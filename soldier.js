@@ -61,7 +61,7 @@ export function makeSoldier(){
  M(new THREE.TorusGeometry(.128,.008,8,28,Math.PI),tanDark,head,0,.015,-.005,0,0,0).rotation.set(0,0,0);
  M(ring(.132,.012),tanDark,head,0,-.01,-.005,Math.PI/2+.12);         // brim rim
  // corrugated hose: filter -> right chest
- const curve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,1.685,.15),new THREE.Vector3(-.03,1.62,.2),new THREE.Vector3(-.07,1.52,.2),new THREE.Vector3(-.1,1.42,.19),new THREE.Vector3(-.13,1.33,.17)]);
+ const curve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,1.685,.15),new THREE.Vector3(-.02,1.645,.2),new THREE.Vector3(-.06,1.58,.215),new THREE.Vector3(-.11,1.5,.205),new THREE.Vector3(-.15,1.42,.19),new THREE.Vector3(-.17,1.36,.175)]);
  const N=26;for(let i=0;i<=N;i++){const p=curve.getPoint(i/N),t=curve.getTangent(i/N);const r=M(new THREE.TorusGeometry(.016,.007,6,12),black,body,p.x,p.y,p.z);r.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),t);r.castShadow=false;}
  // ---- arms ----
  const mkArm=(s)=>{const sh=G(body,s*.29,1.48,0);M(sph(.085),camo,sh);M(ring(.075,.008),seam,sh,0,-.05,0,Math.PI/2);
@@ -87,7 +87,7 @@ export function makeSoldier(){
  const tails=[];for(const [x,len] of[[-.16,7],[-.12,9]]){let p=G(body,x,1.05,-.12);const segs=[];
   for(let i=0;i<len;i++){const s=G(p,0,i?-.075:0,0);M(new THREE.PlaneGeometry(.075,.08),sash,s,0,-.04,0);segs.push(s);p=s;}tails.push(segs);}
  // ---- rifle ----
- const rifle=G(body,-.12,1.3,.32);
+ const rifle=G(body,-.36,1.18,.42);
  M(RB(.07,.11,.42,.015),gun,rifle,0,0,0);                    // receiver
  M(RB(.06,.13,.24,.02),gun,rifle,0,-.02,-.3);                 // stock
  M(new THREE.CylinderGeometry(.018,.018,.35,12),gun,rifle,0,.02,.38,Math.PI/2); // barrel
@@ -101,13 +101,13 @@ export function makeSoldier(){
  const flash=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),new THREE.MeshBasicMaterial({color:0xffd24a}));flash.scale.set(1,1,2.2);flash.visible=false;muzzle.add(flash);
  const flashLight=new THREE.PointLight(0xffaa33,0,5);muzzle.add(flashLight);
  // aim pose
- R.sh.rotation.set(-1.25,0,.15);R.el.rotation.set(-.55,0,0);L.sh.rotation.set(-1.35,0,-.55);L.el.rotation.set(-.25,0,0);
+ R.sh.rotation.set(-.3,0,.08);R.el.rotation.set(-.9,0,0);L.sh.rotation.set(-.25,0,-.12);L.el.rotation.set(-.6,0,0);
  root.traverse(o=>{if(o.isMesh)o.userData.player=true;});
  root.userData={muzzle,flash,flashLight,
   animate(t,speed,air,dt){const ph=t*11,a=Math.min(speed,1);
    const sw=air?0:Math.sin(ph)*.75*a;LL.hip.rotation.x=air?-.6:sw;RL.hip.rotation.x=air?.3:-sw;
    LL.kn.rotation.x=air?.9:Math.max(0,-Math.sin(ph))*1.1*a;RL.kn.rotation.x=air?.3:Math.max(0,Math.sin(ph))*1.1*a;
    body.position.y=air?0:Math.abs(Math.sin(ph))*.05*a;body.rotation.x=a*.1;
-   R.sh.rotation.x=-1.25+Math.sin(ph*2)*.04*a;L.sh.rotation.x=-1.35+Math.sin(ph*2)*.04*a;
+   R.sh.rotation.x=-.3+Math.sin(ph*2)*.04*a;L.sh.rotation.x=-.25+Math.sin(ph)*.3*a+Math.sin(ph*2)*.04*a;
    tails.forEach((segs,k)=>segs.forEach((s,i)=>{s.rotation.x=-(.15+a*.5)*(i?0.25:1)+Math.sin(t*4+i*.7+k)*.12*(1+a);s.rotation.z=Math.sin(t*3+i*.5+k*2)*.08;}));}};
  return root;}

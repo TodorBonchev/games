@@ -21,11 +21,12 @@ button{font-family:inherit;font-size:30px;padding:18px 56px;border-radius:16px;b
 #jumpBtn{width:70px;height:70px;right:calc(140px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));background:#2f7de1cc}
 #stick{position:fixed;width:130px;height:130px;border-radius:50%;background:#fff2;border:2px solid #fff8;display:none;pointer-events:none;left:calc(30px + env(safe-area-inset-left));bottom:calc(30px + env(safe-area-inset-bottom))}
 #stick i{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:50%;background:#fff9}.touch.playing #stick{display:block}
-</style>
+#lock{position:fixed;width:34px;height:34px;margin:-17px 0 0 -17px;border:3px solid #ff3030;border-radius:50%;box-shadow:0 0 6px #f00;pointer-events:none;display:none}
+#skip{position:fixed;right:calc(20px + env(safe-area-inset-right));top:calc(16px + env(safe-area-inset-top));background:#0008;padding:10px 16px;border-radius:10px;font-size:15px;pointer-events:none}</style>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
 </head><body>
 <div id="hud">Score: <span id="score">0</span> &nbsp; Wave: <span id="wave">1</span><div id="hpbar"><div id="hp"></div></div></div>
-<div id="cross"></div><div id="stick"><i></i></div>
+<div id="cross"></div><div id="lock"></div><div id="skip" class="hide">TAP / CLICK / ANY KEY TO SKIP ▶</div><div id="stick"><i></i></div>
 <div id="fireBtn" class="tb">FIRE</div><div id="jumpBtn" class="tb">JUMP</div>
 <div id="start" class="ov"><h1>SOLDIER vs ZOMBIES</h1>
 <p>📱 Left thumb: move · Drag right side: look · FIRE (hold) · JUMP<br>🖥️ WASD move · Mouse look · Click shoot · Space jump · Esc frees mouse</p><button id="startBtn">PLAY</button></div>
