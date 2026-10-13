@@ -35,6 +35,8 @@ export function buildWorld(scene,MOBILE){
  updaters.push((t,cam)=>{const y=cam.position.y;const inside=y>380&&y<820;cloudMats.forEach(m=>m.opacity+=((inside?.38:.85)-m.opacity)*.08);});
  {const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,240,200,1)');gr.addColorStop(.15,'rgba(255,190,120,.6)');gr.addColorStop(1,'rgba(255,140,80,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);
   const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),blending:THREE.AdditiveBlending,fog:false,depthWrite:false,transparent:true,opacity:MOBILE?.6:.9}));glow.scale.set(520,520,1);scene.add(glow);
+  const rays=[];if(!MOBILE)for(let i=0;i<5;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),color:0xffc890,blending:THREE.AdditiveBlending,fog:false,depthWrite:false,transparent:true,opacity:.12,rotation:-.6+i*.3}));s.scale.set(140,1600,1);scene.add(s);rays.push(s);}
+  updaters.push((t,cam)=>rays.forEach((s,i)=>{s.position.copy(cam.position).addScaledVector(SUN_DIR,2950);s.material.opacity=.08+.04*Math.sin(t*.3+i);}));
   updaters.push((t,cam)=>glow.position.copy(cam.position).addScaledVector(SUN_DIR,3000));}
  // ---- terrain ----
  const SEG=MOBILE?110:170,SZ=170;const tg=new THREE.PlaneGeometry(SZ,SZ,SEG,SEG);tg.rotateX(-Math.PI/2);const P=tg.attributes.position,col=new Float32Array(P.count*3),c=new THREE.Color();
@@ -52,13 +54,19 @@ export function buildWorld(scene,MOBILE){
   fragmentShader:`uniform float time,fogNear,fogFar;uniform vec3 sunDir,fogColor;varying vec3 wp;${GL_SHORE}
   void main(){vec2 p=wp.xz;float a=atan(p.y,p.x);float d=length(p)/shoreR(a);float t=time;
    vec2 g=vec2(.8,.6)*cos(dot(p,vec2(.8,.6))*.35+t*1.3)*.5+vec2(-.5,.86)*cos(dot(p,vec2(-.5,.86))*.53+t*1.7)*.35+vec2(.2,-.98)*cos(dot(p,vec2(.2,-.98))*1.1+t*2.3)*.2+vec2(.95,.3)*cos(dot(p,vec2(.95,.3))*2.3-t*2.9)*.12;
-   float dist=length(cameraPosition-wp);float att=1./(1.+dist*.025);vec3 n=normalize(vec3(-g.x*.35*att,1.,-g.y*.35*att));vec3 v=normalize(cameraPosition-wp);
-   vec3 col=mix(vec3(.2,.88,.8),vec3(.02,.42,.62),smoothstep(1.,1.3,d));col=mix(col,vec3(.0,.13,.33),smoothstep(1.25,2.2,d));col=mix(col,vec3(.0,.07,.2),smoothstep(2.2,8.,d));
-   float fr=pow(1.-max(dot(n,v),0.),4.);col=mix(col,vec3(.75,.42,.42),fr*.3);col*=.92+.16*(n.x*3.+.5);
-   vec3 r=reflect(-sunDir,n);float sp=max(dot(r,v),0.);col+=vec3(1.,.75,.45)*(pow(sp,80.)*1.2+pow(sp,1200.)*8.);
-   float wv=sin(t*1.4+a*30.)*.006+sin(t*.9)*.01;float f=smoothstep(1.04+wv,1.0,d)*step(.995,d+.01);float st=.55+.45*sin(p.x*2.1+t*2.)*sin(p.y*2.3-t*1.6);
+   float dist=length(cameraPosition-wp);float att=1./(1.+dist*.025);vec3 n=normalize(vec3(-g.x*.28*att,1.,-g.y*.28*att));vec3 v=normalize(cameraPosition-wp);
+   float sh=1.-smoothstep(1.,1.28,d);
+   vec3 sand=vec3(.95,.85,.6);vec3 col=mix(vec3(.0,.7,.72),vec3(.0,.36,.6),smoothstep(1.02,1.3,d));col=mix(col,vec3(.0,.14,.34),smoothstep(1.25,2.1,d));col=mix(col,vec3(.0,.06,.2),smoothstep(2.1,7.,d));
+   col=mix(col,sand*vec3(.7,1.,.92),sh*sh*.2);
+   vec2 q=p*1.7;float ca=abs(sin(q.x+t*.9+sin(q.y*1.3+t*.6))+sin(q.y*1.1-t*.7+sin(q.x*.8-t*.5)));float cs=pow(max(0.,1.-ca*.55),6.)*sh;col+=vec3(.8,1.,.9)*cs*.3;
+   vec3 rd=reflect(-v,n);float rh=max(rd.y,0.);vec3 sky=mix(vec3(1.,.55,.35),vec3(.5,.32,.55),smoothstep(0.,.3,rh));sky=mix(sky,vec3(.15,.2,.45),smoothstep(.3,.9,rh));
+   float fr=.02+.98*pow(1.-max(dot(n,v),0.),5.);col=mix(col,sky,clamp(fr*.5,0.,.3));
+   vec3 r=reflect(-sunDir,n);float sp=max(dot(r,v),0.);col+=vec3(1.,.75,.45)*(pow(sp,60.)*.9+pow(sp,700.)*6.);
+   vec2 cell=floor(p*3.);float hsh=fract(sin(dot(cell,vec2(12.9898,78.233))+floor(t*6.)*.37)*43758.5);float path=pow(max(dot(normalize(vec3(sunDir.x,0.,sunDir.z)),normalize(vec3(-v.x,0.,-v.z))),0.),40.);
+   col+=vec3(1.,.85,.6)*step(.985,hsh)*path*att*3.;
+   float wv=sin(t*1.4+a*30.)*.006+sin(t*.9)*.01;float f=smoothstep(1.022+wv,1.0,d)*step(.995,d+.01);float st=.55+.45*sin(p.x*2.1+t*2.)*sin(p.y*2.3-t*1.6);
    f=max(f*st,smoothstep(1.075+wv,1.06+wv,d)*smoothstep(1.045+wv,1.06+wv,d)*.6);col=mix(col,vec3(1.),clamp(f,0.,1.)*.9);
-   float al=mix(.55,1.,smoothstep(1.,1.25,d));
+   float al=mix(.72,1.,smoothstep(1.,1.18,d));
    col=mix(col,fogColor,smoothstep(fogNear*1.5,fogFar*1.8,dist)*.9);gl_FragColor=vec4(col,max(al,f));
    #include <tonemapping_fragment>
    #include <colorspace_fragment>
@@ -69,6 +77,7 @@ export function buildWorld(scene,MOBILE){
   if(Math.hypot(x,z)<minC)continue;if(Math.hypot(x-HILL.x,z-HILL.z)<8||Math.hypot(x-POND.x,z-POND.z)<5.5)continue;if(taken.some(o=>Math.hypot(o.x-x,o.z-z)<o.r+r))continue;taken.push({x,z,r});return[x,z];}return[rnd(-20,20),rnd(-20,20)];};
  const m4=new THREE.Matrix4(),q=new THREE.Quaternion(),sc=new THREE.Vector3(),pv=new THREE.Vector3(),eu=new THREE.Euler();
  const setM=(im,i,x,y,z,ry,s,sy=s,rx=0)=>{eu.set(rx,ry,0);q.setFromEuler(eu);im.setMatrixAt(i,m4.compose(pv.set(x,y,z),q,sc.set(s,sy,s)));};
+ const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.3,'rgba(255,255,255,.35)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(g.canvas);})();
  // ---- huts ----
  const bamboo=(()=>{const c=document.createElement('canvas');c.width=64;c.height=8;const g=c.getContext('2d');for(let i=0;i<8;i++){g.fillStyle=i%2?'#c79a5b':'#ad7f45';g.fillRect(i*8,0,8,8);}const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,1);t.colorSpace=THREE.SRGBColorSpace;return t;})();
  const wood=new THREE.MeshLambertMaterial({color:0x8a5a32}),wallM=new THREE.MeshLambertMaterial({map:bamboo}),straw=new THREE.MeshLambertMaterial({color:0xd9b45a,flatShading:true}),darkM=new THREE.MeshLambertMaterial({color:0x2a1a0e});
@@ -79,6 +88,10 @@ export function buildWorld(scene,MOBILE){
   add(new THREE.PlaneGeometry(1,1.6),darkM,g,0,y0+2.2,1.66,false);
   const r=add(new THREE.ConeGeometry(3.3,2.4,i%2?4:8),straw,g,0,y0+4.6,0);r.rotation.y=Math.PI/4;solids.push(r);
   for(let k=0;k<4;k++)add(new THREE.BoxGeometry(.9,.06,.12),wood,g,0,y0+.3+k*.3,2.4+k*.05);
+  {const lp=new THREE.Vector3(1.3,y0+2.9,1.9);const lan=add(new THREE.SphereGeometry(.16,10,8),new THREE.MeshBasicMaterial({color:0xffc060}),g,lp.x,lp.y,lp.z,false);
+   const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffa040,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));gl.scale.set(2.2,2.2,1);gl.position.copy(lp);g.add(gl);
+   if(!MOBILE){const pl=new THREE.PointLight(0xff9a40,6,9,1.6);pl.position.copy(lp);g.add(pl);updaters.push(t=>{pl.intensity=5+Math.sin(t*9+x)*.8+Math.sin(t*23+z)*.4;});}
+   updaters.push(t=>{gl.material.opacity=.75+Math.sin(t*9+x)*.15;});}
   circles.push({x,z,r:2.6});}
  // ---- pier ----
  {const a0=.95,r0=shoreR(a0)*.92,dx=Math.cos(a0),dz=Math.sin(a0);const g=new THREE.Group();g.position.set(dx*r0,0,dz*r0);g.rotation.y=Math.atan2(dx,dz);scene.add(g);
@@ -122,4 +135,7 @@ export function buildWorld(scene,MOBILE){
  const crateT=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle='#c98b3c';g.fillRect(0,0,64,64);g.strokeStyle='#7a4f1c';g.lineWidth=6;g.strokeRect(3,3,58,58);g.beginPath();g.moveTo(3,3);g.lineTo(61,61);g.stroke();const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
  const crM=new THREE.MeshLambertMaterial({map:crateT});
  for(let i=0;i<12;i++){const[x,z]=free(1.6,.85,.15,7);const s=rnd(1,1.6);const m=add(new THREE.BoxGeometry(s,s,s),crM,scene,x,groundH(x,z)+s/2-.05,z);solids.push(m);boxes.push({x,z,hx:s/2,hz:s/2});}
+ {const NFF=MOBILE?40:90,pos=new Float32Array(NFF*3),base=[];for(let i=0;i<NFF;i++){const a=rnd(0,6.28),R=shoreR(a)*rnd(.1,.8),x=Math.cos(a)*R,z=Math.sin(a)*R;base.push([x,groundH(x,z)+rnd(.5,2.5),z,rnd(0,6)]);}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));const ff=new THREE.Points(geo,new THREE.PointsMaterial({map:glowTex,color:0xfff08a,size:.45,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));ff.frustumCulled=false;scene.add(ff);
+  updaters.push(t=>{for(let i=0;i<NFF;i++){const b=base[i];pos[i*3]=b[0]+Math.sin(t*.5+b[3])*1.2;pos[i*3+1]=b[1]+Math.sin(t*.9+b[3]*2)*.4;pos[i*3+2]=b[2]+Math.cos(t*.4+b[3])*1.2;}geo.attributes.position.needsUpdate=true;ff.material.opacity=.6+.4*Math.sin(t*2);});}
  return{solids,circles,boxes,ground,water,fogU,update(t,cam){updaters.forEach(f=>f(t,cam));}};}
