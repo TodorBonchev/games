@@ -11,16 +11,21 @@ function labelTex(){return canvasTex(128,64,(g)=>{g.fillStyle='#2f6a3c';g.fillRe
 function sashTex(){return canvasTex(64,64,(g)=>{for(let y=0;y<64;y+=2)for(let x=0;x<64;x+=2){const v=Math.random();g.fillStyle=v>.85?'#ffb3a8':v>.4?'#d9655f':'#9c3a3a';g.fillRect(x,y,2,2);}},1);}
 
 export function makeSoldier(){
- const camo=new THREE.MeshStandardMaterial({map:camoTex(),roughness:.85});
- const tan=new THREE.MeshStandardMaterial({color:0xcbbd9f,roughness:.7});
+ function fabricN(){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='rgb(128,128,255)';g.fillRect(0,0,256,256);
+for(let i=0;i<260;i++){const x=Math.random()*256,y=Math.random()*256,l=8+Math.random()*30,a=Math.random()*.6-.3;g.strokeStyle=`rgba(${100+Math.random()*56},${100+Math.random()*56},255,.5)`;g.lineWidth=1+Math.random()*2;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke();}
+for(let y=0;y<256;y+=3){g.fillStyle='rgba(128,120,255,.25)';g.fillRect(0,y,256,1);}
+const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,3);return t;}
+const FN=fabricN();
+const camo=new THREE.MeshStandardMaterial({map:camoTex(),normalMap:FN,normalScale:new THREE.Vector2(.7,.7),roughness:.85});
+ const tan=new THREE.MeshStandardMaterial({color:0xcbbd9f,roughness:.7,normalMap:FN,normalScale:new THREE.Vector2(.4,.4)});
  const tanDark=new THREE.MeshStandardMaterial({color:0xa99a7c,roughness:.8});
  const black=new THREE.MeshStandardMaterial({color:0x0c0c0c,roughness:.35,metalness:.1});
  const skin=new THREE.MeshStandardMaterial({color:0xe8b48e,roughness:.6});
- const glove=new THREE.MeshStandardMaterial({color:0x3b3b3b,roughness:.6});
+ const glove=new THREE.MeshStandardMaterial({color:0x3b3b3b,roughness:.55,normalMap:FN,normalScale:new THREE.Vector2(.5,.5)});
  const gray=new THREE.MeshStandardMaterial({color:0x5c5c58,roughness:.8});
  const seam=new THREE.MeshStandardMaterial({color:0x6f6350,roughness:.9});
  const metal=new THREE.MeshStandardMaterial({color:0x9aa0a6,metalness:.9,roughness:.3});
- const gun=new THREE.MeshStandardMaterial({color:0x26282a,metalness:.5,roughness:.45});
+ const gun=new THREE.MeshStandardMaterial({color:0x2a2c2e,metalness:.75,roughness:.38});
  const sash=new THREE.MeshStandardMaterial({map:sashTex(),color:0xffffff,metalness:.65,roughness:.3,side:THREE.DoubleSide});
  const root=new THREE.Group();
  const M=(geo,mat,p,x=0,y=0,z=0,rx=0,ry=0,rz=0)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.rotation.set(rx,ry,rz);m.castShadow=true;p.add(m);return m;};
