@@ -3,12 +3,12 @@ import {buildWorld,groundH,islandD,shoreR,SUN_DIR,FOG_COLOR} from './world.js';
 const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
 const MOBILE=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;if(MOBILE)document.body.classList.add('touch');
 const renderer=new THREE.WebGLRenderer({antialias:!MOBILE,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,MOBILE?1.5:2));renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;document.body.appendChild(renderer.domElement);
-const scene=new THREE.Scene();scene.fog=new THREE.Fog(FOG_COLOR,60,320);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.fog=new THREE.Fog(FOG_COLOR,90,520);
 const cam=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,7000);cam.rotation.order='YXZ';
-scene.add(new THREE.HemisphereLight(0xffd9b0,0x4d6b3a,1.15));
+scene.add(new THREE.HemisphereLight(0xffd2a8,0x3a5230,1.0));
 const sun=new THREE.DirectionalLight(0xffb878,2.6);sun.castShadow=true;const S=MOBILE?1024:2048;sun.shadow.mapSize.set(S,S);
-Object.assign(sun.shadow.camera,{left:-30,right:30,top:30,bottom:-30,near:1,far:200});sun.shadow.bias=-.0005;sun.shadow.normalBias=.04;scene.add(sun,sun.target);
+Object.assign(sun.shadow.camera,{left:-30,right:30,top:30,bottom:-30,near:1,far:200});sun.shadow.bias=-.0003;sun.shadow.normalBias=.03;sun.shadow.radius=3;scene.add(sun,sun.target);
 const W=buildWorld(scene,MOBILE);const solids=W.solids;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const player=makeSoldier();player.rotation.order='YXZ';scene.add(player);
@@ -48,8 +48,8 @@ function moveInput(){let mx=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.Arrow
  const m=v.length();if(m>1)v.divideScalar(m);return m<.15?v.set(0,0,0):v;}
 // ---------- zombies ----------
 const toon=c=>new THREE.MeshLambertMaterial({color:c});
-const zSkin=toon(0x86d94e),shirts=[0xa04fd9,0xff8c2a,0x2ab3ff,0xe03a7a].map(toon),zPants=toon(0x3d4a8a),eyeM=new THREE.MeshBasicMaterial({color:0xff2a00});
-function makeZombie(){const g=new THREE.Group(),mats=[zSkin.clone(),shirts[Math.random()*4|0].clone(),zPants.clone()];mats.forEach(m=>m.transparent=true);
+const zSkin=toon(0x86d94e),shirts=[0x5a2d78,0x8a4a1c,0x1f4f6e,0x6e1f3a,0x3d4a2a].map(toon),zPants=toon(0x2a2f4a),eyeM=new THREE.MeshBasicMaterial({color:0xff2a00});
+function makeZombie(){const g=new THREE.Group(),mats=[zSkin.clone(),shirts[Math.random()*5|0].clone(),zPants.clone()];mats[0].color.offsetHSL(rnd(-.04,.04),rnd(-.15,.05),rnd(-.08,.04));mats.forEach(m=>m.transparent=true);
  const M=(geo,m,x,y,z,p=g)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.castShadow=true;p.add(o);o.userData.root=g;return o};
  M(new THREE.CapsuleGeometry(.26,.35,4,10),mats[1],0,1.3,0).scale.set(1.1,1,.7);const head=M(new THREE.SphereGeometry(.24,14,10),mats[0],0,1.9,.06);
  M(new THREE.SphereGeometry(.05,8,6),eyeM,-.09,.04,.21,head);M(new THREE.SphereGeometry(.05,8,6),eyeM,.09,.04,.21,head);
@@ -67,21 +67,24 @@ function collide(p,r){for(const c of W.circles){const dx=p.x-c.x,dz=p.z-c.z,d=Ma
  const R=Math.hypot(p.x,p.z),lim=shoreR(Math.atan2(p.z,p.x))*.97;if(R>lim){p.x*=lim/R;p.z*=lim/R;}}
 function jump(){if(mode==='play'&&player.position.y<=groundH(player.position.x,player.position.z)+.01){vy=6.5;snd(300,.15,'sine',.1,2);}}
 // ---------- shooting / auto-aim ----------
-const rc=new THREE.Raycaster(),center=new THREE.Vector2(0,0),tmpV=new THREE.Vector3(),losRc=new THREE.Raycaster();let lockT=null,losT=0;
+const rc=new THREE.Raycaster(),center=new THREE.Vector2(0,0),tmpV=new THREE.Vector3(),losRc=new THREE.Raycaster();let lockT=null,losT=0,retWait=0,slow=null;const RET_DELAY=.25,RET_DUR=.7;
 const angD=a=>Math.atan2(Math.sin(a),Math.cos(a));
 function los(z){z.userData.head.getWorldPosition(tmpV);const d=tmpV.clone().sub(cam.position);const L=d.length();losRc.set(cam.position,d.normalize());losRc.far=L-.3;return !losRc.intersectObjects(solids,false).length;}
-function autoAim(dt){if(!(firing||fireId!==null)){lockT=null;return;}
- if(lockT&&(lockT.userData.dead||!zombies.includes(lockT)))lockT=null;
+function autoAim(dt){if(!(firing||fireId!==null)){lockT=null;slow=null;retWait=0;return;}
+ if(lockT&&(lockT.userData.dead||!zombies.includes(lockT))){lockT=null;retWait=RET_DELAY;slow=null;}
+ if(retWait>0){retWait-=dt;if(retWait>0)return;retWait=-1;}
  if(lockT&&(losT-=dt)<=0){losT=.25;if(!los(lockT))lockT=null;}
  if(!lockT){let best=null,bs=1e9;const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
   for(const z of zombies){if(z.userData.dead)continue;const d=z.position.clone().sub(player.position);d.y=0;const dist=d.length();if(dist>45)continue;
-   const s=dist+Math.acos(THREE.MathUtils.clamp(d.normalize().dot(f),-1,1))*6;if(s<bs&&los(z)){bs=s;best=z;}}lockT=best;losT=.25;}
+   const s=dist+Math.acos(THREE.MathUtils.clamp(d.normalize().dot(f),-1,1))*6;if(s<bs&&los(z)){bs=s;best=z;}}lockT=best;losT=.25;if(best&&retWait<0)slow={t:0,y0:yaw,p0:pitch};retWait=0;}
  if(!lockT)return;lockT.userData.head.getWorldPosition(tmpV);const d=tmpV.clone().sub(cam.position).normalize();
- const k=Math.min(1,dt*12);yaw+=angD(Math.atan2(-d.x,-d.z)-yaw)*k;pitch+=(THREE.MathUtils.clamp(Math.asin(d.y),-.7,.55)-pitch)*k;}
-function updLock(){const el=$('lock');if(!lockT||lockT.userData.dead){el.style.display='none';return;}lockT.userData.head.getWorldPosition(tmpV);tmpV.project(cam);
+ const ty=Math.atan2(-d.x,-d.z),tp=THREE.MathUtils.clamp(Math.asin(d.y),-.7,.55);
+ if(slow){slow.t+=dt;const u=Math.min(1,slow.t/RET_DUR),e=u*u*(3-2*u);yaw=slow.y0+angD(ty-slow.y0)*e;pitch=slow.p0+(tp-slow.p0)*e;if(u>=1)slow=null;}
+ else{const k=Math.min(1,dt*12);yaw+=angD(ty-yaw)*k;pitch+=(tp-pitch)*k;}}
+function updLock(){const el=$('lock');if(!lockT||lockT.userData.dead){el.style.display='none';return;}el.style.opacity=slow?.5:1;lockT.userData.head.getWorldPosition(tmpV);tmpV.project(cam);
  if(tmpV.z>1){el.style.display='none';return;}el.style.display='block';el.style.left=((tmpV.x+1)/2*innerWidth)+'px';el.style.top=((1-tmpV.y)/2*innerHeight)+'px';}
 function shoot(){const u=player.userData;u.flash.visible=true;u.flashLight.intensity=8;u.flash.rotation.z=Math.random()*3;setTimeout(()=>{u.flash.visible=false;u.flashLight.intensity=0;},45);snd(900,.08,'square',.12,.2);
- if(lockT){lockT.userData.head.getWorldPosition(tmpV);rc.set(cam.position,tmpV.clone().sub(cam.position).normalize());}else rc.setFromCamera(center,cam);rc.far=150;
+ if(lockT&&!slow){lockT.userData.head.getWorldPosition(tmpV);rc.set(cam.position,tmpV.clone().sub(cam.position).normalize());}else rc.setFromCamera(center,cam);rc.far=150;
  const hits=rc.intersectObjects([...zombies.filter(z=>!z.userData.dead),...solids,W.ground],true);
  const o=new THREE.Vector3();u.muzzle.getWorldPosition(o);let end=hits.length?hits[0].point:rc.ray.at(150,new THREE.Vector3());
  if(hits.length){const z=hits[0].object.userData.root;if(z&&!z.userData.dead){z.userData.hp--;z.userData.hit=.1;const p=end.clone().sub(o).setY(0).normalize();z.position.addScaledVector(p,.25);
@@ -168,12 +171,12 @@ function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.
  else{const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));cam.rotation.set(pitch,yaw,0);const f=new THREE.Vector3(0,0,-1).applyEuler(cam.rotation);
   const piv=new THREE.Vector3(P.x,P.y+1.75,P.z).addScaledVector(right,.8);const back=f.clone().negate();camRc.set(piv,back);camRc.far=4;const ch=camRc.intersectObjects(solids,false);
   cam.position.copy(piv).addScaledVector(back,ch.length?Math.max(.4,ch[0].distance-.3):4);const g=groundH(cam.position.x,cam.position.z)+.3;if(cam.position.y<g)cam.position.y=g;}
- const alt=Math.max(0,cam.position.y);scene.fog.near=60+alt*.6;scene.fog.far=320+alt*1.9;W.fogU.fogNear.value=scene.fog.near;W.fogU.fogFar.value=scene.fog.far;
+ const alt=Math.max(0,cam.position.y);scene.fog.near=90+alt*.7;scene.fog.far=520+alt*2.2;W.fogU.fogNear.value=scene.fog.near;W.fogU.fogFar.value=scene.fog.far;
  const nn=alt>150?1.5:.1;if(cam.near!==nn){cam.near=nn;cam.updateProjectionMatrix();}
  const sc=mode==='intro'?(iPhase==='heli'?heli.position:P):P;sun.position.copy(sc).addScaledVector(SUN_DIR,90);sun.target.position.copy(sc);
  W.update(T,cam);renderer.render(scene,cam);}
 if(closeup){$('start').classList.add('hide');$('hud').classList.add('hide');}
-if(DEBUG)window.__game={get mode(){return mode},get phase(){return iPhase},get score(){return score},get heads(){return headsDetached},get yaw(){return yaw},get alt(){return player.position.y},
+if(DEBUG)window.__game={get mode(){return mode},get phase(){return iPhase},get score(){return score},get heads(){return headsDetached},get yaw(){return yaw},get alt(){return player.position.y},get retarget(){return {slow:!!slow,retWait}},
  setAlt(y){player.position.y=y;},overview(on){camOverride=on?[new THREE.Vector3(...on[0]),new THREE.Vector3(...on[1])]:null;},
  spawnNear(){spawn();const z=zombies[zombies.length-1];z.position.set(player.position.x-Math.sin(yaw)*5,0,player.position.z-Math.cos(yaw)*5);z.position.y=groundH(z.position.x,z.position.z);z.userData.hp=1;}};
 loop();
