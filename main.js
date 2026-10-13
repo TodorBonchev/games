@@ -1,6 +1,7 @@
-import * as THREE from 'three';import {makeSoldier} from './soldier.js?v8';import {makeHeli,makeChute} from './heli.js?v8';
-import {buildWorld,groundH,islandD,shoreR,SUN_DIR,FOG_COLOR} from './world.js?v8';
-export const BUILD='v8 2026-10-13 23:40';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
+import * as THREE from 'three';import {makeSoldier} from './soldier.js?v9';import {makeHeli,makeChute} from './heli.js?v9';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
+import {buildWorld,groundH,islandD,shoreR,SUN_DIR,FOG_COLOR,iceF} from './world.js?v9';
+export const BUILD='v9 2026-10-13 23:59';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
 const MOBILE=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;if(MOBILE)document.body.classList.add('touch');
 const renderer=new THREE.WebGLRenderer({antialias:!MOBILE,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,MOBILE?1.5:2));renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);
@@ -9,7 +10,8 @@ const cam=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,7000);cam.rot
 scene.add(new THREE.HemisphereLight(0xb4c2e8,0x5a4a30,.95));const rim=new THREE.DirectionalLight(0xffd0b0,.35);rim.position.set(60,30,80);scene.add(rim);
 const sun=new THREE.DirectionalLight(0xffb060,3.0);sun.castShadow=true;const S=MOBILE?1024:2048;sun.shadow.mapSize.set(S,S);
 Object.assign(sun.shadow.camera,{left:-30,right:30,top:30,bottom:-30,near:1,far:200});sun.shadow.bias=-.0003;sun.shadow.normalBias=.03;sun.shadow.radius=3;scene.add(sun,sun.target);
-const W=buildWorld(scene,MOBILE);const solids=W.solids;
+const W=buildWorld(scene,MOBILE);
+let composer=null;if(!MOBILE){composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,cam));composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth/2,innerHeight/2),.22,.35,.93));composer.addPass(new OutputPass());}const solids=W.solids;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const player=makeSoldier();player.rotation.order='YXZ';scene.add(player);
 // ---------- audio ----------
@@ -41,7 +43,7 @@ addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouc
 const tend=e=>{for(const t of e.changedTouches){if(t.identifier===stick.id){stick.id=null;stick.x=stick.y=0;knob.style.transform='';}if(t.identifier===lk.id)lk.id=null;if(t.identifier===fireId)fireId=null;}};
 addEventListener('touchend',tend);addEventListener('touchcancel',tend);
 ['gesturestart','dblclick','contextmenu'].forEach(ev=>addEventListener(ev,e=>e.preventDefault(),{passive:false}));
-const onResize=()=>{cam.aspect=innerWidth/innerHeight;cam.fov=innerHeight>innerWidth?85:70;cam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);};
+const onResize=()=>{cam.aspect=innerWidth/innerHeight;cam.fov=innerHeight>innerWidth?85:70;cam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer&&composer.setSize(innerWidth,innerHeight);};
 addEventListener('resize',onResize);addEventListener('orientationchange',()=>setTimeout(onResize,250));onResize();
 function moveInput(){let mx=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0),sx=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);
  if(stick.id!==null){mx-=stick.y;sx+=stick.x;}const v=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)).multiplyScalar(mx).addScaledVector(new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),sx);
@@ -55,7 +57,8 @@ function makeZombie(){const g=new THREE.Group(),mats=[zSkin.clone(),shirts[Math.
  M(new THREE.SphereGeometry(.05,8,6),eyeM,-.09,.04,.21,head);M(new THREE.SphereGeometry(.05,8,6),eyeM,.09,.04,.21,head);
  const legs=[];for(const x of[-.15,.15]){const l=new THREE.Group();l.position.set(x,.95,0);g.add(l);M(new THREE.CapsuleGeometry(.11,.65,4,8),mats[2],0,-.47,0,l);legs.push(l);}
  const arms=[];for(const x of[-.38,.38]){const a=new THREE.Group();a.position.set(x,1.55,0);g.add(a);M(new THREE.CapsuleGeometry(.08,.55,4,8),mats[0],0,-.35,0,a);a.rotation.x=-1.5;arms.push(a);}
- g.userData={legs,arms,mats,head,hp:0,dead:0,ph:Math.random()*6};return g;}
+ g.userData={legs,arms,mats,head,hp:0,dead:0,ph:Math.random()*6,base:mats[0].color.clone(),base1:mats[1].color.clone()};return g;}
+const ICE_SKIN=new THREE.Color(0x9fd8ff),ICE_CLOTH=new THREE.Color(0x4a6f9a);
 let zombies=[],tracers=[],score=0,wave=0,hp=100,toSpawn=0,spawnT=0,fireT=0,vy=0,curSpeed=0;const ZCAP=MOBILE?14:28;
 function onLand(x,z,clear=.6){if(islandD(x,z)>.88)return false;for(const c of W.circles)if(Math.hypot(c.x-x,c.z-z)<c.r+clear)return false;for(const b of W.boxes)if(Math.abs(b.x-x)<b.hx+clear&&Math.abs(b.z-z)<b.hz+clear)return false;return true;}
 function spawn(){const z=makeZombie();let x=0,zz=0;for(let k=0;k<40;k++){const a=rnd(0,6.28),r=rnd(18,36);x=player.position.x+Math.cos(a)*r;zz=player.position.z+Math.sin(a)*r;if(onLand(x,zz))break;
@@ -175,7 +178,7 @@ let gT=0;function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.get
    if(dist>1){z.position.addScaledVector(d.normalize(),u.speed*dt);collide(z.position,.35);}
    else if(P.y-z.position.y<1.2){hp-=22*dt;updHud();if(Math.random()<dt*3)snd(80,.2,'sawtooth',.1,.5);
     if(hp<=0){running=false;mode='over';lockT=null;firing=false;fireId=null;document.body.classList.remove('playing');document.exitPointerLock&&document.exitPointerLock();$('final').textContent=`Score ${score} · Wave ${wave}`;$('over').classList.remove('hide');snd(300,1.2,'sawtooth',.2,.1);}}
-   z.position.y=groundH(z.position.x,z.position.z);}}
+   z.position.y=groundH(z.position.x,z.position.z);const fi=iceF(z.position.x,z.position.z);u.mats[0].color.copy(u.base).lerp(ICE_SKIN,fi*.7);u.mats[1].color.copy(u.base1).lerp(ICE_CLOTH,fi*.5);}}
  if(DEBUG&&running&&(firing||fireId!==null))aimLog.push({t:gT,yaw:yaw*180/Math.PI,pitch:pitch*180/Math.PI,err:aimErrDeg(),aligned,lock:lockT?zombies.indexOf(lockT):-1});
  updDebris(dt);updLock();
  player.userData.animate(T,mode==='intro'?0:curSpeed,mode==='intro'?(iPhase==='free'||iPhase==='chute'):P.y>groundH(P.x,P.z)+.05,dt);
@@ -190,7 +193,7 @@ let gT=0;function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.get
  const alt=Math.max(0,cam.position.y);scene.fog.near=90+alt*.7;scene.fog.far=520+alt*2.2;W.fogU.fogNear.value=scene.fog.near;W.fogU.fogFar.value=scene.fog.far;
  const nn=alt>150?1.5:.1;if(cam.near!==nn){cam.near=nn;cam.updateProjectionMatrix();}
  const sc=mode==='intro'?(iPhase==='heli'?heli.position:P):P;sun.position.copy(sc).addScaledVector(SUN_DIR,90);sun.target.position.copy(sc);
- W.update(T,cam);renderer.render(scene,cam);}
+ W.update(T,cam);composer?composer.render():renderer.render(scene,cam);}
 $('ver').textContent='build '+BUILD;
 if(closeup){$('start').classList.add('hide');$('hud').classList.add('hide');}
 if(DEBUG)window.__game={get mode(){return mode},get phase(){return iPhase},get score(){return score},get heads(){return headsDetached},get yaw(){return yaw},get alt(){return player.position.y},aimLog,
