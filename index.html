@@ -1,0 +1,14 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><title>Soldier vs Zombies</title>
+<style>html,body{height:100%;touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}body{margin:0;position:fixed;inset:0;overflow:hidden;background:#000;font-family:sans-serif;color:#fff}
+#hud{position:fixed;top:10px;left:10px;font-size:18px;text-shadow:1px 1px 2px #000}
+#hpbar{width:200px;height:16px;border:2px solid #fff;margin-top:6px}#hp{height:100%;background:#d33;width:100%}
+.ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+button{font-size:28px;padding:18px 48px;border-radius:14px;border:none;background:#e0566a;color:#fff;font-weight:bold;margin-top:20px;cursor:pointer}.hide{display:none}canvas{display:block;touch-action:none}.stick{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);display:none;pointer-events:none}
+.stick i{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.5)}#ls{left:calc(20px + env(safe-area-inset-left))}#rs{right:calc(20px + env(safe-area-inset-right))}
+.touch .stick{display:block}#hud{top:calc(10px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left))}</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+</head><body>
+<div id="hud">Score: <span id="score">0</span> &nbsp; Wave: <span id="wave">1</span><div id="hpbar"><div id="hp"></div></div></div>
+<div id="start" class="ov"><h1>SOLDIER vs ZOMBIES</h1><p>Phone: left stick move · right stick aim &amp; fire<br>Desktop: WASD move · Mouse aim · Click/hold to shoot</p><button id="startBtn">START</button></div>
+<div id="over" class="ov hide"><h1>GAME OVER</h1><p id="final"></p><button id="restartBtn">RESTART</button></div>
+<div id="ls" class="stick"><i></i></div><div id="rs" class="stick"><i></i></div><script type="module" src="main.js"></script></body></html>
