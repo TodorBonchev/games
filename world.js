@@ -3,6 +3,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 export const SUN_DIR=new THREE.Vector3(-.55,.1,-.8).normalize();
 export const FOG_COLOR=new THREE.Color(0xd9a48c);
+export const LIGHTS={hemi:[0xa8bce8,0x4a3c28,.7],rim:[0xffc8b0,.5],rimPos:[60,30,80],sun:[0xffa860,4.2],exp:.62,fog:[90,520],name:'PALM ISLE'};
+export function lavaF(){return 0;}
 export function shoreR(a){return 52+5*Math.sin(3*a)+4*Math.sin(5*a+1.3)+2.5*Math.sin(9*a+.7);}
 const HILL={x:-24,z:-20},POND={x:-15,z:-9};
 export const ICE_A=2.25;const angDiff=a=>Math.abs(Math.atan2(Math.sin(a),Math.cos(a)));
