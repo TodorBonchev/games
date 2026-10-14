@@ -1,5 +1,6 @@
 // Level 2: Ember Isle — volcanic night island with lava rivers, basalt, ruins, glowing fungi.
 import * as THREE from 'three';
+import {lowSky,lowTerrainMat,lowWater} from './lowfx.js?v12';
 export const SUN_DIR=new THREE.Vector3(.45,.42,-.78).normalize(); // moon direction
 export const FOG_COLOR=new THREE.Color(0x3a1d34);
 export const LIGHTS={hemi:[0x5a4a90,0x6a2008,.42],rim:[0xff6a2a,1.1],rimPos:[-30,8,-40],sun:[0xb8b0ff,1.9],exp:.85,fog:[40,300],name:'EMBER ISLE'};
@@ -24,7 +25,7 @@ export function groundH(x,z){const d=islandD(x,z);if(d>=1)return Math.max(-(d-1)
  const terr=Math.floor((base+3)/1.6)*1.6-3;const b2=base*.6+terr*.4*inl+.4*(1-inl);
  const t=Math.hypot(x-TEMPLE.x,z-TEMPLE.z),flat=sstep(13,8,t);
  return (b2*(1-flat)+1.8*flat)+v*sstep(.98,.7,d)-.9*lavaF(x,z);}
-export function buildWorld(scene,MOBILE,renderer){
+export function buildWorld(scene,MOBILE,renderer,opt={}){const LOWQ=!!opt.low;
  const solids=[],circles=[],boxes=[],updaters=[];const rnd=(a,b)=>a+Math.random()*(b-a);
  const fogU={fogColor:{value:FOG_COLOR},fogNear:{value:40},fogFar:{value:300}};
  // ---- sky: eerie purple-red dusk with stars ----
@@ -41,8 +42,8 @@ export function buildWorld(scene,MOBILE,renderer){
    #include <tonemapping_fragment>
    #include <colorspace_fragment>
   }`});
- const sky=new THREE.Mesh(new THREE.SphereGeometry(4000,32,16),skyMat);scene.add(sky);updaters.push((t,cam)=>{sky.position.copy(cam.position);skyMat.uniforms.time.value=t;});
- {const pm=new THREE.PMREMGenerator(renderer);const es=new THREE.Scene();const s2=new THREE.Mesh(new THREE.SphereGeometry(50,32,16),skyMat);es.add(s2);
+ const sky=LOWQ?lowSky(0x0a0614,0x5a1a14,new THREE.Vector3(-.4,0,-.6).normalize(),0x501808):new THREE.Mesh(new THREE.SphereGeometry(4000,32,16),skyMat);scene.add(sky);updaters.push((t,cam)=>{sky.position.copy(cam.position);skyMat.uniforms.time.value=t;});
+ if(!LOWQ){const pm=new THREE.PMREMGenerator(renderer);const es=new THREE.Scene();const s2=new THREE.Mesh(new THREE.SphereGeometry(50,32,16),skyMat);es.add(s2);
   es.add(new THREE.Mesh(new THREE.PlaneGeometry(200,200).rotateX(-Math.PI/2).translate(0,-2,0),new THREE.MeshBasicMaterial({color:0x3a1208})));
   scene.environment=pm.fromScene(es,0,.1,200).texture;pm.dispose();}
  const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.3,'rgba(255,255,255,.35)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
@@ -57,10 +58,10 @@ export function buildWorld(scene,MOBILE,renderer){
    img.data[i]=60+below*120;img.data[i+1]=35+below*30;img.data[i+2]=60+(1-below)*50;img.data[i+3]=Math.min(255,Math.pow(Math.min(1,d/.35),.8)*235);}
   g.putImageData(img,0,0);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;};
  const CW=MOBILE?96:192,CH=MOBILE?48:96;const cloudMats=[0,1,2].map(k=>new THREE.SpriteMaterial({map:cloudTex(k*5.1+2,CW,CH),transparent:true,opacity:.9,fog:false,depthWrite:false}));
- const NC=MOBILE?40:80;for(let i=0;i<NC;i++){const s=new THREE.Sprite(cloudMats[i%3]);const ca=rnd(0,6.28),cr=rnd(80,1300);s.position.set(Math.cos(ca)*cr,rnd(420,640),Math.sin(ca)*cr);const k=rnd(170,330);s.scale.set(k*2,k,1);scene.add(s);}
+ const NC=LOWQ?14:MOBILE?40:80;for(let i=0;i<NC;i++){const s=new THREE.Sprite(cloudMats[i%3]);const ca=rnd(0,6.28),cr=rnd(80,1300);s.position.set(Math.cos(ca)*cr,rnd(420,640),Math.sin(ca)*cr);const k=rnd(170,330);s.scale.set(k*2,k,1);scene.add(s);}
  updaters.push((t,cam)=>{const y=cam.position.y;const inside=y>380&&y<820;cloudMats.forEach(m=>m.opacity+=((inside?.45:.9)-m.opacity)*.08);});
  // ---- terrain ----
- const SEG=MOBILE?150:250,SZ=170;const tg=new THREE.PlaneGeometry(SZ,SZ,SEG,SEG);tg.rotateX(-Math.PI/2);const P=tg.attributes.position,lavA=new Float32Array(P.count);
+ const SEG=LOWQ?110:MOBILE?150:250,SZ=170;const tg=new THREE.PlaneGeometry(SZ,SZ,SEG,SEG);tg.rotateX(-Math.PI/2);const P=tg.attributes.position,lavA=new Float32Array(P.count);
  for(let i=0;i<P.count;i++){const x=P.getX(i),z=P.getZ(i);P.setY(i,groundH(x,z));lavA[i]=lavaF(x,z);}
  tg.setAttribute('lava',new THREE.BufferAttribute(lavA,1));tg.computeVertexNormals();
  const gm=new THREE.MeshStandardMaterial({roughness:.9,metalness:0});const gU={time:{value:0}};
@@ -91,9 +92,14 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
    totalEmissiveRadiance+=lv*lavaM;float near=smoothstep(.0,.4,vLava)*(1.-lavaM);totalEmissiveRadiance+=vec3(1.,.3,.05)*(near*.35+crack*near*1.4);
    totalEmissiveRadiance+=vec3(1.,.35,.05)*crack*smoothstep(10.,5.,vWP.y)*0.;}`);};
  updaters.push(t=>gU.time.value=t);
- const ground=new THREE.Mesh(tg,gm);ground.receiveShadow=true;scene.add(ground);
+ if(LOWQ){const col=new Float32Array(P.count*3),c=new THREE.Color(),N=tg.attributes.normal;
+  for(let i=0;i<P.count;i++){const x=P.getX(i),z=P.getZ(i),h=P.getY(i),sl=1-N.getY(i),n=fbm(x*.08,z*.08,2);
+   c.setRGB(.24+.1*n,.22+.09*n,.23+.07*n);if(fbm(x*.11+5,z*.11,2)>.55)c.setRGB(.07,.11,.1);if(sl>.25)c.setRGB(.07+.06*n,.065+.05*n,.07+.05*n);if(h<1.2)c.setRGB(.07,.065,.075);
+   const lv=lavA[i];if(lv>.02)c.lerp(new THREE.Color(.04,.02,.01),Math.min(1,lv*2));col.set([c.r,c.g,c.b],i*3);}
+  tg.setAttribute('color',new THREE.BufferAttribute(col,3));}
+ const ground=new THREE.Mesh(tg,LOWQ?lowTerrainMat('lava','1.6,.55,.08',gU):gm);ground.receiveShadow=true;scene.add(ground);
  // ---- dark sea with moon glitter ----
- const water=new THREE.Mesh(new THREE.PlaneGeometry(9000,9000),new THREE.ShaderMaterial({transparent:true,fog:false,uniforms:{time:{value:0},sunDir:{value:SUN_DIR},...fogU},
+ const water=new THREE.Mesh(new THREE.PlaneGeometry(9000,9000),LOWQ?lowWater(GL_SHORE,{time:{value:0},sunDir:{value:SUN_DIR},...fogU},'.015,.015,.04','.18,.06,.06','.8,.75,1.'):new THREE.ShaderMaterial({transparent:true,fog:false,uniforms:{time:{value:0},sunDir:{value:SUN_DIR},...fogU},
   vertexShader:'varying vec3 wp;void main(){vec4 w=modelMatrix*vec4(position,1.);wp=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}',
   fragmentShader:`uniform float time,fogNear,fogFar;uniform vec3 sunDir,fogColor;varying vec3 wp;${GL_SHORE}
   void main(){vec2 p=wp.xz;float a=atan(p.y,p.x);float d=length(p)/shoreR(a);float t=time;
@@ -161,12 +167,12 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
  const vy=groundH(VOLC.x,VOLC.z);
  {const cg=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xff5a10,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,fog:false}));cg.position.set(VOLC.x,vy+6,VOLC.z);cg.scale.set(40,22,1);scene.add(cg);
   const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(60,45,55,.8)');gr.addColorStop(1,'rgba(40,30,40,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);
-  const smT=new THREE.CanvasTexture(c);const sm=[];for(let i=0;i<(MOBILE?8:14);i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:smT,transparent:true,depthWrite:false,opacity:.7}));scene.add(s);sm.push({s,o:i/(MOBILE?8:14)});}
+  const smT=new THREE.CanvasTexture(c);const sm=[];for(let i=0;i<(LOWQ?5:MOBILE?8:14);i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:smT,transparent:true,depthWrite:false,opacity:.7}));scene.add(s);sm.push({s,o:i/(MOBILE?8:14)});}
   updaters.push(t=>{cg.material.opacity=.75+.25*Math.sin(t*2.3)*Math.sin(t*.7);sm.forEach(o=>{const u=(t*.04+o.o)%1;o.s.position.set(VOLC.x+u*30+Math.sin(u*9+o.o*20)*3,vy+4+u*70,VOLC.z-u*12);const k=8+u*40;o.s.scale.set(k,k,1);o.s.material.opacity=.75*Math.sin(u*Math.PI);});});}
  // ---- ash (falling) and embers (rising) ----
- {const NA=MOBILE?260:700,ap=new Float32Array(NA*3);for(let i=0;i<NA;i++)ap.set([rnd(-30,30),rnd(0,25),rnd(-30,30)],i*3);const ag=new THREE.BufferGeometry();ag.setAttribute('position',new THREE.BufferAttribute(ap,3));
+ {const NA=LOWQ?90:MOBILE?260:700,ap=new Float32Array(NA*3);for(let i=0;i<NA;i++)ap.set([rnd(-30,30),rnd(0,25),rnd(-30,30)],i*3);const ag=new THREE.BufferGeometry();ag.setAttribute('position',new THREE.BufferAttribute(ap,3));
   const ash=new THREE.Points(ag,new THREE.PointsMaterial({size:.09,color:0xb8a8a8,transparent:true,opacity:.75,map:glowTex,depthWrite:false}));ash.frustumCulled=false;scene.add(ash);
-  const NE=MOBILE?120:300,ep=new Float32Array(NE*3),ev=[];const lavaPts=[];for(let k=0;k<4000&&lavaPts.length<300;k++){const a=rnd(0,6.28),R=rnd(0,60),x=VOLC.x+Math.cos(a)*R,z=VOLC.z+Math.sin(a)*R;if(lavaF(x,z)>.6)lavaPts.push([x,z]);}
+  const NE=LOWQ?50:MOBILE?120:300,ep=new Float32Array(NE*3),ev=[];const lavaPts=[];for(let k=0;k<4000&&lavaPts.length<300;k++){const a=rnd(0,6.28),R=rnd(0,60),x=VOLC.x+Math.cos(a)*R,z=VOLC.z+Math.sin(a)*R;if(lavaF(x,z)>.6)lavaPts.push([x,z]);}
   const reset=i=>{const p=lavaPts[Math.random()*lavaPts.length|0]||[VOLC.x,VOLC.z];ep.set([p[0]+rnd(-1,1),groundH(p[0],p[1])+rnd(0,1),p[1]+rnd(-1,1)],i*3);ev[i]=[rnd(-.4,.4),rnd(.8,2.5),rnd(-.4,.4),rnd(2,5)];};
   for(let i=0;i<NE;i++){reset(i);ep[i*3+1]+=rnd(0,5);}const eg=new THREE.BufferGeometry();eg.setAttribute('position',new THREE.BufferAttribute(ep,3));
   const emb=new THREE.Points(eg,new THREE.PointsMaterial({size:.22,color:0xff8a30,map:glowTex,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));emb.frustumCulled=false;scene.add(emb);
