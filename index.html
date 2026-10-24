@@ -1,52 +1,556 @@
-<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Soldier Z"><meta name="theme-color" content="#000000">
-<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png">
-<title>Soldier vs Zombies</title>
-<style>
-html,body{height:100%;touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-body{margin:0;position:fixed;inset:0;overflow:hidden;background:#000;font-family:'Arial Black',Arial,sans-serif;color:#fff}
-canvas{display:block;touch-action:none}
-#hud{position:fixed;top:calc(10px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));font-size:20px;text-shadow:2px 2px 0 #0008}
-#hprow{display:flex;align-items:center;gap:8px;margin-top:6px}#hprow #hpbar{margin-top:0}
-#rejumpBtn,#fsBtn,#gearBtn{pointer-events:auto;font:bold 13px Arial;margin:0;padding:5px 10px;border-radius:12px;border:2px solid #fff;background:#1f7a4ccc;color:#fff;display:none;align-items:center;gap:5px;min-height:40px;touch-action:manipulation}
-#rejumpBtn svg{width:24px;height:24px}#rejumpBtn.cd{background:#5559;opacity:.85;cursor:default}#fsBtn{background:#0007;font-size:18px;min-width:40px;justify-content:center}
-.playing #rejumpBtn,.playing #fsBtn,.playing #gearBtn{display:flex}#gearBtn{background:#0007;font-size:18px;min-width:40px;justify-content:center}
-.qrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;font:bold 15px Arial;margin-top:10px}.qbtns{display:flex;gap:6px}.qrow button{font:bold 14px Arial;padding:8px 14px;margin:0;background:#fff3;color:#fff;border-width:2px}.qrow button.sel{background:#ffcc1a;color:#3a2a00}.qinfo{font:12px Arial!important;opacity:.85;margin:6px}
-#fps{position:fixed;right:calc(8px + env(safe-area-inset-right));top:calc(8px + env(safe-area-inset-top));font:bold 12px monospace;background:#0008;padding:3px 6px;border-radius:4px;z-index:6;pointer-events:none}
-#setPanel{z-index:25}#fsBtn.hide{display:none!important}
-#lvlSel{display:flex;gap:12px}#lvlSel button{font-size:18px;padding:10px 22px;background:#fff3;color:#fff}#lvlSel button.sel{background:#ffcc1a;color:#3a2a00}#lvlSel button:disabled{opacity:.45}
-#lvlCard{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:18;transition:opacity .7s;background:radial-gradient(ellipse,#0008,#0000 70%)}#lvlCard h2{font-size:clamp(40px,10vw,90px);margin:0;color:#ffb347;text-shadow:0 0 20px #f40,3px 3px 0 #000}#lvlCard p{font:20px Arial;margin:4px}
-#vig.burn{background:radial-gradient(ellipse at center,rgba(255,60,0,0) 35%,rgba(255,40,0,.55) 100%)}
-#hpbar{width:220px;height:18px;border:3px solid #fff;border-radius:9px;margin-top:6px;overflow:hidden;background:#0006}#hp{height:100%;background:linear-gradient(#5f5,#2b2);width:100%}
-#cross{position:fixed;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;pointer-events:none;display:none}
-#cross:before,#cross:after{content:'';position:absolute;background:#fff;box-shadow:0 0 2px #000}#cross:before{left:12px;top:0;width:2px;height:26px}#cross:after{top:12px;left:0;height:2px;width:26px}
-.playing #cross{display:block}
-.ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(#ff8a5c55,#6a3fd055);text-align:center;padding:10px}
-.ov h1{font-size:clamp(28px,7vw,60px);margin:0;text-shadow:3px 3px 0 #0006}.ov p{font-family:Arial;font-size:16px}
-button{font-family:inherit;font-size:30px;padding:18px 56px;border-radius:16px;border:4px solid #fff;background:#ffcc1a;color:#3a2a00;cursor:pointer;margin-top:14px}
-.hide{display:none!important}
-.tb{position:fixed;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:16px;color:#fff;border:3px solid #fffb;text-shadow:1px 1px 0 #000}
-.touch.playing .tb{display:flex}
-#fireBtn{width:100px;height:100px;right:calc(26px + env(safe-area-inset-right));bottom:calc(30px + env(safe-area-inset-bottom));background:#e33a3acc}
-#jumpBtn{width:70px;height:70px;right:calc(140px + env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));background:#2f7de1cc}
-#stick{position:fixed;width:130px;height:130px;border-radius:50%;background:#fff2;border:2px solid #fff8;display:none;pointer-events:none;left:calc(30px + env(safe-area-inset-left));bottom:calc(30px + env(safe-area-inset-bottom))}
-#stick i{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:50%;background:#fff9}.touch.playing #stick,.touch.intro #stick{display:block}
-#lock{position:fixed;width:34px;height:34px;margin:-17px 0 0 -17px;border:3px solid #ff3030;border-radius:50%;box-shadow:0 0 6px #f00;pointer-events:none;display:none}
-#skipBtn{position:fixed;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top));font-size:22px;padding:10px 34px;margin:0;background:#fffc;color:#222;border:3px solid #ffcc1a}#ver{position:fixed;right:calc(8px + env(safe-area-inset-right));bottom:calc(4px + env(safe-area-inset-bottom));font:11px Arial;color:#fffa;text-shadow:1px 1px 0 #000;pointer-events:none;z-index:5}
-#vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(40,10,30,.38) 100%)}
-body:not(.touch) canvas{filter:saturate(1.08) contrast(1.05)}
-canvas{position:relative;z-index:0}#vig{z-index:1}#hud,#cross,#lock,.tb,#stick,#ver{z-index:5}#skipBtn{z-index:15}.ov{z-index:20}
-</style>
-<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
-</head><body>
-<div id="hud">Score: <span id="score">0</span> &nbsp; Wave: <span id="wave">1</span><div id="hprow"><div id="hpbar"><div id="hp"></div></div><button id="rejumpBtn" title="Jump again (H)"><svg viewBox="0 0 24 24" fill="#fff"><path d="M2 4h20v1.6H13v1.4h3.5c2.5 0 4.5 1.8 4.5 4v1h-4.5l-1 2H9.5c-2 0-3.5-1.2-3.8-3L1 9.2V7.5l5 1.3C6.6 7.8 7.8 7 9.5 7H11V5.6H2z"/><path d="M8 17c0-2.2 1.8-3 4-3s4 .8 4 3l-4 4z" opacity=".85"/></svg><b>JUMP AGAIN</b></button><button id="fsBtn" title="Fullscreen">⛶</button><button id="gearBtn" title="Settings">⚙</button></div></div>
-<div id="lvlCard" class="hide"><h2></h2><p></p></div>
-<div id="vig"></div><div id="ver"></div><div id="cross"></div><div id="lock"></div><button id="skipBtn" class="hide">SKIP ▶</button><div id="stick"><i></i></div>
-<div id="fireBtn" class="tb">FIRE</div><div id="jumpBtn" class="tb">JUMP</div>
-<div id="start" class="ov"><h1>SOLDIER vs ZOMBIES</h1>
-<p>📱 Left thumb: move · Drag right side: look · hold FIRE (auto-aim) · JUMP<br>🖥️ WASD move · Mouse look · Hold click: auto-aim shoot · Space jump · H jump again from helicopter · Esc frees mouse</p><div class="qrow">Quality: <span class="qbtns"></span><button class="fpsBtn">FPS: OFF</button></div><p class="qinfo"></p><div id="lvlSel"><button data-l="1">LEVEL 1</button><button data-l="2">LEVEL 2</button></div><button id="startBtn">PLAY</button></div>
-<div id="fps" class="hide"></div><div id="setPanel" class="ov hide"><h1>SETTINGS</h1><div class="qrow">Quality: <span class="qbtns"></span><button class="fpsBtn">FPS: OFF</button></div><p class="qinfo"></p><button id="setClose">CLOSE</button></div>
-<div id="over" class="ov hide"><h1>GAME OVER</h1><p id="final"></p><button id="restartBtn">PLAY AGAIN</button></div>
-<script type="module" src="main.js?v12"></script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Soldier Z" />
+    <meta name="theme-color" content="#101916" />
+    <meta
+      name="description"
+      content="Drop into a wild island. Hold your ground against the horde. A third-person survival game."
+    />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icon-180.png" />
+    <link rel="icon" href="icon-192.png" />
+    <link
+      rel="preload"
+      href="assets/fonts/barlow-condensed-800.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Soldier vs Zombies — Island Survival</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three/build/three.module.js",
+          "three/addons/": "./vendor/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="vig" aria-hidden="true"></div>
+    <div id="hud">
+      <div class="hud-topline">
+        <span class="live-dot"></span>
+        <div class="encounter-copy"><strong id="encounterName">SKIRMISH</strong><span id="encounterHint">Find your footing. Clear the shore.</span></div>
+        <div id="momentumHud" class="hide" aria-label="Score momentum">
+          <strong id="momentumMultiplier">×1</strong><span id="momentumCount">2 CHAIN</span>
+          <div class="momentum-track" aria-hidden="true"><div id="momentumFill"></div></div>
+        </div>
+      </div>
+      <div class="hud-stats">
+        <div class="hud-stat">
+          <span>SCORE</span><strong id="score">0</strong>
+        </div>
+        <div class="hud-stat">
+          <span>WAVE</span><strong id="wave">1</strong>
+        </div>
+        <div class="hud-stat threat-stat">
+          <span>HOSTILES</span><strong id="enemies">0</strong>
+        </div>
+      </div>
+      <div id="hprow">
+        <div class="health">
+          <div class="health-label">
+            <span>VITALS</span
+            ><span><b id="hpValue">100</b> <small>/ 100</small></span>
+            <span id="reserveArmorStatus" class="hide" aria-label="Reserve armor">ARMOR <b id="reserveArmorValue">0</b></span>
+          </div>
+          <div
+            id="hpbar"
+            role="progressbar"
+            aria-label="Health"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="100"
+          >
+            <div id="hp"></div>
+          </div>
+        </div>
+      </div>
+      <p id="objective">Survive five waves to reach Ember Isle.</p>
+      <div class="wave-progress-heading" aria-hidden="true">
+        <span>WAVE PROGRESS</span><span id="waveProgressLabel">0 / 7</span>
+      </div>
+      <div
+        id="waveProgress"
+        class="wave-progress"
+        role="progressbar"
+        aria-label="Hostiles defeated this wave"
+        aria-valuemin="0"
+        aria-valuemax="7"
+        aria-valuenow="0"
+      >
+        <div id="waveProgressFill"></div>
+      </div>
+    </div>
+    <div class="hud-actions">
+      <button
+        id="rejumpBtn"
+        class="utility-button"
+        title="Return to the helicopter (H)"
+        aria-label="Return to the helicopter"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M2 4h20v1.6H13v1.4h3.5c2.5 0 4.5 1.8 4.5 4v1h-4.5l-1 2H9.5c-2 0-3.5-1.2-3.8-3L1 9.2V7.5l5 1.3C6.6 7.8 7.8 7 9.5 7H11V5.6H2zM8 17c0-2.2 1.8-3 4-3s4 .8 4 3l-4 4z"
+          /></svg
+        ><b>JUMP AGAIN</b><kbd>H</kbd>
+      </button>
+      <button
+        id="fsBtn"
+        class="utility-button icon-button"
+        title="Fullscreen"
+        aria-label="Toggle fullscreen"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" />
+        </svg>
+      </button>
+      <button
+        id="gearBtn"
+        class="utility-button icon-button"
+        title="Settings"
+        aria-label="Open settings"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h16M4 17h16M8 4v6M16 14v6" />
+        </svg>
+      </button>
+      <button
+        id="pauseBtn"
+        class="utility-button icon-button"
+        title="Pause (Esc or P)"
+        aria-label="Pause game"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8 5v14M16 5v14" />
+        </svg>
+      </button>
+    </div>
+    <div id="lvlCard" class="hide">
+      <span class="eyebrow">MISSION UPDATE</span>
+      <h2></h2>
+      <p></p>
+    </div>
+    <div id="eliteHud" class="hide" aria-label="Elite hostile">
+      <div class="elite-heading">
+        <span class="elite-mark" aria-hidden="true">◇</span>
+        <strong id="eliteName">ISLAND COMMANDER</strong>
+        <span id="eliteHpText">100%</span>
+      </div>
+      <div id="eliteHpBar" role="progressbar" aria-label="Elite health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+        <div id="eliteHpFill"></div>
+      </div>
+    </div>
+    <div id="overdriveHud" class="hide" role="status">
+      <span class="overdrive-mark" aria-hidden="true">»</span>
+      <span>OVERDRIVE <strong id="overdriveTime">8s</strong></span>
+      <div class="overdrive-track" aria-hidden="true"><div id="overdriveFill"></div></div>
+    </div>
+    <div id="fieldObjective" class="hide" aria-label="Optional field uplink">
+      <span class="field-compass" aria-hidden="true"><svg id="fieldDirection" viewBox="0 0 24 24"><path d="m12 3 7 17-7-4-7 4z" /></svg></span>
+      <div class="field-objective-copy">
+        <div class="field-objective-heading"><strong id="fieldTitle">FIELD UPLINK</strong><span id="fieldDistance">24m</span></div>
+        <span id="fieldStatus">Enter the beacon · hold 5 seconds</span>
+        <div class="field-progress" aria-hidden="true"><div id="fieldProgressFill"></div></div>
+      </div>
+    </div>
+    <div id="weaponHud" aria-label="Equipped weapon"><span class="weapon-hud-mark" aria-hidden="true">▰</span><strong id="weaponName">RANGER</strong><span id="weaponHint">ASSAULT RIFLE · ∞</span></div>
+    <div id="pickupNotice" role="status" aria-live="polite"></div>
+    <div id="waveBanner" role="status" aria-live="polite"></div>
+    <div id="cross" aria-hidden="true"><i></i></div>
+    <div id="hitmarker" aria-hidden="true"></div>
+    <div id="lock" aria-hidden="true"></div>
+    <button id="skipBtn" class="hide">
+      SKIP INSERTION <kbd class="skip-key">SPACE</kbd
+      ><span aria-hidden="true">→</span>
+    </button>
+    <div id="stick" aria-hidden="true"><i></i></div>
+    <div
+      id="fireBtn"
+      class="tb"
+      role="button"
+      aria-label="Hold to aim and fire"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="6" />
+        <path d="M12 2v6M12 16v6M2 12h6M16 12h6" /></svg
+      ><span>FIRE</span>
+    </div>
+    <div id="jumpBtn" class="tb" role="button" aria-label="Jump">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m5 12 7-7 7 7M12 5v15" /></svg
+      ><span>JUMP</span>
+    </div>
+
+    <main id="start" class="ov menu">
+      <header class="masthead">
+        <a class="brand" href="./" aria-label="Soldier Z home"
+          ><span class="brand-symbol">S<span>Z</span></span
+          ><span>SURVIVAL<br />OPERATIONS</span></a
+        >
+        <div class="session-tag">
+          <span class="live-dot"></span> SOLO OPERATION
+          <span class="divider">/</span> ISLAND THEATER
+        </div>
+        <div class="personal-best">
+          <span>PERSONAL BEST</span><strong id="bestScore">0</strong>
+        </div>
+      </header>
+      <div class="menu-content">
+        <section class="hero">
+          <p class="eyebrow">
+            <span class="line"></span> OUTNUMBERED. NEVER OUTGUNNED.
+          </p>
+          <h1>
+            SOLDIER<span class="title-bottom"
+              ><small>VS</small> ZOMBIES<span class="title-dot">.</span></span
+            >
+          </h1>
+          <p class="hero-description">
+            Paradise is lost.<br />
+            Adapt to the horde. Secure both islands.
+          </p>
+          <div class="mission-pills">
+            <span><i></i> BUILD YOUR RUN</span><span>TWO-ISLAND CAMPAIGN</span>
+          </div>
+          <div class="field-note">
+            <span>BRIEFING / 001</span>
+            <p>
+              Pick your weapon. Capture field uplinks.<br />Defeat both commanders and complete the operation.
+            </p>
+          </div>
+          <section class="loadout" aria-labelledby="loadoutTitle">
+            <div class="loadout-heading"><span id="loadoutTitle" class="eyebrow">CHOOSE YOUR WEAPON</span><span>UNLIMITED AMMO</span></div>
+            <div class="weapon-choices">
+              <button type="button" class="weapon-card" data-weapon="rifle" aria-pressed="true">
+                <svg viewBox="0 0 112 34" aria-hidden="true"><path d="M10 15h18l4-7h28l5 5h35v5H65l-5 5H41l-4 8h-7l2-10H17l-7 7zM44 8V4h14v4M76 13V8h3v5"/><path class="weapon-detail" d="M42 13h17M68 15h24"/></svg>
+                <span class="weapon-card-heading"><strong>RANGER</strong><span class="weapon-selected" aria-hidden="true">✓</span></span>
+                <span class="weapon-role">ASSAULT RIFLE</span>
+                <span class="weapon-description">Fast fire. Ready for anything.</span>
+              </button>
+              <button type="button" class="weapon-card" data-weapon="burst" aria-pressed="false">
+                <svg viewBox="0 0 112 34" aria-hidden="true"><path d="M8 16h22l4-8h31l4 5h35v4H68l-4 6H44l-4 8h-6l1-10H21l-13 7zM40 8V4h20v4M91 13V9h3v4"/><path class="weapon-detail" d="M46 13h16M73 15h23"/></svg>
+                <span class="weapon-card-heading"><strong>STRIKER</strong><span class="weapon-selected" aria-hidden="true">✓</span></span>
+                <span class="weapon-role">BURST CARBINE</span>
+                <span class="weapon-description">Three-round bursts. Stay precise.</span>
+              </button>
+              <button type="button" class="weapon-card" data-weapon="scatter" aria-pressed="false">
+                <svg viewBox="0 0 112 34" aria-hidden="true"><path d="M8 17h23l6-6h29l3 2h29v6H70l-5 5H42l-4 7h-7l1-10H18l-10 6zM52 8h12v3M87 13V9h3v4"/><path class="weapon-detail" d="M48 15h18M74 16h20"/></svg>
+                <span class="weapon-card-heading"><strong>BREACHER</strong><span class="weapon-selected" aria-hidden="true">✓</span></span>
+                <span class="weapon-role">SCATTERGUN</span>
+                <span class="weapon-description">Heavy spread. Get up close.</span>
+              </button>
+            </div>
+          </section>
+        </section>
+        <section class="deployment" aria-label="Mission selection">
+          <div class="panel-heading">
+            <span class="eyebrow">SELECT DROP ZONE</span
+            ><span class="sector-code">02 SECTORS</span>
+          </div>
+          <div id="lvlSel">
+            <button
+              type="button"
+              data-l="1"
+              class="level-card palm"
+              aria-label="Select Palm Isle"
+            >
+              <span class="level-image" aria-hidden="true"></span
+              ><span class="level-number">01</span>
+              <span class="level-copy"
+                ><span class="level-kicker">FIRST DEPLOYMENT</span
+                ><strong>Palm Isle</strong
+                ><span class="level-description"
+                  >Golden shores. Hostile company.</span
+                ></span
+              >
+              <span class="level-indicator" aria-hidden="true">↗</span>
+            </button>
+            <button
+              type="button"
+              data-l="2"
+              class="level-card ember"
+              aria-label="Select Ember Isle"
+            >
+              <span class="level-image" aria-hidden="true"></span
+              ><span class="level-number">02</span>
+              <span class="level-copy"
+                ><span class="level-kicker">ADVANCED OPERATION</span
+                ><strong>Ember Isle</strong
+                ><span class="level-description"
+                  >Volcanic terrain. Relentless enemies.</span
+                ><span class="locked-note">CLEAR 5 WAVES TO UNLOCK</span></span
+              >
+              <span class="level-indicator" aria-hidden="true">↗</span>
+            </button>
+          </div>
+          <button id="startBtn" class="primary-button" disabled>
+            <span>DEPLOY NOW</span><span aria-hidden="true">→</span>
+          </button>
+          <p id="loadStatus" class="deploy-note" role="status">
+            Preparing the island…
+          </p>
+          <details class="menu-settings">
+            <summary>DISPLAY & AUDIO <span aria-hidden="true">+</span></summary>
+            <div class="qrow">
+              <span class="setting-label">QUALITY</span
+              ><span class="qbtns"></span>
+            </div>
+            <div class="setting-toggles">
+              <button class="fpsBtn">FPS: OFF</button
+              ><button id="menuMuteBtn" class="muteBtn">SOUND ON</button>
+            </div>
+            <p class="qinfo"></p>
+          </details>
+        </section>
+      </div>
+      <footer class="menu-footer">
+        <div class="control-guide desktop-guide">
+          <span><kbd>W A S D</kbd> MOVE</span><span><kbd>MOUSE</kbd> LOOK</span
+          ><span><kbd>CLICK</kbd> HOLD TO AIM & FIRE</span
+          ><span><kbd>SPACE</kbd> JUMP</span
+          ><span><kbd>SHIFT</kbd> SPRINT</span>
+        </div>
+        <div class="control-guide mobile-guide">
+          <span>LEFT THUMB <b>MOVE + SPRINT</b></span
+          ><span>DRAG RIGHT <b>LOOK</b></span
+          ><span>HOLD FIRE <b>AUTO-AIM</b></span>
+        </div>
+        <span class="footer-status"><i></i> READY FOR DEPLOYMENT</span>
+      </footer>
+    </main>
+
+    <section
+      id="setPanel"
+      class="ov hide"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settingsTitle"
+    >
+      <div class="dialog-card">
+        <p class="eyebrow">FIELD CONFIGURATION</p>
+        <h1 id="settingsTitle">Settings</h1>
+        <p class="dialog-intro">Make the island feel right.</p>
+        <div class="setting-group">
+          <div class="qrow">
+            <span class="setting-label">GRAPHICS QUALITY</span
+            ><span class="qbtns"></span>
+          </div>
+          <p class="qinfo"></p>
+        </div>
+        <div class="preference-controls">
+          <label class="sensitivity-label" for="lookSensitivity">
+            <span>LOOK SENSITIVITY</span
+            ><output id="lookSensitivityValue" for="lookSensitivity"
+              >1.00×</output
+            >
+          </label>
+          <input
+            id="lookSensitivity"
+            type="range"
+            min="0.5"
+            max="1.75"
+            step="0.05"
+            value="1"
+            aria-label="Look sensitivity"
+          />
+          <button id="motionBtn" class="secondary-button">MOTION: AUTO</button>
+        </div>
+        <div class="setting-toggles">
+          <button class="fpsBtn">FPS: OFF</button
+          ><button id="muteBtn" class="muteBtn">SOUND ON</button>
+        </div>
+        <button
+          id="settingsFullscreenBtn"
+          class="secondary-button fullscreen-button"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" />
+          </svg>
+          <span>FULLSCREEN</span>
+        </button>
+        <button id="setClose" class="primary-button">
+          <span>BACK TO GAME</span><span aria-hidden="true">→</span>
+        </button>
+      </div>
+    </section>
+    <section
+      id="pausePanel"
+      class="ov hide"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pauseTitle"
+    >
+      <div class="dialog-card pause-card">
+        <p class="eyebrow"><span class="live-dot"></span> OPERATION ON HOLD</p>
+        <h1 id="pauseTitle">Take a breath.</h1>
+        <p class="dialog-intro">Your position is secure. Ready when you are.</p>
+        <button id="resumeBtn" class="primary-button">
+          <span>RESUME OPERATION</span><span aria-hidden="true">→</span>
+        </button>
+        <button id="pauseRejumpBtn" class="secondary-button redeploy-button">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M2 4h20v1.6H13v1.4h3.5c2.5 0 4.5 1.8 4.5 4v1h-4.5l-1 2H9.5c-2 0-3.5-1.2-3.8-3L1 9.2V7.5l5 1.3C6.6 7.8 7.8 7 9.5 7H11V5.6H2zM8 17c0-2.2 1.8-3 4-3s4 .8 4 3l-4 4z"
+            />
+          </svg>
+          <span data-rejump-label>HELICOPTER REDEPLOY</span>
+        </button>
+        <div class="dialog-secondary-actions">
+          <button id="pauseSettingsBtn" class="secondary-button">
+            DISPLAY & AUDIO
+          </button>
+          <button id="pauseMenuBtn" class="secondary-button">
+            END RUN & RETURN
+          </button>
+        </div>
+        <details class="pause-controls">
+          <summary>
+            CONTROLS & FIELD TIPS <span aria-hidden="true">+</span>
+          </summary>
+          <div class="controls-reference desktop-reference">
+            <span><kbd>W A S D</kbd> Move</span
+            ><span><kbd>MOUSE</kbd> Look around</span>
+            <span><kbd>CLICK</kbd> Hold to aim & fire</span
+            ><span><kbd>SPACE</kbd> Jump</span>
+            <span><kbd>SHIFT</kbd> Sprint</span
+            ><span><kbd>H</kbd> Helicopter redeploy</span>
+          </div>
+          <div class="controls-reference touch-reference">
+            <span><strong>LEFT THUMB</strong> Move; push fully to sprint.</span>
+            <span><strong>DRAG RIGHT</strong> Look around the island.</span>
+            <span><strong>HOLD FIRE</strong> Track targets and shoot.</span>
+            <span><strong>JUMP</strong> Clear obstacles and keep moving.</span>
+          </div>
+          <p>Choose your weapon before deploying. Hold FIRE with any weapon; ammunition is unlimited. Clear waves to upgrade your build.</p>
+          <p>Follow the uplink arrow to the beacon. Keep nearby hostiles clear and stay inside for five seconds to earn armor, Overdrive, and bonus points. Uplinks are optional; leave the ring when you need breathing room.</p>
+          <p>Collect field supplies. Jump or leave the commander's warning ring before the slam lands.</p>
+          <p>Each encounter changes the horde. Runner Rush rewards movement; Iron Guard demands sustained fire. Spitters mark the ground before acid lands: leave the warning circle, then avoid the pool.</p>
+          <p>Chain eliminations within seven seconds to build your score bonus up to ×3. Taking a hit breaks momentum. Clear both islands to complete the operation, then continue in Endless if you want a tougher run.</p>
+        </details>
+        <p class="keyboard-hint">
+          Press <kbd>ESC</kbd> or <kbd>P</kbd> to return
+        </p>
+      </div>
+    </section>
+    <section
+      id="upgradePanel"
+      class="ov hide"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="upgradeTitle"
+      aria-describedby="upgradeHelp"
+    >
+      <div class="upgrade-shell">
+        <header class="upgrade-header">
+          <div>
+            <p id="upgradeWave" class="eyebrow">WAVE 01 SECURED</p>
+            <h1 id="upgradeTitle">Get stronger.</h1>
+            <p id="upgradeHelp">Choose one upgrade. Yours for this run.</p>
+          </div>
+          <p id="upgradeRecovery" class="upgrade-recovery">+25 HEALTH · READY FOR NEXT WAVE</p>
+        </header>
+        <div id="upgradeChoices" class="upgrade-choices">
+          <button class="upgrade-card" data-choice="0" data-perk="damage">
+            <span class="upgrade-card-top"><span data-upgrade-icon class="upgrade-icon" aria-hidden="true">✦</span><span data-upgrade-category>OFFENSE</span><span class="upgrade-choice-number" aria-hidden="true">01</span></span>
+            <strong data-upgrade-title>HOLLOW POINTS</strong>
+            <span data-upgrade-description>Deal 40% more bullet damage.</span>
+            <span class="upgrade-card-bottom"><span data-upgrade-rank>NEW · RANK 1 / 3</span><span class="upgrade-select" aria-hidden="true">CHOOSE <b>↗</b></span></span>
+          </button>
+          <button class="upgrade-card" data-choice="1" data-perk="speed">
+            <span class="upgrade-card-top"><span data-upgrade-icon class="upgrade-icon" aria-hidden="true">↗</span><span data-upgrade-category>MOBILITY</span><span class="upgrade-choice-number" aria-hidden="true">02</span></span>
+            <strong data-upgrade-title>LIGHT FOOTED</strong>
+            <span data-upgrade-description>Move and sprint 8% faster.</span>
+            <span class="upgrade-card-bottom"><span data-upgrade-rank>NEW · RANK 1 / 3</span><span class="upgrade-select" aria-hidden="true">CHOOSE <b>↗</b></span></span>
+          </button>
+          <button class="upgrade-card" data-choice="2" data-perk="recovery">
+            <span class="upgrade-card-top"><span data-upgrade-icon class="upgrade-icon" aria-hidden="true">+</span><span data-upgrade-category>SUPPORT</span><span class="upgrade-choice-number" aria-hidden="true">03</span></span>
+            <strong data-upgrade-title>FIELD MEDIC</strong>
+            <span data-upgrade-description>Recover 10 more health after each wave.</span>
+            <span class="upgrade-card-bottom"><span data-upgrade-rank>NEW · RANK 1 / 3</span><span class="upgrade-select" aria-hidden="true">CHOOSE <b>↗</b></span></span>
+          </button>
+        </div>
+        <footer class="upgrade-footer">
+          <div class="upgrade-build"><span>YOUR FIELD KIT</span><p id="upgradeBuild">Your first upgrade starts here.</p></div>
+          <button id="upgradeMenuBtn" class="secondary-button">END RUN & RETURN</button>
+        </footer>
+      </div>
+    </section>
+    <section
+      id="over"
+      class="ov hide"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="debriefTitle"
+    >
+      <div class="dialog-card over-card">
+        <p id="debriefEyebrow" class="eyebrow">OPERATION DEBRIEF</p>
+        <h1 id="debriefTitle">
+          Good fight,<br />
+          soldier.
+        </h1>
+        <div class="debrief-score">
+          <span>FINAL SCORE</span><strong id="finalScore">0</strong>
+          <span id="finalRecord">PERSONAL BEST 0</span>
+          <div class="mission-rank" aria-label="Operation rating">
+            <span class="rank-caption">OPERATION RATING</span>
+            <span class="rank-emblem"><b id="finalRank">C</b></span>
+            <span id="finalRankLabel">KEEP FIGHTING</span>
+          </div>
+        </div>
+        <dl class="run-stats">
+          <div>
+            <dt>WAVE REACHED</dt>
+            <dd id="finalWave">01</dd>
+          </div>
+          <div>
+            <dt>HOSTILES DOWN</dt>
+            <dd id="finalKills">0</dd>
+          </div>
+          <div>
+            <dt>TIME IN COMBAT</dt>
+            <dd id="finalTime">00:00</dd>
+          </div>
+          <div>
+            <dt>ACCURACY</dt>
+            <dd id="finalAccuracy">—</dd>
+          </div>
+          <div>
+            <dt>BEST CHAIN</dt>
+            <dd id="finalChain">0</dd>
+          </div>
+          <div>
+            <dt>TOP BONUS</dt>
+            <dd id="finalMultiplier">×1</dd>
+          </div>
+        </dl>
+        <details class="debrief-build"><summary><span>FIELD REPORT <i aria-hidden="true">+</i></span><span><b id="finalElites">0</b> ELITES · <b id="finalUplinks">0</b> UPLINKS</span></summary><p id="finalBuild">Standard issue</p></details>
+        <p id="final" class="debrief-tip"></p>
+        <div class="debrief-actions">
+          <button id="endlessBtn" type="button" class="primary-button hide"><span>CONTINUE ENDLESS</span><span aria-hidden="true">↗</span></button>
+          <button id="restartBtn" class="primary-button">
+            <span>DEPLOY AGAIN</span><span aria-hidden="true">→</span>
+          </button>
+          <button id="overMenuBtn" class="secondary-button">RETURN TO BRIEFING</button>
+        </div>
+      </div>
+    </section>
+    <div id="fps" class="hide"></div>
+    <div id="ver"></div>
+    <script type="module" src="boot.js"></script>
+  </body>
+</html>

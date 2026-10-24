@@ -1,9 +1,10 @@
 // Geometry factory: halves tessellation on the Low tier and caches identical geometries (shared across zombies).
 import * as THREE from 'three';
-export const LOD={low:false};const cache=new Map();
+export const LOD={low:false};const cache=new Map(),cachedGeometries=new WeakSet();
+export const isCachedGeometry=geometry=>cachedGeometries.has(geometry);
 const SEGIDX={SphereGeometry:[1,2],CapsuleGeometry:[2,3],CylinderGeometry:[3],ConeGeometry:[2],TorusGeometry:[2,3],CircleGeometry:[1],RoundedBoxGeometry:[3]};
 export function mk(C,...a){if(LOD.low){const ix=SEGIDX[C.name];if(ix)for(const i of ix)if(typeof a[i]==='number')a[i]=Math.max(i===1&&C.name==='SphereGeometry'?8:3,Math.ceil(a[i]/2));}return new C(...a);}
-export function mkc(C,...a){const k=C.name+a.join(',')+LOD.low;let g=cache.get(k);if(!g){g=mk(C,...a);cache.set(k,g);}return g;}
+export function mkc(C,...a){const k=C.name+a.join(',')+LOD.low;let g=cache.get(k);if(!g){g=mk(C,...a);cache.set(k,g);cachedGeometries.add(g);}return g;}
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 const attrSig=g=>Object.keys(g.attributes).sort().map(k=>{const a=g.attributes[k];return k+a.itemSize+(a.normalized?'n':'')+a.array.constructor.name+(a.isInterleavedBufferAttribute?'i':'');}).join(',');
 // Merge every mesh that is rigidly attached to an animated joint into one mesh per material (fewer draw calls, same look).

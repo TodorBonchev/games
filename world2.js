@@ -1,9 +1,11 @@
 // Level 2: Ember Isle — volcanic night island with lava rivers, basalt, ruins, glowing fungi.
 import * as THREE from 'three';
-import {lowSky,lowTerrainMat,lowWater} from './lowfx.js?v12';
+import {lowSky,lowTerrainMat,lowWater} from './lowfx.js?v18';
+import {expeditionScenery} from './atmosphere.js?v18';
+import {createEncounterWeather} from './weather.js?v18';
 export const SUN_DIR=new THREE.Vector3(.45,.42,-.78).normalize(); // moon direction
-export const FOG_COLOR=new THREE.Color(0x3a1d34);
-export const LIGHTS={hemi:[0x5a4a90,0x6a2008,.42],rim:[0xff6a2a,1.1],rimPos:[-30,8,-40],sun:[0xb8b0ff,1.9],exp:.85,fog:[40,300],name:'EMBER ISLE'};
+export const FOG_COLOR=new THREE.Color(0x343e4d);
+export const LIGHTS={hemi:[0x7f91b7,0x5b2d20,.6],rim:[0xff8a49,.95],rimPos:[-30,8,-40],sun:[0xc5d9ff,2.1],exp:.9,fog:[40,300],name:'EMBER ISLE'};
 export function shoreR(a){return 56+6*Math.sin(2*a+.5)+4*Math.sin(5*a+2.1)+2*Math.sin(11*a+.3);}
 const GL_SHORE='float shoreR(float a){return 56.+6.*sin(2.*a+.5)+4.*sin(5.*a+2.1)+2.*sin(11.*a+.3);}';
 export const VOLC={x:-16,z:-20};export const TEMPLE={x:17,z:15};
@@ -33,7 +35,7 @@ export function buildWorld(scene,MOBILE,renderer,opt={}){const LOWQ=!!opt.low;
   vertexShader:'varying vec3 vd;void main(){vd=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_Position.z=gl_Position.w;}',
   fragmentShader:`uniform vec3 moon;uniform float time;varying vec3 vd;float h(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
   float n3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z);}
-  void main(){vec3 d=normalize(vd);float y=d.y;vec3 c=mix(vec3(.55,.13,.07),vec3(.24,.07,.2),smoothstep(-.02,.18,y));c=mix(c,vec3(.06,.03,.12),smoothstep(.15,.6,y));c=mix(c,vec3(.015,.012,.04),smoothstep(.55,1.,y));
+  void main(){vec3 d=normalize(vd);float y=d.y;vec3 c=mix(vec3(.55,.13,.07),vec3(.15,.09,.16),smoothstep(-.02,.18,y));c=mix(c,vec3(.025,.055,.10),smoothstep(.15,.6,y));c=mix(c,vec3(.015,.012,.04),smoothstep(.55,1.,y));
    float lv=max(0.,dot(d,normalize(vec3(-.4,0.,-.6))));c+=vec3(.6,.15,.04)*pow(lv,6.)*(1.-smoothstep(0.,.35,y))*.8;
    float cl=n3(d*vec3(3.,9.,3.)+vec3(time*.01,0,0))*.6+n3(d*9.)*.4;float band=smoothstep(.45,.8,cl)*smoothstep(.02,.15,y)*(1.-smoothstep(.35,.6,y));c=mix(c,vec3(.12,.04,.08),band*.7);
    float md=dot(d,moon);c+=vec3(.6,.55,.8)*pow(max(md,0.),30.)*.25+vec3(.9,.7,.9)*pow(max(md,0.),300.)*.4;c+=vec3(.9,.9,1.)*band*pow(max(md,0.),8.)*.35;
@@ -42,7 +44,7 @@ export function buildWorld(scene,MOBILE,renderer,opt={}){const LOWQ=!!opt.low;
    #include <tonemapping_fragment>
    #include <colorspace_fragment>
   }`});
- const sky=LOWQ?lowSky(0x0a0614,0x5a1a14,new THREE.Vector3(-.4,0,-.6).normalize(),0x501808):new THREE.Mesh(new THREE.SphereGeometry(4000,32,16),skyMat);scene.add(sky);updaters.push((t,cam)=>{sky.position.copy(cam.position);skyMat.uniforms.time.value=t;});
+ const sky=LOWQ?lowSky(0x172335,0x744339,new THREE.Vector3(-.4,0,-.6).normalize(),0x7a3a12,true):new THREE.Mesh(new THREE.SphereGeometry(4000,32,16),skyMat);scene.add(sky);updaters.push((t,cam)=>{sky.position.copy(cam.position);skyMat.uniforms.time.value=t;});
  if(!LOWQ){const pm=new THREE.PMREMGenerator(renderer);const es=new THREE.Scene();const s2=new THREE.Mesh(new THREE.SphereGeometry(50,32,16),skyMat);es.add(s2);
   es.add(new THREE.Mesh(new THREE.PlaneGeometry(200,200).rotateX(-Math.PI/2).translate(0,-2,0),new THREE.MeshBasicMaterial({color:0x3a1208})));
   scene.environment=pm.fromScene(es,0,.1,200).texture;pm.dispose();}
@@ -90,16 +92,16 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
   {vec2 P=vWP.xz;float fl=fbmS(P*.35+vec2(time*.12,-time*.08))+.5*vn(P*1.7-time*.3);vec3 hot=mix(vec3(1.,.25,.02),vec3(1.,.75,.2),smoothstep(.55,.95,fl));
    float crust=smoothstep(.55,.7,vn(P*.9+time*.05)+vn(P*2.3)*.4);vec3 lv=mix(hot*1.5,hot*.25,crust*.75);
    totalEmissiveRadiance+=lv*lavaM;float near=smoothstep(.0,.4,vLava)*(1.-lavaM);totalEmissiveRadiance+=vec3(1.,.3,.05)*(near*.35+crack*near*1.4);
-   totalEmissiveRadiance+=vec3(1.,.35,.05)*crack*smoothstep(10.,5.,vWP.y)*0.;}`);};
+  }`);};
  updaters.push(t=>gU.time.value=t);
  if(LOWQ){const col=new Float32Array(P.count*3),c=new THREE.Color(),N=tg.attributes.normal;
   for(let i=0;i<P.count;i++){const x=P.getX(i),z=P.getZ(i),h=P.getY(i),sl=1-N.getY(i),n=fbm(x*.08,z*.08,2);
-   c.setRGB(.24+.1*n,.22+.09*n,.23+.07*n);if(fbm(x*.11+5,z*.11,2)>.55)c.setRGB(.07,.11,.1);if(sl>.25)c.setRGB(.07+.06*n,.065+.05*n,.07+.05*n);if(h<1.2)c.setRGB(.07,.065,.075);
+   c.setRGB(.15+.1*n,.16+.09*n,.19+.09*n);if(fbm(x*.11+5,z*.11,2)>.55)c.setRGB(.055,.12,.12);if(sl>.25)c.setRGB(.07+.06*n,.075+.05*n,.10+.06*n);if(h<1.2)c.setRGB(.065,.075,.09);
    const lv=lavA[i];if(lv>.02)c.lerp(new THREE.Color(.04,.02,.01),Math.min(1,lv*2));col.set([c.r,c.g,c.b],i*3);}
   tg.setAttribute('color',new THREE.BufferAttribute(col,3));}
  const ground=new THREE.Mesh(tg,LOWQ?lowTerrainMat('lava','1.6,.55,.08',gU):gm);ground.receiveShadow=true;scene.add(ground);
  // ---- dark sea with moon glitter ----
- const water=new THREE.Mesh(new THREE.PlaneGeometry(9000,9000),LOWQ?lowWater(GL_SHORE,{time:{value:0},sunDir:{value:SUN_DIR},...fogU},'.015,.015,.04','.18,.06,.06','.8,.75,1.'):new THREE.ShaderMaterial({transparent:true,fog:false,uniforms:{time:{value:0},sunDir:{value:SUN_DIR},...fogU},
+ const water=new THREE.Mesh(new THREE.PlaneGeometry(30000,30000),LOWQ?lowWater(GL_SHORE,{time:{value:0},sunDir:{value:SUN_DIR},...fogU},'.015,.015,.04','.18,.06,.06','.8,.75,1.'):new THREE.ShaderMaterial({transparent:true,fog:false,uniforms:{time:{value:0},sunDir:{value:SUN_DIR},...fogU},
   vertexShader:'varying vec3 wp;void main(){vec4 w=modelMatrix*vec4(position,1.);wp=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}',
   fragmentShader:`uniform float time,fogNear,fogFar;uniform vec3 sunDir,fogColor;varying vec3 wp;${GL_SHORE}
   void main(){vec2 p=wp.xz;float a=atan(p.y,p.x);float d=length(p)/shoreR(a);float t=time;
@@ -109,7 +111,7 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
    vec3 rd=reflect(-v,n);float rh=max(rd.y,0.);vec3 sky=mix(vec3(.55,.14,.08),vec3(.2,.06,.18),smoothstep(0.,.2,rh));sky=mix(sky,vec3(.03,.02,.06),smoothstep(.2,.7,rh));
    float fr=.02+.98*pow(1.-max(dot(n,v),0.),5.);col=mix(col,sky,clamp(fr*.8,0.,.6));
    vec3 r=reflect(-sunDir,n);float sp=max(dot(r,v),0.);col+=vec3(.8,.75,1.)*(pow(sp,80.)*.8+pow(sp,900.)*5.);
-   float wv=sin(t*1.2+a*30.)*.006;float f=smoothstep(1.022+wv,1.,d)*step(.995,d+.01)*(.5+.5*sin(p.x*2.1+t*2.));col=mix(col,vec3(.6,.5,.6),clamp(f,0.,1.)*.6);
+   float wv=sin(t*1.2+a*30.)*.006;float f=(1.-smoothstep(1.,1.022+wv,d))*step(.995,d+.01)*(.5+.5*sin(p.x*2.1+t*2.));col=mix(col,vec3(.6,.5,.6),clamp(f,0.,1.)*.6);
    float al=mix(.8,1.,smoothstep(1.,1.15,d));col=mix(col,fogColor,smoothstep(fogNear*1.5,fogFar*2.,dist)*.8);gl_FragColor=vec4(col,max(al,f));
    #include <tonemapping_fragment>
    #include <colorspace_fragment>
@@ -124,7 +126,7 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
   g.strokeStyle='rgba(0,0,0,.35)';for(let i=0;i<14;i++){g.lineWidth=Math.random()*1.5+.5;g.beginPath();let x=Math.random()*sz,y=Math.random()*sz;g.moveTo(x,y);for(let k=0;k<5;k++){x+=Math.random()*24-12;y+=Math.random()*24-12;g.lineTo(x,y);}g.stroke();}
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep,rep);t.colorSpace=THREE.SRGBColorSpace;return t;};
  // ---- basalt column clusters ----
- {const bt=noiseTex(40,38,42,128,1);const bm=new THREE.MeshStandardMaterial({map:bt,bumpMap:bt,bumpScale:3,roughness:.75,metalness:.05,flatShading:true});
+ {const bt=noiseTex(74,80,91,128,1);const bm=new THREE.MeshStandardMaterial({map:bt,bumpMap:bt,bumpScale:.1,roughness:.88,metalness:.02,flatShading:true});
   const NCl=MOBILE?16:26,per=6;const im=new THREE.InstancedMesh(new THREE.CylinderGeometry(.55,.62,1,6),bm,NCl*per);let n=0;
   for(let c=0;c<NCl;c++){const p=free(2.6,.9,.2);if(!p)continue;const[x,z]=p;const base=groundH(x,z);circles.push({x,z,r:1.7});
    for(let k=0;k<per;k++){const a=k/per*6.28+rnd(-.3,.3),rr=k===0?0:rnd(.7,1.3),cx=x+Math.cos(a)*rr,cz=z+Math.sin(a)*rr,hh=k===0?rnd(3.5,6):rnd(1,4);setM(im,n++,cx,base+hh/2-.3,cz,rnd(0,1),rnd(.9,1.3),hh,rnd(-.06,.06),rnd(-.06,.06));}}
@@ -132,7 +134,7 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
   const rk=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,1),bm,MOBILE?40:80);for(let i=0;i<rk.count;i++){const p=free(.8,.95,.15);if(!p){setM(rk,i,0,-50,0,0,.01);continue;}const s=rnd(.3,1);setM(rk,i,p[0],groundH(p[0],p[1])+s*.2,p[1],rnd(0,6),s,s*rnd(.5,.8));if(s>.7)circles.push({x:p[0],z:p[1],r:s*.9});}
   rk.castShadow=rk.receiveShadow=true;scene.add(rk);}
  // ---- ruined temple ----
- {const st=noiseTex(118,108,118,256,1);const sm=new THREE.MeshStandardMaterial({map:st,bumpMap:st,bumpScale:4,roughness:.85,color:0xb0a0b8});const T0=TEMPLE,y0=groundH(T0.x,T0.z);
+ {const st=noiseTex(118,108,118,256,1);const sm=new THREE.MeshStandardMaterial({map:st,bumpMap:st,bumpScale:.12,roughness:.85,color:0xb0a0b8});const T0=TEMPLE,y0=groundH(T0.x,T0.z);
   const plat=new THREE.Mesh(new THREE.CylinderGeometry(9,9.6,.6,10),sm);plat.position.set(T0.x,y0-.05,T0.z);plat.receiveShadow=true;scene.add(plat);
   const col=new THREE.CylinderGeometry(.55,.62,1,14,4);{const p=col.attributes.position;for(let i=0;i<p.count;i++){const a=Math.atan2(p.getZ(i),p.getX(i));const k=1+.06*Math.cos(a*14);p.setX(i,p.getX(i)*k);p.setZ(i,p.getZ(i)*k);}col.computeVertexNormals();}
   const ring=10;for(let i=0;i<ring;i++){const a=i/ring*6.283,x=T0.x+Math.cos(a)*7,z=T0.z+Math.sin(a)*7;const broken=i%3===1,h=broken?rnd(1.2,3):6.5;
@@ -155,7 +157,7 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
    if(glows.length<(MOBILE?8:16)){const g=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:cc.clone().multiplyScalar(.5),blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));g.position.set(p[0],groundH(p[0],p[1])+.6,p[1]);g.scale.set(4,2.5,1);scene.add(g);glows.push(g);}}
   stem.count=caps.count=n;caps.instanceColor.needsUpdate=true;scene.add(stem,caps);
   updaters.push(t=>glows.forEach((g,i)=>g.material.opacity=.7+.3*Math.sin(t*1.5+i)));
-  const cm=new THREE.MeshStandardMaterial({color:0x7a3aff,emissive:0x5a1aff,emissiveIntensity:.9,roughness:.15,metalness:.2,flatShading:true});const cim=new THREE.InstancedMesh(new THREE.OctahedronGeometry(.4,0),cm,MOBILE?30:60);
+  const cm=new THREE.MeshStandardMaterial({color:0x247f99,emissive:0x2e8d9a,emissiveIntensity:.55,roughness:.28,metalness:.2,flatShading:true});const cim=new THREE.InstancedMesh(new THREE.OctahedronGeometry(.4,0),cm,MOBILE?30:60);
   for(let i=0;i<cim.count;i++){const p=free(.6,.9,.2);if(!p){setM(cim,i,0,-50,0,0,.01);continue;}const s=rnd(.6,1.6);setM(cim,i,p[0],groundH(p[0],p[1])+s*.4,p[1],rnd(0,6),s*.7,s*2,rnd(-.3,.3),rnd(-.3,.3));}
   cim.castShadow=true;scene.add(cim);}
  // ---- dead charred trees ----
@@ -176,8 +178,10 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
   const reset=i=>{const p=lavaPts[Math.random()*lavaPts.length|0]||[VOLC.x,VOLC.z];ep.set([p[0]+rnd(-1,1),groundH(p[0],p[1])+rnd(0,1),p[1]+rnd(-1,1)],i*3);ev[i]=[rnd(-.4,.4),rnd(.8,2.5),rnd(-.4,.4),rnd(2,5)];};
   for(let i=0;i<NE;i++){reset(i);ep[i*3+1]+=rnd(0,5);}const eg=new THREE.BufferGeometry();eg.setAttribute('position',new THREE.BufferAttribute(ep,3));
   const emb=new THREE.Points(eg,new THREE.PointsMaterial({size:.22,color:0xff8a30,map:glowTex,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));emb.frustumCulled=false;scene.add(emb);
-  let last=0;updaters.push((t,cam)=>{const dt=Math.min(.05,t-last);last=t;const c=cam.position;for(let i=0;i<NA;i++){const b=i*3;ap[b+1]-=dt*(.6+(i%5)*.15);ap[b]+=Math.sin(t*.5+i)*dt*.4;
+  let last=null;updaters.push((t,cam)=>{const dt=last===null?0:Math.max(0,Math.min(.05,t-last));last=t;if(!dt)return;const c=cam.position;for(let i=0;i<NA;i++){const b=i*3;ap[b+1]-=dt*(.6+(i%5)*.15);ap[b]+=Math.sin(t*.5+i)*dt*.4;
     let x=ap[b],y=ap[b+1],z=ap[b+2];if(y<c.y-8||Math.abs(x-c.x)>30||Math.abs(z-c.z)>30){ap[b]=c.x+rnd(-30,30);ap[b+1]=c.y+rnd(5,20);ap[b+2]=c.z+rnd(-30,30);}}ag.attributes.position.needsUpdate=true;
    for(let i=0;i<NE;i++){const v=ev[i];v[3]-=dt;if(v[3]<=0){reset(i);continue;}ep[i*3]+=v[0]*dt;ep[i*3+1]+=v[1]*dt;ep[i*3+2]+=v[2]*dt;}eg.attributes.position.needsUpdate=true;});}
+ const expedition=expeditionScenery(scene,{ground,groundH,islandD,lavaF,iceF,circles,boxes,solids,ember:true,low:LOWQ});updaters.push((t,cam,motion)=>expedition.update(t,motion));
+ const weather=createEncounterWeather(scene,{sky,water,fogColor:FOG_COLOR,sunDirection:SUN_DIR,lights:opt.lights,ember:true,low:LOWQ,cloudMaterials:cloudMats});
  scene.traverse(o=>{if(o.isMesh&&o!==ground&&o.material&&o.material.isMeshStandardMaterial)o.material.envMapIntensity=.45;});
- return{solids,circles,boxes,ground,water,fogU,lavaF,update(t,cam){updaters.forEach(f=>f(t,cam));}};}
+ return{solids,circles,boxes,ground,water,fogU,lavaF,weather,setEncounter:weather.setEncounter,update(t,cam,motion=true){updaters.forEach(f=>f(t,cam,motion));weather.update(t,cam,motion);}};}
