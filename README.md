@@ -1,5 +1,7 @@
 # Soldier vs Zombies
 
+[Play online](https://todorbonchev.github.io/soldier-zombie-game/)
+
 A third-person island survival shooter with helicopter insertion, three weapon styles, changing encounters and weather, optional field objectives, and an upgrade build carried through a two-island campaign.
 
 ## Play locally
