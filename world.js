@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Sky } from 'three/addons/objects/Sky.js';
-import {lowSky,lowTerrainMat,lowWater} from './lowfx.js?v18';
-import {expeditionScenery} from './atmosphere.js?v18';
-import {createEncounterWeather} from './weather.js?v18';
+import {lowSky,lowTerrainMat,lowWater} from './lowfx.js?v19';
+import {expeditionScenery} from './atmosphere.js?v19';
+import {createEncounterWeather} from './weather.js?v19';
 export const SUN_DIR=new THREE.Vector3(-.55,.22,-.8).normalize();
 export const FOG_COLOR=new THREE.Color(0xbac6b9);
 export const LIGHTS={hemi:[0xb8d9e1,0x414a32,.8],rim:[0xffdfb0,.65],rimPos:[60,30,80],sun:[0xffd19a,3.1],exp:.72,fog:[90,520],name:'PALM ISLE'};

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {mk,LOD,mergeRigid} from './lod.js?v18';
+import {mk,LOD,mergeRigid} from './lod.js?v19';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 const T=(c,o={})=>new THREE.MeshStandardMaterial({color:c,roughness:.82,...o});
 export function makeHeli(){

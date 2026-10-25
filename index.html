@@ -28,7 +28,7 @@
       type="font/ttf"
       crossorigin
     />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v19" />
     <title>Soldier vs Zombies — Island Survival</title>
     <script type="importmap">
       {
@@ -139,6 +139,15 @@
           <path d="M8 5v14M16 5v14" />
         </svg>
       </button>
+      <button
+        id="cameraBtn"
+        class="utility-button camera-button"
+        title="Switch to first-person view (V)"
+        aria-label="Switch to first-person view (V)"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h5l2-3h4l2 3h5v13H3z" /><circle cx="12" cy="13" r="4" /></svg>
+        <span id="cameraLabel" aria-hidden="true">3P</span>
+      </button>
     </div>
     <div id="lvlCard" class="hide">
       <span class="eyebrow">MISSION UPDATE</span>
@@ -190,10 +199,21 @@
         <path d="M12 2v6M12 16v6M2 12h6M16 12h6" /></svg
       ><span>FIRE</span>
     </div>
-    <div id="jumpBtn" class="tb" role="button" aria-label="Jump">
+    <button id="jumpBtn" class="tb" type="button" aria-label="Jump; hold to fly with the jetpack" title="Tap to jump · hold to fly · release to descend">
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m5 12 7-7 7 7M12 5v15" /></svg
-      ><span>JUMP</span>
+        <path d="m5 10 7-7 7 7M12 3v12M6 15v5M12 18v4M18 15v5" /></svg
+      ><span>JUMP / FLY</span><small>HOLD TO FLY</small>
+    </button>
+    <button id="orbBtn" class="tb" type="button" aria-label="Cast Frozen Orb" title="Cast Frozen Orb (F)">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="8" />
+        <path d="M16 2v28M4 9l24 14M4 23 28 9M12 5l4 3 4-3M12 27l4-3 4 3M5 13l5-2-1-5M27 19l-5 2 1 5M5 19l5 2-1 5M27 13l-5-2 1-5" />
+      </svg>
+      <span id="orbLabel">FROZEN ORB</span><small id="orbCooldown">READY</small><kbd aria-hidden="true">F</kbd>
+    </button>
+    <div id="jetpackHud" role="progressbar" aria-label="Jetpack fuel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+      <div class="jetpack-heading"><span>JETPACK</span><b id="jetpackValue">100%</b></div>
+      <div class="jetpack-track" aria-hidden="true"><div id="jetpackFill"></div></div>
     </div>
 
     <main id="start" class="ov menu">
@@ -322,13 +342,16 @@
         <div class="control-guide desktop-guide">
           <span><kbd>W A S D</kbd> MOVE</span><span><kbd>MOUSE</kbd> LOOK</span
           ><span><kbd>CLICK</kbd> HOLD TO AIM & FIRE</span
-          ><span><kbd>SPACE</kbd> JUMP</span
+          ><span><kbd>SPACE</kbd> JUMP / HOLD TO FLY</span
+          ><span><kbd>F</kbd> FROZEN ORB</span
+          ><span><kbd>V</kbd> CAMERA VIEW</span
           ><span><kbd>SHIFT</kbd> SPRINT</span>
         </div>
         <div class="control-guide mobile-guide">
           <span>LEFT THUMB <b>MOVE + SPRINT</b></span
           ><span>DRAG RIGHT <b>LOOK</b></span
-          ><span>HOLD FIRE <b>AUTO-AIM</b></span>
+          ><span>HOLD FIRE <b>AUTO-AIM</b></span
+          ><span>HOLD JUMP <b>JETPACK</b></span>
         </div>
         <span class="footer-status"><i></i> READY FOR DEPLOYMENT</span>
       </footer>
@@ -369,6 +392,13 @@
             aria-label="Look sensitivity"
           />
           <button id="motionBtn" class="secondary-button">MOTION: AUTO</button>
+        </div>
+        <div class="camera-setting">
+          <span class="setting-label">CAMERA VIEW</span>
+          <div class="camera-options" role="group" aria-label="Camera view">
+            <button type="button" data-camera="third" aria-pressed="true">Third person</button>
+            <button type="button" data-camera="first" aria-pressed="false">First person</button>
+          </div>
         </div>
         <div class="setting-toggles">
           <button class="fpsBtn">FPS: OFF</button
@@ -426,7 +456,9 @@
             <span><kbd>W A S D</kbd> Move</span
             ><span><kbd>MOUSE</kbd> Look around</span>
             <span><kbd>CLICK</kbd> Hold to aim & fire</span
-            ><span><kbd>SPACE</kbd> Jump</span>
+            ><span><kbd>SPACE</kbd> Tap to jump; hold to fly</span>
+            <span><kbd>F</kbd> Cast Frozen Orb</span>
+            <span><kbd>V</kbd> Switch camera view</span>
             <span><kbd>SHIFT</kbd> Sprint</span
             ><span><kbd>H</kbd> Helicopter redeploy</span>
           </div>
@@ -434,8 +466,11 @@
             <span><strong>LEFT THUMB</strong> Move; push fully to sprint.</span>
             <span><strong>DRAG RIGHT</strong> Look around the island.</span>
             <span><strong>HOLD FIRE</strong> Track targets and shoot.</span>
-            <span><strong>JUMP</strong> Clear obstacles and keep moving.</span>
+            <span><strong>JUMP / FLY</strong> Tap to jump; hold to fly. Steer with the left joystick.</span>
+            <span><strong>FROZEN ORB</strong> Launch ice shards that damage and slow the horde.</span>
+            <span><strong>CAMERA BUTTON</strong> Switch between first-person and third-person views.</span>
           </div>
+          <p>Hold jump to engage the jetpack, steer with movement controls, and release to descend. Land to recharge fuel. Frozen Orb sends out ice shards and ends in a burst; watch its button for the next cast.</p>
           <p>Choose your weapon before deploying. Hold FIRE with any weapon; ammunition is unlimited. Clear waves to upgrade your build.</p>
           <p>Follow the uplink arrow to the beacon. Keep nearby hostiles clear and stay inside for five seconds to earn armor, Overdrive, and bonus points. Uplinks are optional; leave the ring when you need breathing room.</p>
           <p>Collect field supplies. Jump or leave the commander's warning ring before the slam lands.</p>
@@ -551,6 +586,6 @@
     </section>
     <div id="fps" class="hide"></div>
     <div id="ver"></div>
-    <script type="module" src="boot.js"></script>
+    <script type="module" src="boot.js?v19"></script>
   </body>
 </html>

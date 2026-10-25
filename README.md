@@ -2,7 +2,7 @@
 
 [Play online](https://todorbonchev.github.io/soldier-zombie-game/)
 
-A third-person island survival shooter with helicopter insertion, three weapon styles, changing encounters and weather, optional field objectives, and an upgrade build carried through a two-island campaign.
+A third-person island survival shooter with helicopter insertion, a flyable jetpack, Frozen Orb magic, three weapon styles, changing encounters and weather, optional field objectives, and an upgrade build carried through a two-island campaign.
 
 ## Play locally
 
@@ -21,7 +21,10 @@ To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open yo
 | Move | WASD or arrow keys | Left thumb stick |
 | Look | Mouse (click the scene to capture) | Drag right side |
 | Aim and fire | Hold left mouse button | Hold FIRE |
-| Jump | Space | JUMP |
+| Jump / fly | Tap / hold Space | Tap / hold JUMP / FLY |
+| Steer in flight | WASD or arrow keys | Left thumb stick |
+| Frozen Orb | F | FROZEN ORB |
+| First / third person | V or camera button | Camera button |
 | Skip insertion | Space or Enter | SKIP INSERTION |
 | Sprint | Hold Shift while moving, without firing | Push the movement stick fully, without firing |
 | Pause / resume | Esc or P | Pause button / Resume |
@@ -29,6 +32,12 @@ To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open yo
 | Helicopter redeploy | H after cooldown | Pause → Helicopter redeploy |
 
 Choose your weapon before deployment. **Ranger** is a versatile automatic rifle; **Striker** fires precise three-round bursts; **Breacher** fires seven spread pellets and rewards getting close. All three use the same hold-to-fire control, have unlimited ammo, and benefit from your upgrades. Your weapon preference is saved. Choose a different one when you return to the briefing.
+
+Tap **Jump / Fly** for a normal jump, or hold it to ignite the soldier's twin-thruster jetpack. Use the movement controls to steer while flying and release to descend. The fuel meter provides six seconds of thrust and recharges on landing; flight levels off around 18 meters above terrain. After running out of fuel, release and hold again to restart. Pausing or rotating the phone releases held controls.
+
+Switch between **first person** and **third person** using **V**, the HUD camera button, or the View option in settings. Your choice is saved. First person includes a visible weapon and supports flying, firing, and casting; helicopter insertion keeps its cinematic camera.
+
+Cast **Frozen Orb** with **F** or its HUD button. Aim with the crosshair: the icy orb travels through enemies, sheds radial ice shards, then bursts into a final ring. Hits damage enemies and chill them for three seconds, slowing movement and attacks. Scenery blocks the spell, and aiming down from the air bursts it near the ground. Its eight-second cooldown pauses with the game. Spell kills award normal score and rewards without changing rifle accuracy.
 
 Each wave also offers an optional **field uplink**. Follow its compass arrow to the turquoise station, enter the marked ring, and hold it for **five seconds**. Enemies inside the zone pause capture; leaving slowly loses progress. Securing it awards **125 score, 20 reserve armor, and ten seconds of Overdrive**. Armor absorbs damage before health and stacks up to 60 points. The uplink never blocks wave progression, and no extra interaction button is needed.
 
@@ -42,7 +51,7 @@ Wave three introduces an armored elite. Wave five brings a commander with a broa
 
 Keep a **momentum chain** by defeating another enemy within seven combat seconds and avoiding damage. Three consecutive kills earn **×2 kill score**, and eight earn **×3**. Pauses, upgrades, recovery, and helicopter insertion do not consume the timer. Your best chain contributes to the final **C–S operation rating**, alongside kills, elites, uplinks, accuracy, and completion. Uplink and upgrade score rewards are not multiplied.
 
-The atmosphere develops with the operation: Palm's golden light gives way to blue storm clouds and light rain, while Ember's copper dusk develops a cyan aurora. Lighting, clouds, fog, and ocean tint transition together. Reduced motion stops the new weather animation and rain while retaining readable attack warnings.
+The atmosphere develops with the operation: Palm's golden light gives way to blue storm clouds and light rain, while Ember's copper dusk develops a cyan aurora. Flocks of birds circle and glide above both islands. Lighting, clouds, fog, and ocean tint transition together. Reduced motion stops the weather and bird animation and rain while retaining readable attack warnings.
 
 Watch for an enemy drawing its arms back: move away or jump before the strike lands. Enemies steer around scenery, and solid cover blocks attacks. The wave progress strip shows how close you are to clearing the area; the debrief records your kills, combat time, accuracy, wave, score, and upgrade build.
 
@@ -71,11 +80,14 @@ For actual browser rendering and screenshots:
 npx playwright install chromium
 npm run test:browser
 npm run test:mobile
+npm run test:abilities
 ```
 
 Use `CHROMIUM_PATH=/path/to/chromium npm run test:browser` to use an installed browser. Screenshots go into ignored `test-results/`. The browser check covers both islands, high/medium/low graphics, desktop and mobile layouts, simultaneous touch movement and firing, keyboard dialog navigation, saved preferences, real WebGL context loss/recovery, pause, and returning to the briefing. It needs permission to run Chromium and bind a localhost port. Visual quality, sound, and physical touch controls still benefit from hands-on playtesting.
 
 The mobile suite checks seven emulated phone sizes, notch insets, 44px touch targets, upgrade selection, combat status, debrief layouts, scrolling, and rotating while moving, firing, paused, or choosing an upgrade. Physical iOS/Android devices are still useful for GPU, thermal, audio, and browser-toolbar testing.
+
+The abilities suite checks tap/hold jetpack flight, steering, fuel, touch cancellation, Frozen Orb cooldowns, simultaneous touch controls, and first-person switching in a real browser.
 
 The locally bundled Barlow Condensed display font is licensed under the [SIL Open Font License](assets/fonts/OFL.txt). No external font requests are needed.
 

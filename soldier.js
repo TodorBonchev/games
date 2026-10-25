@@ -1,4 +1,4 @@
-import * as THREE from 'three';import {mk,LOD} from './lod.js?v18';
+import * as THREE from 'three';import {mk,LOD} from './lod.js?v19';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 function canvasTex(w,h,draw,repeat){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;if(repeat){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(repeat,repeat);}return t;}
 // Broad, muted camouflage stays readable as the operator gets small on a phone.
@@ -67,6 +67,25 @@ const camo=new THREE.MeshStandardMaterial({map:camoTex(),normalMap:FN,normalScal
  M(RB(.075,.15,.055,.012),black,body,.135,1.46,-.24);
  M(mk(THREE.CylinderGeometry,.004,.005,.2,6),black,body,.135,1.62,-.24);
  M(mk(THREE.PlaneGeometry,.105,.052),patch,body,0,1.42,-.285,0,Math.PI);
+ // Twin thrust pods stay legible from the shoulder camera, even on Low.
+ const jetpack=G(body,0,1.36,-.34);jetpack.name='jetpack';
+ const jetTrim=new THREE.MeshBasicMaterial({color:0x77e8ff,toneMapped:false});
+ M(RB(.25,.36,.17,.035),black,jetpack);
+ M(RB(.17,.21,.025,.012),metal,jetpack,0,0,-.1);
+ for(const x of[-.21,.21]){
+  M(mk(THREE.CylinderGeometry,.105,.125,.43,12),metal,jetpack,x,0,0);
+  M(mk(THREE.CylinderGeometry,.13,.13,.07,12),black,jetpack,x,-.18,0);
+  M(mk(THREE.CylinderGeometry,.10,.075,.1,12),black,jetpack,x,-.26,0);
+  for(const y of[-.1,.12])M(ring(.108,.014),jetTrim,jetpack,x,y,0,Math.PI/2);
+ }
+ for(const y of[-.06,0,.06])M(RB(.1,.018,.012,.004),jetTrim,jetpack,0,y,-.12);
+ const jetFlames=G(jetpack,0,-.31,0);jetFlames.name='jetpack-exhaust';jetFlames.visible=false;
+ const plumeMat=new THREE.MeshBasicMaterial({color:0x43cfff,transparent:true,opacity:.72,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false});
+ const coreMat=new THREE.MeshBasicMaterial({color:0xe6fbff,transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false});
+ for(const x of[-.21,.21]){
+  const plume=M(mk(THREE.ConeGeometry,.105,.68,8),plumeMat,jetFlames,x,-.34,0,0,0,Math.PI);plume.castShadow=false;
+  const core=M(mk(THREE.ConeGeometry,.06,.36,8),coreMat,jetFlames,x,-.18,0,0,0,Math.PI);core.castShadow=false;
+ }
  // ---- head ----
  M(mk(THREE.CylinderGeometry,.055,.06,.1,14),skin,body,0,1.6,0);
  const head=G(body,0,1.73,0);
@@ -151,12 +170,14 @@ const camo=new THREE.MeshStandardMaterial({map:camoTex(),normalMap:FN,normalScal
   inv.copy(arm.sh.quaternion).multiply(arm.el.quaternion).invert();arm.f.quaternion.copy(inv).multiply(rifle.quaternion);}
  let kick=0,flashed=false;
  root.traverse(o=>{if(o.isMesh)o.userData.player=true;});
- root.userData={muzzle,flash,flashLight,dyn:[LL.hip,RL.hip,LL.kn,RL.kn,body,R.sh,L.sh,R.el,L.el,R.f,L.f,rifle,precision,breacher,muzzle,flash,...(LOD.low?[]:tails.flat())],
+ root.userData={muzzle,flash,flashLight,dyn:[LL.hip,RL.hip,LL.kn,RL.kn,body,jetpack,jetFlames,R.sh,L.sh,R.el,L.el,R.f,L.f,rifle,precision,breacher,muzzle,flash,...(LOD.low?[]:tails.flat())],
+  setJetpack(active){jetFlames.visible=active;},
   setWeapon(id){precision.visible=id==='burst';breacher.visible=id==='scatter';muzzle.position.z=id==='burst'?.81:.59;},
   animate(t,speed,air,dt,motion=true){const ph=t*11,a=Math.min(speed,1),breath=motion?Math.sin(t*2.1)*.004*(1-a):0;
    const sw=air?0:Math.sin(ph)*.75*a;LL.hip.rotation.x=air?-.6:sw;RL.hip.rotation.x=air?.3:-sw;
    LL.kn.rotation.x=air?.9:Math.max(0,-Math.sin(ph))*1.1*a;RL.kn.rotation.x=air?.3:Math.max(0,Math.sin(ph))*1.1*a;
-   body.position.y=air?0:Math.abs(Math.sin(ph))*.035*a+breath;body.rotation.x=a*.06;
+   body.position.y=air?0:Math.abs(Math.sin(ph))*.035*a+breath;body.rotation.x=a*(jetFlames.visible?.16:.06);
+   if(jetFlames.visible){LL.hip.rotation.x=RL.hip.rotation.x=.2;LL.kn.rotation.x=RL.kn.rotation.x=.55;jetFlames.scale.y=motion?1+Math.sin(t*42)*.13:1;}
    if(flash.visible&&!flashed)kick=1;flashed=flash.visible;kick*=Math.exp(-18*Math.max(0,dt||0));if(!motion)kick=0;
    rifle.position.set(-.11,1.36+(motion?Math.sin(ph*2)*.008*a:0),.42-kick*.045);
    rifle.rotation.set(-kick*.035+(motion?Math.sin(t*2.1)*.006:0),0,motion?Math.sin(ph)*.018*a:0);rifle.updateMatrix();hold(R,gripR);hold(L,gripL);

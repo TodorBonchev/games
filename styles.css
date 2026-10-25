@@ -5545,3 +5545,147 @@ body:not(.touch) #fieldObjective { top: calc(270px + env(safe-area-inset-top)); 
 .touch .debrief-actions #restartBtn,
 .touch .debrief-actions #overMenuBtn,
 .touch .debrief-actions #endlessBtn { font-size: 8.5px; letter-spacing: 0; }
+
+/* Abilities sit with the firing hand; fuel remains readable while holding fly. */
+#jumpBtn { padding: 0; }
+#jumpBtn small { font: 5.5px/1 var(--mono); letter-spacing: .025em; color: #d2e6c0; pointer-events: none; }
+#jumpBtn.active { border-color: #a5e8ff; background: linear-gradient(145deg, #375c69ec, #173540e8); color: #e0f7ff; }
+.playing #orbBtn { display: grid; }
+#orbBtn {
+  right: calc(28px + env(safe-area-inset-right));
+  bottom: calc(75px + env(safe-area-inset-bottom));
+  width: 164px;
+  height: 62px;
+  padding: 10px 34px 10px 48px;
+  border-radius: 9px;
+  border-color: #a6def7ad;
+  background: radial-gradient(ellipse at 20% 30%, #4083a366, transparent 75%), #112b39e6;
+  box-shadow: inset 0 0 0 4px #b9eaff08, 0 5px 22px #0003;
+  color: #d2f3ff;
+  text-align: left;
+  align-content: center;
+  justify-items: start;
+  gap: 5px;
+  letter-spacing: .035em;
+}
+#orbBtn > svg { position: absolute; left: 12px; top: 17px; width: 28px; height: 28px; stroke-width: 1.3; }
+#orbBtn > kbd { position: absolute; top: 20px; right: 10px; font-size: 8px; padding: 4px; color: #d2f3ff; border-color: #b1dff455; pointer-events: none; }
+#orbLabel { font: 700 8px/1.2 var(--mono); white-space: nowrap; }
+#orbCooldown { color: #9cd0e8; font: 7px/1 var(--mono); letter-spacing: .08em; pointer-events: none; font-variant-numeric: tabular-nums; }
+#orbBtn:hover:not(:disabled), #orbBtn.active { border-color: #ddf7ff; background-color: #244e62ed; }
+#orbBtn.cd, #orbBtn:disabled { border-color: #88b7ce5c; background: #152a35e0; box-shadow: inset 0 0 0 4px #b9eaff04; }
+#orbBtn.cd > svg, #orbBtn:disabled > svg { opacity: .5; }
+#jetpackHud {
+  position: fixed;
+  display: none;
+  right: calc(28px + env(safe-area-inset-right));
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  width: 164px;
+  z-index: 10;
+  color: #dbe6cd;
+  pointer-events: none;
+  text-shadow: 0 1px 4px #071c19, 0 1px 10px #071c19;
+}
+.playing #jetpackHud { display: block; }
+.jetpack-heading { display: flex; align-items: center; justify-content: space-between; gap: 5px; font: 7px/1.3 var(--mono); letter-spacing: .06em; }
+#jetpackValue { font: inherit; font-variant-numeric: tabular-nums; color: #c7e2b4; }
+.jetpack-track { margin-top: 5px; height: 4px; background: #051d1b99; border: 1px solid #dbe6cd38; border-radius: 3px; overflow: hidden; }
+#jetpackFill { width: 100%; height: 100%; background: #c7e2b4; border-radius: inherit; }
+#jetpackHud.active { color: #cdf4ff; }
+#jetpackHud.active #jetpackValue { color: #a3e5ff; }
+#jetpackHud.active #jetpackFill { background: #a3e5ff; }
+#jetpackHud.empty #jetpackValue { color: #e9b783; }
+#jetpackHud.empty #jetpackFill { background: #e9b783; }
+.paused #jetpackHud, .upgrading #jetpackHud, .intro #jetpackHud, .intro #orbBtn { display: none !important; }
+
+.touch {
+  --action-edge: 20px;
+  --action-base: 40px;
+  --fire-size: 104px;
+  --jump-size: 70px;
+  --orb-size: 64px;
+}
+.touch #fireBtn { right: calc(var(--action-edge) + env(safe-area-inset-right)); bottom: calc(var(--action-base) + env(safe-area-inset-bottom)); width: var(--fire-size); height: var(--fire-size); }
+.touch #jumpBtn { right: calc(var(--action-edge) + var(--fire-size) + 14px + env(safe-area-inset-right)); bottom: calc(var(--action-base) + 3px + env(safe-area-inset-bottom)); width: var(--jump-size); height: var(--jump-size); gap: 4px; }
+.touch #jumpBtn span { font-size: 7px; letter-spacing: 0; }
+.touch #jumpBtn svg { width: 20px; height: 20px; }
+.touch.playing #orbBtn { display: flex; }
+.touch #orbBtn {
+  right: calc(var(--action-edge) + var(--fire-size) + 17px + env(safe-area-inset-right));
+  bottom: calc(var(--action-base) + var(--jump-size) + 15px + env(safe-area-inset-bottom));
+  width: var(--orb-size);
+  height: var(--orb-size);
+  padding: 0;
+  border-radius: 50%;
+  gap: 3px;
+  align-items: center;
+  text-align: center;
+}
+.touch #orbBtn > svg { position: static; width: 22px; height: 22px; }
+.touch #orbBtn > kbd { display: none; }
+.touch #orbLabel { font-size: 6px; letter-spacing: 0; }
+.touch #orbCooldown { font-size: 6px; letter-spacing: .02em; }
+.touch #jetpackHud {
+  right: calc(var(--action-edge) + env(safe-area-inset-right));
+  bottom: calc(var(--action-base) + var(--fire-size) + 2px + env(safe-area-inset-bottom));
+  width: var(--fire-size);
+}
+.touch .jetpack-heading { font-size: 6px; letter-spacing: .015em; }
+.touch .jetpack-track { margin-top: 4px; height: 4px; }
+.touch #weaponHud {
+  right: calc(var(--action-edge) + env(safe-area-inset-right));
+  bottom: calc(var(--action-base) + var(--jump-size) + var(--orb-size) + 25px + env(safe-area-inset-bottom));
+}
+.touch #fieldObjective { bottom: calc(var(--action-base) + var(--jump-size) + var(--orb-size) + 55px + env(safe-area-inset-bottom)); }
+.touch.jetpacking #stick::after { content: 'STEER YOUR FLIGHT'; }
+
+@media (orientation: portrait) and (max-width: 360px) {
+  .touch { --action-edge: 14px; --action-base: 36px; --fire-size: 92px; --jump-size: 64px; --orb-size: 60px; }
+  .touch #jumpBtn small { font-size: 5px; }
+}
+@media (orientation: landscape) {
+  .touch { --action-edge: 28px; --action-base: 32px; --fire-size: 96px; --jump-size: 68px; --orb-size: 64px; }
+  .touch #orbBtn {
+    right: calc(var(--action-edge) + var(--fire-size) + var(--jump-size) + 28px + env(safe-area-inset-right));
+    bottom: calc(var(--action-base) + 5px + env(safe-area-inset-bottom));
+  }
+  .touch #jetpackHud {
+    right: calc(var(--action-edge) + var(--fire-size) + 14px + env(safe-area-inset-right));
+    bottom: calc(var(--action-base) + var(--jump-size) + 14px + env(safe-area-inset-bottom));
+    width: var(--jump-size);
+  }
+  .touch #weaponHud { bottom: calc(var(--action-base) + var(--fire-size) + 18px + env(safe-area-inset-bottom)); }
+  .touch #fieldObjective { bottom: auto; }
+}
+@media (orientation: landscape) and (max-width: 740px) {
+  .touch { --action-edge: 20px; --fire-size: 90px; --jump-size: 64px; --orb-size: 60px; }
+}
+
+/* The camera toggle shows the current perspective; its accessible label names
+   the view the next press will select. */
+#cameraBtn { width: 48px; min-height: 44px; padding: 5px; flex-direction: column; justify-content: center; gap: 2px; }
+#cameraBtn svg { width: 19px; height: 19px; }
+#cameraLabel { font: 7px/1 var(--mono); letter-spacing: .035em; }
+.camera-setting { margin: 22px 0; }
+.camera-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.camera-options button { min-height: 44px; padding: 10px; font-size: 10px; letter-spacing: .025em; }
+.camera-options button[aria-pressed='true'] { color: #f2d59b; border-color: #edc47699; background: #edc47614; }
+.touch .hud-actions { flex-direction: column; gap: 6px; }
+.touch .hud-actions #cameraBtn { display: flex; width: 48px; height: 44px; border-radius: 7px; background: #14281fe8; border-color: #e2ecd547; }
+.touch .camera-setting { margin: 18px 0; }
+@media (orientation: portrait) {
+  .touch #eliteHud, .touch #overdriveHud { top: calc(120px + env(safe-area-inset-top)); }
+  .touch #eliteHud:not(.hide) ~ #overdriveHud { top: calc(168px + env(safe-area-inset-top)); }
+  .touch #eliteHud:not(.hide) ~ #waveBanner { top: calc(168px + env(safe-area-inset-top)); }
+  .touch #overdriveHud:not(.hide) ~ #waveBanner { top: calc(161px + env(safe-area-inset-top)); }
+  .touch #eliteHud:not(.hide) ~ #overdriveHud:not(.hide) ~ #waveBanner { top: calc(210px + env(safe-area-inset-top)); }
+  .touch #fieldObjective:not(.hide) ~ #pickupNotice { top: calc(260px + env(safe-area-inset-top)); }
+}
+@media (orientation: landscape) {
+  .touch .hud-actions { flex-direction: row; gap: 8px; }
+  .touch .hud-actions #cameraBtn { height: 48px; }
+  .touch #eliteHud { right: calc(134px + env(safe-area-inset-right)); }
+}
+@media (max-width: 1100px) {
+  body:not(.touch) #rejumpBtn b, body:not(.touch) #rejumpBtn kbd { display: none; }
+}

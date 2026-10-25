@@ -2,6 +2,7 @@
 // Ground detail and contact shading are vertex attributes, not shadow passes.
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {createBirdFlocks} from './birds.js?v19';
 
 const hash=n=>{const v=Math.sin(n*127.17+31.7)*43758.5453;return v-Math.floor(v);};
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
@@ -77,14 +78,6 @@ export function expeditionScenery(scene,{ground,groundH,islandD,lavaF,iceF,circl
   shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform vec3 trailColor;varying vec3 vArtShade;varying float vArtPath;').replace('#include <alphamap_fragment>','diffuseColor.rgb=mix(diffuseColor.rgb*vArtShade,trailColor*vArtShade,vArtPath);\n#include <alphamap_fragment>');
  };
  ground.material.customProgramCacheKey=()=>`expedition-terrain-${ember?'ember':'palm'}`;
- // A single flock with shader-animated wings. No per-frame object allocation.
- const birdCount=low?7:12,birdPositions=[],birdSeeds=[];
- for(let i=0;i<birdCount;i++)for(const vertex of[[-.65,0,0],[0,.12,.2],[0,0,-.12],[0,.12,.2],[.65,0,0],[0,0,-.12]]){birdPositions.push(...vertex);birdSeeds.push(i);}
- const birdGeometry=new THREE.BufferGeometry();birdGeometry.setAttribute('position',new THREE.Float32BufferAttribute(birdPositions,3));birdGeometry.setAttribute('birdSeed',new THREE.Float32BufferAttribute(birdSeeds,1));
- const birdTime={value:0},birdMaterial=new THREE.MeshBasicMaterial({color:ember?0x182e3d:0xe6dac1,side:THREE.DoubleSide,fog:true});
- birdMaterial.onBeforeCompile=shader=>{shader.uniforms.birdTime=birdTime;shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nattribute float birdSeed;uniform float birdTime;').replace('#include <begin_vertex>',`#include <begin_vertex>
-  float a=birdTime*.055+birdSeed*.7;float r=26.+mod(birdSeed,3.)*7.;transformed.y+=abs(position.x)*sin(birdTime*5.+birdSeed*1.7)*.7;
-  mat2 turn=mat2(cos(a),-sin(a),sin(a),cos(a));transformed.xz=turn*transformed.xz;transformed+=vec3(cos(a)*r,19.+mod(birdSeed,4.)*1.6+sin(a*2.)*1.8,sin(a)*r);`);};
- const flock=new THREE.Mesh(birdGeometry,birdMaterial);flock.name='island-birds';flock.frustumCulled=false;scene.add(flock);
- return{sites,update(time,motion=true){if(motion){birdTime.value=time;fabricTime.value=time;}}};
+ const birds=createBirdFlocks(scene,{ember,low});
+ return{sites,update(time,motion=true){birds.update(time,motion);if(motion)fabricTime.value=time;}};
 }

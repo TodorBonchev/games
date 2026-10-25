@@ -77,7 +77,7 @@ try {
     { width: 844, height: 390, insets: { top: 0, bottom: 21, left: 47, right: 47 } },
     { width: 932, height: 430 }
   ];
-  for (const spec of specs) {
+  for (const spec of specs.filter(spec => !process.env.MOBILE_CASE || process.env.MOBILE_CASE.split(',').includes(String(spec.width)))) {
     const label = `${spec.width}×${spec.height}`;
     const context = await browser.newContext({ viewport: { width: spec.width, height: spec.height }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
     const page = await context.newPage(), cdp = await context.newCDPSession(page);

@@ -1,8 +1,8 @@
 // Level 2: Ember Isle — volcanic night island with lava rivers, basalt, ruins, glowing fungi.
 import * as THREE from 'three';
-import {lowSky,lowTerrainMat,lowWater} from './lowfx.js?v18';
-import {expeditionScenery} from './atmosphere.js?v18';
-import {createEncounterWeather} from './weather.js?v18';
+import {lowSky,lowTerrainMat,lowWater} from './lowfx.js?v19';
+import {expeditionScenery} from './atmosphere.js?v19';
+import {createEncounterWeather} from './weather.js?v19';
 export const SUN_DIR=new THREE.Vector3(.45,.42,-.78).normalize(); // moon direction
 export const FOG_COLOR=new THREE.Color(0x343e4d);
 export const LIGHTS={hemi:[0x7f91b7,0x5b2d20,.6],rim:[0xff8a49,.95],rimPos:[-30,8,-40],sun:[0xc5d9ff,2.1],exp:.9,fog:[40,300],name:'EMBER ISLE'};
