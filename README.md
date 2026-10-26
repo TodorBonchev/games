@@ -1,8 +1,13 @@
-# Soldier vs Zombies
+# Games
 
-[Play online](https://todorbonchev.github.io/soldier-zombie-game/)
+[Play online](https://todorbonchev.github.io/games/)
 
-A third-person island survival shooter with helicopter insertion, a flyable jetpack, Frozen Orb magic, three weapon styles, changing encounters and weather, optional field objectives, and an upgrade build carried through a two-island campaign.
+A collection of standalone Three.js browser games. The home page is a lightweight game picker; each game loads its own 3D scene only when opened. Everything needed to play is bundled locally.
+
+| Game | Play | What's included |
+| --- | --- | --- |
+| **Soldier vs Zombies** | [Launch the shooter](https://todorbonchev.github.io/games/soldier.html) | The existing two-island survival campaign, jetpack, Frozen Orb, weapons, upgrades, and endless mode. |
+| **Garden Guard** | [Launch garden defense](https://todorbonchev.github.io/games/garden.html) | One original garden defense sample level with five lanes, three plant types, and three zombie waves. |
 
 ## Play locally
 
@@ -12,9 +17,31 @@ With Node.js installed, run:
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
+Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html` and `/garden.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
 
 To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Both portrait and landscape have dedicated menus, camera framing, and thumb controls. Rotate during a run without losing progress; lift and place your thumbs again after rotating.
+
+## Garden Guard
+
+An original Plants vs. Zombies-inspired lane defense game, rendered with the locally bundled Three.js engine. All plants, zombies, lawnmowers, the cottage, and the garden are modeled in code.
+
+**Backyard beginnings** is one complete sample level: start with **200 sun**, defend **five lanes across eight columns**, and stop **18 zombies over three waves**. A successful run takes about two to three minutes. Cone-wearing zombies take more hits. Each lane has one emergency lawnmower; a later zombie reaching home ends the run.
+
+| Plant | Cost | Role |
+| --- | --- | --- |
+| Sun bloom | 50 sun | Produces 25 sun, first after seven seconds and then every ten seconds. |
+| Pea pod | 100 sun | Automatically shoots zombies to its right in the same lane. |
+| Shellnut | 75 sun | Blocks zombies and absorbs bites so other plants can keep firing. |
+
+Tap a seed packet, then an empty lawn tile. Tap glowing suns to collect **25 sun**; uncollected suns disappear after fourteen active seconds. Sky suns appear regularly, and Sun blooms grow more. Keep the blooms on the left and put Pea pods in every lane before the larger waves. Seed packets have brief cooldowns. The shovel returns half a removed plant's cost, rounded down.
+
+Mouse and touch use the same controls. On a keyboard, **1–3** select plants, **4** selects the shovel, and **P / Esc** pauses. Tab onto the lawn, use arrow keys to choose a patch, and press Enter or Space to plant. The **1× / 2×** button changes game speed. Help and pause freeze the level; switching browser tabs also pauses it. Best completion stars and time are saved separately from the shooter's settings.
+
+The level includes victory and defeat screens, restart, WebGL context recovery, keyboard dialog navigation, and links back to all games. It works in portrait and landscape; rotating preserves the current run. Garden Guard has one level in this first sample.
+
+## Soldier vs Zombies
+
+A third-person island survival shooter with helicopter insertion, a flyable jetpack, Frozen Orb magic, three weapon styles, changing encounters and weather, optional field objectives, and an upgrade build carried through a two-island campaign.
 
 | Action | Keyboard / mouse | Touch |
 | --- | --- | --- |
@@ -81,6 +108,7 @@ npx playwright install chromium
 npm run test:browser
 npm run test:mobile
 npm run test:abilities
+npm run test:garden
 ```
 
 Use `CHROMIUM_PATH=/path/to/chromium npm run test:browser` to use an installed browser. Screenshots go into ignored `test-results/`. The browser check covers both islands, high/medium/low graphics, desktop and mobile layouts, simultaneous touch movement and firing, keyboard dialog navigation, saved preferences, real WebGL context loss/recovery, pause, and returning to the briefing. It needs permission to run Chromium and bind a localhost port. Visual quality, sound, and physical touch controls still benefit from hands-on playtesting.
@@ -89,6 +117,12 @@ The mobile suite checks seven emulated phone sizes, notch insets, 44px touch tar
 
 The abilities suite checks tap/hold jetpack flight, steering, fuel, touch cancellation, Frozen Orb cooldowns, simultaneous touch controls, and first-person switching in a real browser.
 
+The garden suite checks the game picker, real WebGL rendering, 320px and 390px phones, landscape rotation, touch and keyboard planting, sun collection, shovel refunds, pause, help, victory, defeat, restart, saved completion, graphics restoration, and launching the existing shooter. Screenshots are written to `test-results/`. Run `npm run test:garden -- --capture-art` to also refresh `assets/garden-preview.png` from the actual garden scene. Pure simulation tests include a full legal playthrough that wins without spending more sun than it collects.
+
+Each game owns its entry page and UI. The shooter is `soldier.html` with its existing modules. Garden Guard uses `garden.html`, `garden-main.js` (controls and UI), `garden-scene.js` (Three.js rendering), and `garden-game.js` (deterministic level rules). To add a game, give it a separate entry page and add its link to `index.html`; keep the hub free of gameplay code.
+
 The locally bundled Barlow Condensed display font is licensed under the [SIL Open Font License](assets/fonts/OFL.txt). No external font requests are needed.
 
-For development inspection, `?debug=1` exposes `window.__game`; `?level=2` previews Ember Isle, and `?q=low`, `?q=medium`, or `?q=high` selects a rendering tier. These are local development shortcuts, not access controls.
+For shooter development inspection, `/soldier.html?debug=1` exposes `window.__game`; `?level=2` previews Ember Isle, and `?q=low`, `?q=medium`, or `?q=high` selects a rendering tier. These are local development shortcuts, not access controls.
+
+For Garden Guard, `/garden.html?debug=1` exposes `window.__garden` with the simulation and scene for local inspection. Normal play does not expose these helpers.

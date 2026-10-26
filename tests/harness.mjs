@@ -10,7 +10,7 @@ import * as THREE from '../vendor/three/build/three.module.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export async function createGame({ level = 1, touch = false, seed: randomSeed = 4253 + level, storage = {}, session = {}, go = false } = {}) {
-  const html = await readFile(resolve(root, 'index.html'), 'utf8');
+  const html = await readFile(resolve(root, 'soldier.html'), 'utf8');
   const dom = new JSDOM(html, { url: `http://localhost/?debug=1&q=low&noscale=1&level=${level}${go ? '&go=1' : ''}`, pretendToBeVisual: true, runScripts: 'outside-only' });
   const { window } = dom;
   for (const [key, value] of Object.entries(storage)) window.localStorage.setItem(key, value);

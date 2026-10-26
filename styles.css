@@ -9,6 +9,8 @@
   --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --sans: Arial, Helvetica, sans-serif;
 }
+.games-return { display:block; color:var(--paper); text-align:center; padding:16px 12px; min-height:44px; font:600 11px var(--mono); text-decoration:none; letter-spacing:.08em; }
+.games-return:hover { color:var(--amber); }
 * {
   box-sizing: border-box;
 }

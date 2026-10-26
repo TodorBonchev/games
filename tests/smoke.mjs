@@ -42,7 +42,7 @@ try {
       if (new URL(route.request().url()).hostname !== '127.0.0.1') return route.abort();
       return route.continue();
     });
-    await page.goto(`http://127.0.0.1:${port}/?debug=1&noscale=1&q=${spec.quality}&level=${spec.level}`);
+    await page.goto(`http://127.0.0.1:${port}/soldier.html?debug=1&noscale=1&q=${spec.quality}&level=${spec.level}`);
     await page.waitForFunction(() => document.body.dataset.ready === 'true', null, { timeout: 60000 });
     assert.equal(await page.locator('#startBtn').isEnabled(), true);
     assert.ok(await page.locator('#lvlSel .level-card strong').count() === 2);

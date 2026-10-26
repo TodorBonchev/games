@@ -1,0 +1,1242 @@
+@font-face {
+  font-family:Barlow;
+  src:url('assets/fonts/barlow-condensed-800.ttf') format('truetype');
+  font-weight:800;
+  font-display:swap
+}
+:root {
+  color-scheme:light;
+  --paper:#f4f2e8;
+  --ink:#293d2b;
+  --green:#385c36;
+  --line:#304c2d28;
+  --muted:#74816b;
+  --mono:Consolas,'Liberation Mono',monospace
+}
+* {
+  box-sizing:border-box
+}
+body {
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:Arial,Helvetica,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior:none
+}
+button,a {
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation
+}
+button {
+  font-family:inherit;
+  cursor:pointer;
+  color:inherit
+}
+button:disabled {
+  cursor:wait;
+  opacity:.55
+}
+button:focus-visible,a:focus-visible {
+  outline:3px solid #e39933;
+  outline-offset:4px
+}
+a {
+  color:inherit;
+  text-decoration:none
+}
+.garden-app {
+  max-width:1250px;
+  margin:auto;
+  padding:0 36px
+}
+.garden-nav {
+  height:79px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid var(--line);
+  position:relative
+}
+.back-link,.help-button,.eyebrow,.level-label>span,.sun-counter span,.wave-status,.seed-heading,.seed-copy>span,.seed-cost,.shovel-button>span,.stage-label,.intro-note,.mower-note,.garden-footer,.keyboard-guide {
+  font-family:var(--mono);
+  font-size:9px;
+  letter-spacing:1px
+}
+.back-link {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:44px
+}
+.back-link>span {
+  font-size:19px
+}
+.small-brand {
+  font-size:25px;
+  font-weight:800;
+  letter-spacing:-1.4px;
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%)
+}
+.small-brand>span {
+  color:#d5843d
+}
+.help-button {
+  min-height:44px;
+  padding:8px 0 8px 10px;
+  border:0;
+  background:none;
+  display:flex;
+  align-items:center;
+  gap:9px
+}
+.help-button>span {
+  display:grid;
+  place-items:center;
+  width:21px;
+  height:21px;
+  border:1px solid #5368497a;
+  border-radius:50%;
+  font-size:12px
+}
+.game-heading {
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:24px;
+  padding:31px 0 25px
+}
+.eyebrow {
+  font-size:8px;
+  letter-spacing:1px;
+  color:var(--muted);
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin:0 0 11px
+}
+.eyebrow>span {
+  width:17px;
+  height:1px;
+  background:#688c4c
+}
+h1 {
+  font:800 66px/.9 Barlow,Impact,sans-serif;
+  letter-spacing:.2px;
+  margin:0
+}
+h1>span {
+  color:#bd783b
+}
+.level-label {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:7px;
+  padding-bottom:4px
+}
+.level-label>span:first-child {
+  color:#6a8752;
+  font-size:9px
+}
+.level-label strong {
+  font-size:15px;
+  font-weight:500
+}
+.level-label>span:last-child {
+  font-size:8px;
+  letter-spacing:.7px;
+  color:var(--muted)
+}
+.game-toolbar {
+  display:flex;
+  align-items:center;
+  gap:34px;
+  border:1px solid var(--line);
+  border-bottom:0;
+  background:#efeedf;
+  padding:11px 17px;
+  border-radius:5px 5px 0 0
+}
+.sun-counter {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:145px
+}
+.sun-counter>svg {
+  width:38px;
+  height:38px;
+  stroke:#bd8632;
+  fill:#edc25a;
+  stroke-width:2;
+  stroke-linecap:round
+}
+.sun-counter>div {
+  display:flex;
+  flex-direction:column;
+  gap:3px
+}
+.sun-counter strong {
+  font-size:27px;
+  line-height:1;
+  letter-spacing:-1px;
+  font-variant-numeric:tabular-nums
+}
+.sun-counter span {
+  font-size:7px;
+  letter-spacing:.8px;
+  color:#8b8058
+}
+.wave-status {
+  flex:1;
+  max-width:440px;
+  margin:0 auto;
+  letter-spacing:.5px
+}
+.wave-status>div:first-child {
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px
+}
+.wave-status strong {
+  font-size:9px
+}
+.wave-status>div>span {
+  font-size:8px;
+  color:var(--muted)
+}
+.wave-track {
+  height:5px;
+  position:relative;
+  background:#29421f19;
+  border-radius:4px;
+  overflow:hidden
+}
+.wave-track>span {
+  display:block;
+  height:100%;
+  width:0;
+  background:#688e48;
+  transition:width .4s
+}
+.wave-track>i {
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:2px;
+  background:var(--paper);
+  left:33.333%
+}
+.wave-track>i:last-child {
+  left:66.666%
+}
+.toolbar-actions {
+  display:flex;
+  gap:8px
+}
+.tool-button {
+  display:grid;
+  place-items:center;
+  background:#f9f7ed;
+  border:1px solid var(--line);
+  border-radius:4px;
+  min-width:42px;
+  min-height:42px;
+  font:600 14px var(--mono)
+}
+.tool-button:hover {
+  background:#e1e7cf
+}
+.tool-button svg {
+  width:19px;
+  height:19px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.7
+}
+.seed-bank {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:13px 16px;
+  background:#e6e9d7;
+  border:1px solid var(--line);
+  border-bottom:0
+}
+.seed-heading {
+  width:85px;
+  flex-shrink:0;
+  line-height:1.6;
+  color:#637657;
+  font-size:8px;
+  letter-spacing:1px;
+  position:relative
+}
+.seed-heading>span {
+  display:block;
+  font-size:21px;
+  line-height:1;
+  margin-top:5px
+}
+.seed-card {
+  position:relative;
+  isolation:isolate;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  flex:1;
+  min-width:0;
+  min-height:75px;
+  border:1px solid #4b654a3d;
+  background:#f2f2e5;
+  border-radius:4px;
+  padding:9px 12px 16px;
+  transition:border-color .15s,background .15s;
+  text-align:left;
+  overflow:hidden
+}
+.seed-card.selected {
+  background:#f7f7e8;
+  border:2px solid #527643;
+  padding:8px 11px 15px;
+  box-shadow:0 2px 0 #3d5c2920
+}
+.seed-card:hover {
+  background:#f9faed
+}
+.seed-card>img {
+  position:relative;
+  z-index:1;
+  width:49px;
+  height:49px;
+  flex-shrink:0
+}
+.seed-copy {
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  gap:7px
+}
+.seed-copy>strong {
+  font-size:13px;
+  white-space:nowrap
+}
+.seed-copy>span {
+  font-size:6px;
+  letter-spacing:.5px;
+  color:#7c886e;
+  white-space:nowrap
+}
+.seed-cost {
+  position:absolute;
+  bottom:6px;
+  right:10px;
+  z-index:1;
+  letter-spacing:0;
+  font-size:10px;
+  font-weight:600
+}
+.seed-cost>span {
+  font-size:12px;
+  color:#aa802c
+}
+.seed-card>kbd,.shovel-button>kbd {
+  position:absolute;
+  right:8px;
+  top:6px;
+  font:8px var(--mono);
+  color:#859476
+}
+.seed-cooldown {
+  position:absolute;
+  inset:0;
+  background:#3c542128;
+  transform:scaleX(0);
+  transform-origin:left;
+  pointer-events:none;
+  z-index:0
+}
+.seed-card.unaffordable .seed-cost {
+  color:#a2644b
+}
+.shovel-button {
+  align-self:stretch;
+  width:67px;
+  flex-shrink:0;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  border:1px solid #4b654a3d;
+  border-radius:4px;
+  background:#edecdc
+}
+.shovel-button>svg {
+  height:36px;
+  width:36px;
+  fill:#c9b28d;
+  stroke:#536346;
+  stroke-width:1.7;
+  stroke-linejoin:round;
+  stroke-linecap:round
+}
+.shovel-button>span {
+  font-size:6px;
+  letter-spacing:1px
+}
+.shovel-button[aria-pressed=true] {
+  border:2px solid #b68642;
+  background:#f5e7c9
+}
+.garden-stage {
+  position:relative;
+  isolation:isolate;
+  width:100%;
+  height:clamp(350px,44vw,550px);
+  background:#cddcc3;
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-top:0;
+  border-radius:0 0 5px 5px
+}
+.garden-stage>canvas {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block
+}
+.stage-label {
+  position:absolute;
+  bottom:15px;
+  left:17px;
+  color:#3a522a80;
+  font-size:7px;
+  letter-spacing:1px;
+  z-index:1;
+  pointer-events:none
+}
+.lawn-grid {
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none
+}
+.lawn-cell {
+  position:absolute;
+  background:transparent;
+  border:0;
+  padding:0;
+  pointer-events:auto;
+  cursor:crosshair;
+  border-radius:3px;
+  touch-action:manipulation
+}
+.lawn-cell:focus-visible {
+  outline:2px solid #fcf4c5;
+  outline-offset:-3px;
+  background:#fffbd82c
+}
+.lawn-cell.shoveling {
+  cursor:grab
+}
+.cell-health {
+  position:absolute;
+  bottom:3px;
+  left:20%;
+  width:60%;
+  height:3px;
+  border-radius:4px;
+  background:#27442966;
+  pointer-events:none
+}
+.cell-health>span {
+  display:block;
+  height:100%;
+  width:var(--hp);
+  background:#d5e699;
+  border-radius:4px
+}
+.cell-health.low>span {
+  background:#eab178
+}
+.sun-drops {
+  position:absolute;
+  inset:0;
+  z-index:4;
+  pointer-events:none
+}
+.sun-drop {
+  position:absolute;
+  min-width:44px;
+  min-height:44px;
+  border:0;
+  background:#ffe28a;
+  color:#78571e;
+  box-shadow:0 0 16px #ffe894c9,0 3px 0 #ad80273b;
+  border-radius:50%;
+  pointer-events:auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:23px;
+  transform:translate(-50%,-50%);
+  animation:sun-pop .25s ease-out
+}
+.sun-drop>span {
+  position:absolute;
+  bottom:-3px;
+  font:700 9px var(--mono);
+  background:#fff1bb;
+  padding:2px 5px;
+  border-radius:4px
+}
+.sun-drop.expiring {
+  opacity:.5
+}
+.game-overlay {
+  position:absolute;
+  inset:0;
+  z-index:5;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#24412330;
+  backdrop-filter:blur(3px)
+}
+.intro-card {
+  position:relative;
+  text-align:center;
+  background:#f9f5e7f5;
+  border:1px solid #fff9e7;
+  border-radius:5px;
+  box-shadow:0 16px 45px #23352230;
+  max-width:360px;
+  width:calc(100% - 42px);
+  padding:28px 28px 22px
+}
+.intro-card>.eyebrow {
+  justify-content:center;
+  font-size:7px;
+  letter-spacing:1px;
+  margin-bottom:12px
+}
+.intro-sun {
+  display:block;
+  color:#c7973e;
+  font-size:35px;
+  line-height:1;
+  margin-bottom:12px
+}
+h2 {
+  font:800 56px/.94 Barlow,Impact,sans-serif;
+  letter-spacing:.3px;
+  margin:0
+}
+.intro-card>p:not(.eyebrow) {
+  font-size:13px;
+  line-height:1.75;
+  color:#728064;
+  margin:14px 0 21px
+}
+.primary-button {
+  border:1px solid var(--green);
+  background:var(--green);
+  color:#f7f4df;
+  border-radius:3px;
+  font:600 10px var(--mono);
+  letter-spacing:.7px;
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:17px 16px;
+  min-height:49px
+}
+.primary-button:hover {
+  background:#294b28
+}
+.primary-button>span {
+  font-size:19px;
+  line-height:.8
+}
+.intro-note {
+  display:block;
+  font-size:7px;
+  letter-spacing:.3px;
+  line-height:1.6;
+  margin-top:13px;
+  color:#8a8d76
+}
+.garden-bottom {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:0 1px
+}
+.play-hint {
+  font-size:12px;
+  line-height:1.6;
+  min-height:40px;
+  display:flex;
+  align-items:center;
+  color:#667b54;
+  margin:6px 0
+}
+.play-hint.error {
+  color:#a05d36
+}
+.mower-note {
+  flex-shrink:0;
+  font-size:7px;
+  letter-spacing:.6px;
+  color:#8a927d
+}
+.mower-note>i {
+  display:inline-block;
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:#ad7455;
+  margin-right:6px
+}
+.garden-footer {
+  border-top:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  padding:20px 0 27px;
+  font-size:7px;
+  letter-spacing:.6px;
+  color:#8a927d
+}
+.garden-footer a>span {
+  margin-left:8px;
+  color:#47613b
+}
+.garden-dialog {
+  background:#faf6e8;
+  color:var(--ink);
+  border:1px solid #d7d9be;
+  border-radius:5px;
+  box-shadow:0 25px 100px #1425134d;
+  max-width:410px;
+  width:calc(100% - 36px);
+  max-height:calc(100dvh - 32px);
+  padding:0;
+  overscroll-behavior:contain
+}
+.garden-dialog::backdrop {
+  background:#1b2c1ec2;
+  backdrop-filter:blur(5px)
+}
+.dialog-content {
+  padding:32px 32px 23px;
+  text-align:center
+}
+.dialog-content>.eyebrow {
+  justify-content:center;
+  font-size:8px
+}
+.dialog-content>h2 {
+  font-size:59px
+}
+.dialog-content>p:not(.eyebrow) {
+  font-size:13px;
+  line-height:1.8;
+  color:#758264;
+  margin:18px 0 23px
+}
+.result-icon {
+  color:#c19341;
+  font-size:38px;
+  display:block;
+  line-height:1;
+  margin:17px 0
+}
+.secondary-button {
+  width:100%;
+  font:600 9px var(--mono);
+  letter-spacing:.5px;
+  min-height:44px;
+  background:transparent;
+  border:1px solid #46613e55;
+  border-radius:3px;
+  margin-top:10px
+}
+.secondary-button:hover {
+  background:#e5e7d5
+}
+.dialog-back {
+  display:block;
+  padding:17px 8px 3px;
+  font-size:12px;
+  color:#7c866f;
+  min-height:44px
+}
+.result-stats {
+  display:flex;
+  justify-content:space-evenly;
+  gap:20px;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:18px 0;
+  margin:10px 0 22px
+}
+.result-stats>div {
+  display:flex;
+  flex-direction:column;
+  gap:7px
+}
+.result-stats strong {
+  font:800 30px Barlow,Impact,sans-serif
+}
+.result-stats span {
+  font:7px var(--mono);
+  letter-spacing:.5px;
+  color:#7c886d
+}
+.how-to {
+  list-style:none;
+  padding:0;
+  margin:24px 0;
+  text-align:left;
+  display:flex;
+  flex-direction:column;
+  gap:18px
+}
+.how-to>li {
+  display:flex;
+  gap:14px
+}
+.how-to>li>span {
+  font:10px var(--mono);
+  color:#8b9b70;
+  padding-top:3px
+}
+.how-to strong {
+  font-size:13px;
+  font-weight:600
+}
+.how-to p {
+  font-size:12px;
+  line-height:1.7;
+  color:#778567;
+  margin:6px 0 0
+}
+.dialog-content>.keyboard-guide {
+  font-size:7px!important;
+  line-height:2.5!important;
+  letter-spacing:.3px
+}
+kbd {
+  font:inherit
+}
+.keyboard-guide kbd {
+  background:#e5e9d5;
+  padding:3px 4px;
+  border:1px solid #bcc9a6;
+  border-radius:2px
+}
+.wave-banner {
+  position:absolute;
+  top:18px;
+  left:50%;
+  transform:translateX(-50%);
+  border:1px solid #f7efcc;
+  background:#f8f1d9f2;
+  color:#537037;
+  z-index:4;
+  font:800 22px Barlow,Impact,sans-serif;
+  letter-spacing:1px;
+  padding:12px 25px;
+  box-shadow:0 3px 15px #3446261a;
+  white-space:nowrap;
+  border-radius:3px;
+  pointer-events:none
+}
+[hidden] {
+  display:none!important
+}
+@keyframes sun-pop {
+  from {
+    scale:.4;
+    opacity:0
+  }
+  to {
+    scale:1;
+    opacity:1
+  }
+}
+@media(max-width:1000px) {
+  .garden-app {
+    padding:0 24px
+  }
+  .seed-heading {
+    display:none
+  }
+  .seed-card {
+    gap:7px;
+    padding-left:8px
+  }
+  .seed-card.selected {
+    padding-left:7px
+  }
+  .seed-copy>strong {
+    font-size:12px
+  }
+  .seed-copy>span {
+    font-size:6px
+  }
+  .seed-card>img {
+    width:42px
+  }
+  .game-toolbar {
+    gap:20px
+  }
+  .seed-bank {
+    gap:8px;
+    padding:11px 12px
+  }
+  .mower-note {
+    font-size:6px
+  }
+  h1 {
+    font-size:59px
+  }
+  .game-heading>.eyebrow {
+    font-size:7px
+  }
+  .level-label {
+    gap:6px
+  }
+}
+@media(max-width:600px) {
+  .garden-app {
+    padding:0 14px
+  }
+  .garden-nav {
+    height:61px
+  }
+  .back-link,.help-button {
+    font-size:8px;
+    letter-spacing:.5px
+  }
+  .back-link {
+    gap:5px
+  }
+  .help-button {
+    gap:5px
+  }
+  .help-button>span {
+    width:18px;
+    height:18px
+  }
+  .small-brand {
+    font-size:23px
+  }
+  .game-heading {
+    padding:22px 0 19px;
+    align-items:center;
+    gap:12px
+  }
+  .game-heading .eyebrow {
+    font-size:5px;
+    letter-spacing:.4px;
+    gap:5px;
+    margin-bottom:9px
+  }
+  .eyebrow>span {
+    width:9px
+  }
+  h1 {
+    font-size:44px;
+    letter-spacing:0
+  }
+  .level-label {
+    gap:5px;
+    align-items:flex-end;
+    max-width:90px;
+    text-align:right
+  }
+  .level-label>span:first-child {
+    font-size:7px
+  }
+  .level-label strong {
+    font-size:10px;
+    line-height:1.4
+  }
+  .level-label>span:last-child {
+    display:none
+  }
+  .game-toolbar {
+    padding:10px 10px;
+    gap:12px
+  }
+  .sun-counter {
+    min-width:85px;
+    gap:7px
+  }
+  .sun-counter>svg {
+    width:28px;
+    height:28px
+  }
+  .sun-counter strong {
+    font-size:24px
+  }
+  .sun-counter span {
+    font-size:5px;
+    letter-spacing:.4px
+  }
+  .wave-status {
+    min-width:0
+  }
+  .wave-status>div>span {
+    font-size:6px;
+    max-width:100px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap
+  }
+  .wave-status strong {
+    font-size:7px;
+    white-space:nowrap
+  }
+  .wave-status>div:first-child {
+    gap:5px;
+    margin-bottom:6px
+  }
+  .toolbar-actions {
+    gap:5px
+  }
+  .tool-button {
+    min-width:37px;
+    min-height:44px;
+    font-size:12px
+  }
+  .tool-button svg {
+    width:16px;
+    height:16px
+  }
+  .seed-bank {
+    padding:9px 8px;
+    gap:6px;
+    align-items:stretch
+  }
+  .seed-card {
+    min-height:99px;
+    padding:4px 3px 23px;
+    gap:0;
+    flex-direction:column;
+    justify-content:start
+  }
+  .seed-card.selected {
+    padding:3px 2px 22px
+  }
+  .seed-card>img {
+    width:43px;
+    height:43px
+  }
+  .seed-copy {
+    gap:4px;
+    align-items:center
+  }
+  .seed-copy>strong {
+    font-size:10px
+  }
+  .seed-copy>span {
+    font-size:4.5px;
+    letter-spacing:.1px
+  }
+  .seed-cost {
+    font-size:10px;
+    bottom:5px;
+    right:50%;
+    transform:translateX(50%);
+    white-space:nowrap
+  }
+  .seed-cost>span {
+    font-size:11px
+  }
+  .seed-card>kbd,.shovel-button>kbd {
+    display:none
+  }
+  .shovel-button {
+    width:44px;
+    gap:7px
+  }
+  .shovel-button>svg {
+    width:30px;
+    height:30px
+  }
+  .shovel-button>span {
+    font-size:5px;
+    letter-spacing:.2px
+  }
+  .garden-stage {
+    height:clamp(285px,83vw,430px)
+  }
+  .stage-label {
+    bottom:11px;
+    left:11px;
+    font-size:5px;
+    letter-spacing:.6px
+  }
+  .intro-card {
+    padding:19px 21px 16px;
+    max-width:294px
+  }
+  .intro-sun {
+    font-size:26px;
+    margin-bottom:9px
+  }
+  .intro-card>.eyebrow {
+    font-size:6px;
+    margin-bottom:9px
+  }
+  .intro-card h2 {
+    font-size:47px
+  }
+  .intro-card>p:not(.eyebrow) {
+    font-size:11px;
+    line-height:1.7;
+    margin:10px 0 14px
+  }
+  .primary-button {
+    font-size:9px;
+    min-height:46px;
+    padding:15px 12px
+  }
+  .intro-note {
+    margin-top:9px;
+    font-size:6px
+  }
+  .garden-bottom {
+    flex-wrap:wrap;
+    gap:0;
+    padding-top:4px;
+    justify-content:center
+  }
+  .play-hint {
+    font-size:10px;
+    line-height:1.7;
+    width:100%;
+    min-height:36px;
+    margin:4px 0;
+    text-align:center;
+    justify-content:center
+  }
+  .mower-note {
+    font-size:6px;
+    letter-spacing:.3px;
+    padding:3px 0 14px
+  }
+  .garden-footer {
+    padding:17px 0 22px;
+    font-size:5.5px;
+    gap:10px;
+    letter-spacing:.2px
+  }
+  .sun-drop {
+    min-width:40px;
+    min-height:40px;
+    font-size:22px
+  }
+  .wave-banner {
+    top:12px;
+    font-size:18px;
+    padding:10px 15px
+  }
+  .dialog-content {
+    padding:27px 25px 19px
+  }
+  .dialog-content>h2 {
+    font-size:54px
+  }
+  .help-dialog .dialog-content>h2 {
+    font-size:46px
+  }
+  .how-to {
+    margin:20px 0;
+    gap:14px
+  }
+  .how-to p {
+    font-size:11px;
+    line-height:1.7
+  }
+  .how-to strong {
+    font-size:12px
+  }
+  .dialog-content>.eyebrow {
+    font-size:7px
+  }
+}
+@media(max-height:520px) and (min-width:601px) {
+  .garden-app {
+    padding:0 16px
+  }
+  .garden-nav {
+    height:43px
+  }
+  .back-link,.help-button {
+    min-height:40px
+  }
+  .game-shell {
+    display:grid;
+    grid-template-columns:138px minmax(0,1fr);
+    grid-template-rows:54px minmax(220px,calc(100dvh - 112px));
+    column-gap:10px;
+    padding-top:8px
+  }
+  .game-heading {
+    display:none
+  }
+  .game-toolbar {
+    grid-column:2;
+    grid-row:1;
+    padding:5px 12px;
+    gap:16px
+  }
+  .sun-counter {
+    min-width:95px
+  }
+  .sun-counter strong {
+    font-size:22px
+  }
+  .sun-counter>svg {
+    width:28px;
+    height:28px
+  }
+  .sun-counter span {
+    font-size:5px
+  }
+  .tool-button {
+    min-height:38px;
+    min-width:38px
+  }
+  .seed-bank {
+    grid-column:1;
+    grid-row:1/3;
+    flex-direction:column;
+    gap:6px;
+    padding:0;
+    background:transparent;
+    border:0;
+    justify-content:stretch
+  }
+  .seed-card {
+    flex:1;
+    min-height:48px;
+    padding:4px 5px 11px;
+    gap:3px;
+    overflow:hidden
+  }
+  .seed-card.selected {
+    padding:3px 4px 10px
+  }
+  .seed-card>img {
+    width:33px;
+    height:33px
+  }
+  .seed-copy>strong {
+    font-size:10px
+  }
+  .seed-copy>span {
+    font-size:5px;
+    letter-spacing:0
+  }
+  .seed-cost {
+    font-size:8px;
+    bottom:3px;
+    right:7px
+  }
+  .seed-card>kbd {
+    display:none
+  }
+  .seed-copy {
+    gap:4px
+  }
+  .shovel-button {
+    width:100%;
+    min-height:44px;
+    flex-direction:row;
+    gap:8px;
+    align-self:auto
+  }
+  .shovel-button>svg {
+    height:26px;
+    width:26px
+  }
+  .shovel-button>span {
+    font-size:6px
+  }
+  .shovel-button>kbd {
+    display:none
+  }
+  .garden-stage {
+    grid-column:2;
+    grid-row:2;
+    height:100%
+  }
+  .garden-bottom {
+    grid-column:1/3;
+    padding:0
+  }
+  .play-hint {
+    font-size:8px;
+    min-height:24px;
+    margin:2px 0
+  }
+  .mower-note {
+    display:none
+  }
+  .garden-footer {
+    display:none
+  }
+  .stage-label {
+    font-size:5px;
+    bottom:9px
+  }
+  .intro-card {
+    max-width:290px;
+    padding:17px 24px 12px
+  }
+  .intro-sun {
+    display:none
+  }
+  .intro-card>.eyebrow {
+    font-size:6px;
+    margin-bottom:8px
+  }
+  .intro-card h2 {
+    font-size:40px
+  }
+  .intro-card>p:not(.eyebrow) {
+    font-size:11px;
+    line-height:1.6;
+    margin:9px 0 12px
+  }
+  .intro-note {
+    font-size:6px;
+    margin-top:7px
+  }
+  .primary-button {
+    padding:13px;
+    font-size:8px;
+    min-height:44px
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after {
+    animation:none!important;
+    transition:none!important
+  }
+}

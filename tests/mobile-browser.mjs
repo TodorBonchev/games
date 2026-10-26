@@ -85,7 +85,7 @@ try {
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
     if (spec.insets) await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: spec.insets });
-    await page.goto(`${baseURL}/?debug=1&q=low&noscale=1`);
+    await page.goto(`${baseURL}/soldier.html?debug=1&q=low&noscale=1`);
     await page.waitForFunction(() => document.body.dataset.ready === 'true', null, { timeout: 60000 });
     await page.evaluate(async () => { await document.fonts.ready; });
     const problemStart = problems.length;
@@ -247,7 +247,7 @@ try {
     if (spec.width === 320 || spec.width === 667) {
       // Exercise the real five-wave Ember finish on the tightest viewport in
       // each orientation, including keeping the build when entering endless.
-      await page.goto(`${baseURL}/?debug=1&q=low&noscale=1&level=2`);
+      await page.goto(`${baseURL}/soldier.html?debug=1&q=low&noscale=1&level=2`);
       await page.waitForFunction(() => document.body.dataset.ready === 'true', null, { timeout: 60000 });
       await deploy(page);
       for (let wave = 1; wave <= 5; wave++) {

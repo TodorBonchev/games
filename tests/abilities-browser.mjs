@@ -41,7 +41,7 @@ async function prepare(page, touch) {
   page.on('pageerror', error => errors.push(error.stack || error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
-  await page.goto(`http://127.0.0.1:${port}/?debug=1&noscale=1&q=low`);
+  await page.goto(`http://127.0.0.1:${port}/soldier.html?debug=1&noscale=1&q=low`);
   await page.waitForFunction(() => document.body.dataset.ready === 'true', null, { timeout: 60000 });
   await page.locator('#startBtn').click();
   await page.waitForFunction(() => window.__game.mode === 'intro');

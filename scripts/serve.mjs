@@ -41,4 +41,4 @@ createServer(async (req, res) => {
   } catch (error) {
     res.writeHead(error instanceof URIError ? 400 : 404).end('Not found');
   }
-}).listen(port, host, () => console.log(`Soldier vs Zombies → http://${host}:${port}`));
+}).listen(port, host, () => console.log(`Games → http://${host}:${port}`));

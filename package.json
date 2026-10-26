@@ -1,17 +1,23 @@
 {
-  "name": "soldier-zombie-game",
+  "name": "games",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A standalone Three.js island survival shooter.",
+  "description": "A collection of standalone Three.js browser games: Soldier vs Zombies and Garden Guard.",
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
     "test": "node --experimental-vm-modules --test tests/*.test.mjs",
     "test:browser": "node tests/smoke.mjs",
     "test:mobile": "node tests/mobile-browser.mjs",
-    "test:abilities": "node tests/abilities-browser.mjs"
+    "test:abilities": "node tests/abilities-browser.mjs",
+    "test:garden": "node tests/garden-browser.mjs"
   },
-  "engines": { "node": "^22.22.2 || ^24.15.0 || >=26.0.0" },
-  "devDependencies": { "jsdom": "30.1.1", "playwright": "1.63.0" }
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
+  "devDependencies": {
+    "jsdom": "30.1.1",
+    "playwright": "1.63.0"
+  }
 }
