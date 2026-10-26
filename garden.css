@@ -591,6 +591,15 @@ h2 {
   margin-top:13px;
   color:#8a8d76
 }
+.intro-card #continueRunBtn { margin-top:17px; margin-bottom:9px; }
+.new-garden-button { background:transparent; color:var(--green); border-color:var(--line); }
+.new-garden-button:hover { background:#e7ead8; }
+.has-saved-run .intro-sun,.has-saved-run #introDescription,.has-saved-run #introKicker { display:none; }
+.has-saved-run #loadStatus { display:none; }
+.has-saved-run .intro-card #continueRunBtn { margin-top:12px; margin-bottom:8px; }
+.has-saved-run .intro-card h2 { font-size:38px; }
+.save-status { font:10px/1.6 var(--mono); color:var(--muted); }
+.save-status.save-unavailable { color:#9b5839; }
 .garden-bottom {
   display:flex;
   align-items:center;

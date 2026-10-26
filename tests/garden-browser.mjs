@@ -7,6 +7,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { checkPhones } from './phone-browser.mjs';
 import { checkCampaign } from './campaign-browser.mjs';
+import { checkSaves } from './saves-browser.mjs';
 
 const port = 5182;
 const baseURL = process.env.GAMES_TEST_URL || `http://127.0.0.1:${port}`;
@@ -59,6 +60,8 @@ try {
   }
   if (process.argv.includes('--prepare-previews')) {
     await preparePreviews();
+  } else if (process.argv.includes('--saves-only')) {
+    await checkSaves(browser, baseURL);
   } else if (process.argv.includes('--campaign-only')) {
     await checkCampaign(browser, baseURL);
   } else if (process.argv.includes('--phone-only') || process.argv.includes('--phone-baseline')) {

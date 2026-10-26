@@ -1,17 +1,19 @@
+import {readGameSave,writeGameSave,removeGameSave} from './save-store.js';
+import {parseSoldierSave} from './soldier-save.js';
 import {getWeapon,shotInterval,weaponDamage} from './weapons.js?v19';
-import * as THREE from 'three';import {restoreRanks,bonuses,upgradeChoices,buildSummary} from './progression.js?v19';import {createRewardPool,createEliteAccent,createSlamWarning} from './rewards.js?v19';import {createCombatAudio,createImpactPool} from './combat.js?v19';import {createEnemyNavigator} from './navigation.js?v19';import {getLookSensitivity,reducedMotion} from './preferences.js?v19';import {mk,mkc,LOD,mergeRigid,isCachedGeometry} from './lod.js?v19';import {makeSoldier} from './soldier.js?v19';import {makeHeli,makeChute} from './heli.js?v19';
+import * as THREE from 'three';import {restoreRanks,bonuses,upgradeChoices,restoreUpgradeChoices,buildSummary} from './progression.js?v21';import {createRewardPool,createEliteAccent,createSlamWarning} from './rewards.js?v19';import {createCombatAudio,createImpactPool} from './combat.js?v19';import {createEnemyNavigator} from './navigation.js?v19';import {getLookSensitivity,reducedMotion} from './preferences.js?v19';import {mk,mkc,LOD,mergeRigid,isCachedGeometry} from './lod.js?v19';import {makeSoldier} from './soldier.js?v19';import {makeHeli,makeChute} from './heli.js?v19';
 THREE.Sprite.prototype.raycast=function(){};
 import {createAcidThreats,createSpitterAccent} from './threats.js?v19';
-import {createFieldUplink,UPLINK_RADIUS} from './field.js?v19';
-import {createEncounter,createMomentum,rateOperation} from './encounters.js?v19';
-import {createFrozenOrb} from './frozen-orb.js?v19';
+import {createFieldUplink,UPLINK_RADIUS} from './field.js?v21';
+import {createEncounter,createMomentum,rateOperation} from './encounters.js?v21';
+import {createFrozenOrb} from './frozen-orb.js?v21';
 import {createFlightCollision} from './flight-collision.js?v19';
 import {createFirstPersonView} from './first-person.js?v19';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 const LEVEL=new URLSearchParams(location.search).get('level')==='2'?2:1;
 const WM=LEVEL===2?await import('./world2.js?v19'):await import('./world.js?v19');const {buildWorld,groundH,islandD,shoreR,SUN_DIR,FOG_COLOR,iceF,lavaF,LIGHTS}=WM;
-export const BUILD='v20 · phone ready';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
+export const BUILD='v21 · saved operations';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
 const MOBILE=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;if(MOBILE)document.body.classList.add('touch');
 // ---------- quality tiers ----------
 const QL=['auto','low','medium','high'];const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){return null;}};
@@ -102,9 +104,9 @@ addEventListener('keydown',e=>{
 });addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space'){jetHeldTime=0;jetLocked=false;if(!jumpButtonHeld){jetActive=false;player.userData.setJetpack(false);document.body.classList.remove('jetpacking');}}});
 let graphicsLost=false,startDisabledBeforeLoss=false,inactiveWindow=false;const cv=renderer.domElement;
 export function canStartGame(){return !graphicsLost&&!graphicsContext.isContextLost();}
-function markGraphicsLost(){if(graphicsLost)return;graphicsLost=true;startDisabledBeforeLoss=$('startBtn').disabled;$('startBtn').disabled=true;if(mode==='upgrade')setUpgradeButtons(true);pauseGame();}
+function markGraphicsLost(){if(graphicsLost)return;graphicsLost=true;startDisabledBeforeLoss=$('startBtn').disabled;$('startBtn').disabled=true;if($('continueBtn'))$('continueBtn').disabled=true;if(mode==='upgrade')setUpgradeButtons(true);pauseGame();}
 cv.addEventListener('webglcontextlost',e=>{e.preventDefault();markGraphicsLost();});
-cv.addEventListener('webglcontextrestored',()=>{graphicsLost=false;renderer.setRenderTarget(null);$('startBtn').disabled=startDisabledBeforeLoss&&document.body.dataset.ready!=='true';if(mode==='upgrade')setUpgradeButtons(false);onResize();});
+cv.addEventListener('webglcontextrestored',()=>{graphicsLost=false;renderer.setRenderTarget(null);$('startBtn').disabled=startDisabledBeforeLoss&&document.body.dataset.ready!=='true';if(mode==='upgrade')setUpgradeButtons(false);refreshRunUi();onResize();});
 function renderFrame(){
  // GL can be lost before its queued DOM event arrives, including mid-pass.
  // Handle only that recoverable condition; ordinary render errors still surface.
@@ -140,7 +142,7 @@ jumpButton.addEventListener('click',e=>{e.preventDefault();if(e.detail===0&&!jum
 $('orbBtn')?.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();e.stopPropagation();castFrozenOrb();});
 $('orbBtn')?.addEventListener('click',e=>{e.stopPropagation();if(e.detail===0)castFrozenOrb();});
 function clearInput(){Object.keys(keys).forEach(k=>delete keys[k]);releaseJump();firing=false;fireId=null;stick.id=lk.id=null;stick.x=stick.y=0;knob.style.transform='';$('stick').classList.remove('active');$('fireBtn').classList.remove('active');document.body.classList.remove('sprinting');curSpeed=0;jumpBuffer=coyoteTime=0;lockT=null;swing=null;wasFiring=false;aligned=false;burstRound=0;}
-function pauseGame(settings=false){if(mode!=='play'&&mode!=='intro')return;if(!gamePaused){gamePaused=true;pauseStarted=performance.now();running=false;clearInput();document.body.classList.add('paused');syncAudio();document.exitPointerLock?.();}updRejump();$('pausePanel')?.classList.toggle('hide',settings);$('setPanel').classList.toggle('hide',!settings);(settings?$('setClose'):$('resumeBtn'))?.focus();}
+function pauseGame(settings=false){if(mode!=='play'&&mode!=='intro')return;if(!gamePaused){gamePaused=true;pauseStarted=performance.now();running=false;clearInput();document.body.classList.add('paused');syncAudio();document.exitPointerLock?.();}updRejump();$('pausePanel')?.classList.toggle('hide',settings);$('setPanel').classList.toggle('hide',!settings);(settings?$('setClose'):$('resumeBtn'))?.focus();saveRun();}
 function resumeGame(){if(!gamePaused||graphicsLost)return;rjReady+=performance.now()-pauseStarted;gamePaused=false;running=mode==='play';document.body.classList.remove('paused');$('pausePanel')?.classList.add('hide');$('setPanel').classList.add('hide');clearInput();syncAudio();ensureAudio();document.activeElement?.blur();lockPointer();}
 addEventListener('blur',()=>{inactiveWindow=true;pauseGame();});addEventListener('focus',()=>inactiveWindow=false);document.addEventListener('visibilitychange',()=>{inactiveWindow=document.hidden;if(document.hidden)pauseGame();});
 let hadPointerLock=false;document.addEventListener('pointerlockchange',()=>{const locked=document.pointerLockElement===cv;if(hadPointerLock&&!locked&&!gamePaused)pauseGame();hadPointerLock=locked;});
@@ -284,11 +286,11 @@ function updateRewards(dt){
  }
  rewards.update(dt,gT,!reducedMotion());updateProgressionHud();
 }
-function showUpgrades(){
- if(mode!=='play')return;running=false;mode='upgrade';acidThreats.clear();frozenOrb.clear();updateFieldHud();upgradeStarted=performance.now();clearInput();offeredUpgrades=upgradeChoices(ranks);flashTime=0;player.userData.flash.visible=false;player.userData.flashLight.intensity=0;slamWarning.hide();
+function showUpgrades(savedChoices){
+ if(mode!=='play')return;running=false;mode='upgrade';acidThreats.clear();frozenOrb.clear();updateFieldHud();upgradeStarted=performance.now();clearInput();offeredUpgrades=restoreUpgradeChoices(savedChoices,ranks);flashTime=0;player.userData.flash.visible=false;player.userData.flashLight.intensity=0;slamWarning.hide();
  textAt('upgradeWave','WAVE '+String(wave).padStart(2,'0')+' SECURED');textAt('upgradeRecovery',(lastRecovery>0?'+'+Math.ceil(lastRecovery)+' HEALTH':'FULL HEALTH')+' · AREA SECURED');textAt('upgradeBuild',buildSummary(ranks));
  document.querySelectorAll('#upgradeChoices button').forEach((button,index)=>{const choice=offeredUpgrades[index];button.dataset.choice=String(index);button.dataset.perk=choice.id;for(const [key,value] of Object.entries({icon:choice.icon,category:choice.category,title:choice.title,description:choice.text,rank:choice.rank?(choice.rank===1?'NEW · I':['','I','II'][choice.rank-1]+' → '+['','I','II','III'][choice.rank])+' / III':'ONE-TIME BOOST'})){const el=button.querySelector('[data-upgrade-'+key+']');if(el)el.textContent=value;}button.disabled=false;});
- document.body.classList.add('upgrading');$('upgradePanel')?.classList.remove('hide');$('waveBanner')?.classList.remove('show');$('lock').style.display='none';syncAudio();document.exitPointerLock?.();document.querySelector('#upgradeChoices button')?.focus();
+ saveRun();document.body.classList.add('upgrading');$('upgradePanel')?.classList.remove('hide');$('waveBanner')?.classList.remove('show');$('lock').style.display='none';syncAudio();document.exitPointerLock?.();document.querySelector('#upgradeChoices button')?.focus();
 }
 function chooseUpgrade(index){
  if(mode!=='upgrade'||graphicsLost||!Number.isInteger(index)||!offeredUpgrades[index])return;
@@ -336,7 +338,7 @@ function meleeClear(z){meleeFrom.copy(z.position).y+=1.1;meleeTo.copy(player.pos
 function runSummary(){const seconds=Math.floor(runSeconds),chain=momentum.state,rating=rateOperation({kills:runKills,elites:eliteKills,uplinks:runUplinks,shots:runShots,hits:runHits,chain:chain.best,completed:campaignComplete});textAt('finalScore',score.toLocaleString());textAt('finalKills',runKills);textAt('finalWave',String(wave).padStart(2,'0'));textAt('finalTime',String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0'));textAt('finalAccuracy',runShots?Math.round(runHits/runShots*100)+'%':'—');textAt('finalRecord',score>runBestStart?'NEW PERSONAL BEST':'PERSONAL BEST '+bestScore.toLocaleString());textAt('final',debriefOutcome==='victory'?'Both islands secured. Keep your build and push into endless waves, or begin a fresh operation.':'Keep your chain alive, capture uplinks, and move before the acid lands.');textAt('finalBuild',buildSummary(ranks));textAt('finalElites',eliteKills);textAt('finalUplinks',runUplinks);textAt('finalChain',chain.best);textAt('finalMultiplier','×'+chain.bestMultiplier);textAt('finalRank',rating.grade);textAt('finalRankLabel',rating.label);const medal=document.querySelector('.mission-rank');if(medal)medal.dataset.rank=rating.grade;}
 function showOutcome(won){debriefOutcome=won?'victory':'defeat';document.body.classList.toggle('victory',won);textAt('debriefTitle',won?'Operation complete.':'Good fight, soldier.');textAt('debriefEyebrow',won?'BOTH ISLANDS SECURED':'OPERATION DEBRIEF');$('endlessBtn')?.classList.toggle('hide',!won);}
 function winOperation(){
- if(campaignComplete||mode==='over')return;campaignComplete=true;running=false;mode='over';clearInput();acidThreats.clear();frozenOrb.clear();slamWarning.hide();rememberScore();heliOn=false;heli.visible=false;setGain(rotor,0);setGain(wind,0);document.body.classList.remove('playing');document.exitPointerLock?.();$('waveBanner')?.classList.remove('show');showOutcome(true);runSummary();$('over').classList.remove('hide');$('endlessBtn')?.focus();snd(440,.7,'sine',.18,2);
+ if(campaignComplete||mode==='over')return;campaignComplete=true;running=false;mode='over';clearInput();acidThreats.clear();frozenOrb.clear();slamWarning.hide();rememberScore();heliOn=false;heli.visible=false;setGain(rotor,0);setGain(wind,0);document.body.classList.remove('playing');document.exitPointerLock?.();$('waveBanner')?.classList.remove('show');showOutcome(true);runSummary();$('over').classList.remove('hide');$('endlessBtn')?.focus();LS('szCompleted','1');saveRun();snd(440,.7,'sine',.18,2);
 }
 function continueEndless(){
  if(mode!=='over'||debriefOutcome!=='victory'||!campaignComplete||graphicsLost)return;
@@ -350,7 +352,7 @@ function onLand(x,z,clear=.6){if(islandD(x,z)>.88)return false;for(const c of W.
 function spawn(elite=null,forcedType=null){const r0=Math.random(),type=elite?'brute':forcedType&&ZT[forcedType]?forcedType:LEVEL===2?(r0<.22?'fiery':r0<.4?'brute':r0<.7?'runner':'walker'):(r0<.13?'brute':r0<.38?'runner':'walker');const z=makeZombie(type);let x=0,zz=0;for(let k=0;k<40;k++){const a=rnd(0,6.28),r=elite?rnd(10,14):rnd(18,36);x=player.position.x+Math.cos(a)*r;zz=player.position.z+Math.sin(a)*r;if(onLand(x,zz)&&lavaF(x,zz)<.05)break;
   if(k===39){const b=rnd(0,6.28),R=shoreR(b)*rnd(.3,.8);x=Math.cos(b)*R;zz=Math.sin(b)*R;}}
  z.position.set(x,groundH(x,zz),zz);const ZTt=ZT[type];z.userData.hp=Math.max(1,Math.round((2+Math.floor(wave/2))*ZTt.hp*(LEVEL===2?1.6:1)));z.userData.speed=(1.4+wave*.15+Math.random()*.6)*ZTt.sp*(LEVEL===2?1.18:1);if(type==='spitter')z.userData.spitCooldown=1.6+Math.random()*1.6;if(elite){const u=z.userData;u.elite=elite;u.eliteName=elite==='commander'?(LEVEL===2?'ASH TITAN':'ISLAND WARDEN'):'HOLLOW GUARD';u.hp=Math.round(u.hp*(elite==='commander'?14:6));u.speed=Math.max(elite==='commander'?2.8:2.5,u.speed*(elite==='commander'?1.9:1.7));u.maxHp=u.hp;u.slamCooldown=.8;z.scale.multiplyScalar(elite==='commander'?1.24:1.12);u.eliteAccent=createEliteAccent(z,elite==='commander',{low:LOWQ});announce(u.eliteName+' · '+(elite==='commander'?'COMMANDER':'ELITE')+' INBOUND',3.5);}scene.add(z);zombies.push(z);updateProgressionHud();return z;}
-function die(){if(mode==='over')return;acidThreats.clear();frozenOrb.clear();showOutcome(false);slamWarning.hide();running=false;mode='over';clearInput();rememberScore();heliOn=false;heli.visible=false;setGain(rotor,0);setGain(wind,0);document.body.classList.remove('playing');document.exitPointerLock?.();$('waveBanner')?.classList.remove('show');runSummary();$('over').classList.remove('hide');$('restartBtn').focus();snd(300,.7,'triangle',.16,.2);}
+function die(){if(mode==='over')return;removeGameSave('soldier');acidThreats.clear();frozenOrb.clear();showOutcome(false);slamWarning.hide();running=false;mode='over';clearInput();rememberScore();heliOn=false;heli.visible=false;setGain(rotor,0);setGain(wind,0);document.body.classList.remove('playing');document.exitPointerLock?.();$('waveBanner')?.classList.remove('show');runSummary();$('over').classList.remove('hide');$('restartBtn').focus();snd(300,.7,'triangle',.16,.2);}
 function updHud(){updateProgressionHud();const remaining=toSpawn+zombies.filter(z=>!z.userData.dead).length,cleared=Math.max(0,waveTotal-remaining);textAt('waveProgressLabel',cleared+' / '+waveTotal);if($('waveProgressFill'))$('waveProgressFill').style.width=(waveTotal?cleared/waveTotal*100:0)+'%';if($('waveProgress')){$('waveProgress').setAttribute('aria-valuemax',String(waveTotal||1));$('waveProgress').setAttribute('aria-valuenow',String(cleared));$('waveProgress').classList.toggle('complete',waveTotal>0&&remaining===0);}textAt('score',score.toLocaleString());textAt('wave',String(Math.max(1,wave)).padStart(2,'0'));textAt('hpValue',Math.ceil(Math.max(0,hp)));textAt('bestScore',bestScore.toLocaleString());textAt('enemies',toSpawn+zombies.filter(z=>!z.userData.dead).length);$('hp').style.width=Math.max(0,hp)+'%';$('hpbar').setAttribute('aria-valuenow',String(Math.ceil(hp)));document.body.classList.toggle('low-health',hp<=30);}
 function collide(p,r){for(const c of W.circles){const dx=p.x-c.x,dz=p.z-c.z,d=Math.hypot(dx,dz),m=c.r+r;if(d<m&&d>1e-4){p.x=c.x+dx/d*m;p.z=c.z+dz/d*m;}}
  for(const b of W.boxes){const cx=THREE.MathUtils.clamp(p.x,b.x-b.hx,b.x+b.hx),cz=THREE.MathUtils.clamp(p.z,b.z-b.hz,b.z+b.hz);const dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);if(d<r){if(d>1e-4){p.x=cx+dx/d*r;p.z=cz+dz/d*r;}else p.x+=r;}}
@@ -505,20 +507,21 @@ $('skipBtn').addEventListener('click',e=>{e.stopPropagation();if(gamePaused)retu
 let levelTimer=null;
 function reset(){clearInput();flightMovement=false;jetFuel=1;frozenOrb.reset();acidThreats.clear();acidHintShown=false;momentum.reset();updateMomentumHud();campaignComplete=false;showOutcome(false);W.setEncounter?.(0,{immediate:true,motion:!reducedMotion()});fieldUplink.reset();runUplinks=0;updateFieldHud();ranks=restoreRanks();loadout=bonuses(ranks);offeredUpgrades=[];overdriveMax=8;overdrive=reserveArmor=eliteKills=pickupNoticeTime=0;elitePending=null;rewards.clear();slamWarning.hide();$('upgradePanel')?.classList.add('hide');$('pickupNotice')?.classList.remove('show');document.body.classList.remove('upgrading','overdrive');flashTime=0;player.userData.flash.visible=false;player.userData.flashLight.intensity=0;impacts.clear();waveTotal=runKills=runSeconds=runShots=runHits=0;runBestStart=bestScore;gamePaused=false;waveBreak=-1;recoil=hitTime=bannerTime=damageTime=0;heliOn=false;heli.visible=false;setGain(rotor,0);setGain(wind,0);document.body.classList.remove('paused','low-health');$('pausePanel')?.classList.add('hide');$('setPanel').classList.add('hide');$('hitmarker')?.classList.remove('show');$('waveBanner')?.classList.remove('show');$('vig').classList.remove('burn','hurt');toSpawn=0;debris.forEach(d=>disposeModel(d.o));debris=[];zombies.forEach(disposeZombie);zombies=[];TP.forEach(t=>t.visible=false);score=0;wave=0;hp=100;vy=0;updHud();}
 function returnToMenu(){
+ removeGameSave('soldier');
  rememberScore();mode='menu';running=false;reset();introDone=false;rejumping=false;iPhase='';iT=heliT=0;vel.set(0,0,0);rjReady=0;rjShown=-1;
  chute.visible=false;chute.scale.setScalar(1);const u=chute.userData;u.can.scale.y=1.3;u.can.position.y=4.2;u.mat.opacity=1;u.cords.material.opacity=1;streaks.visible=false;streaks.material.opacity=0;
  player.userData.flash.visible=false;player.userData.flashLight.intensity=0;player.rotation.set(0,0,0);yaw=0;pitch=-.1;spawnPlayer();
  clearTimeout(card.t);clearTimeout(card.hideT);clearTimeout(levelTimer);levelTimer=null;$('lvlCard').classList.add('hide');$('skipBtn').classList.add('hide');$('over').classList.add('hide');$('lock').style.display='none';
- document.body.classList.remove('playing','intro','paused');$('start').classList.remove('hide');document.exitPointerLock?.();syncAudio();$('startBtn').focus();
+ document.body.classList.remove('playing','intro','paused');$('start').classList.remove('hide');document.exitPointerLock?.();syncAudio();refreshRunUi();$('startBtn').focus();
 }
-const lvURL=(l,go)=>{const q=new URLSearchParams(location.search);q.set('level',l);if(go)q.set('go','1');else q.delete('go');return location.pathname+'?'+q.toString();};
+const lvURL=(l,go)=>{const q=new URLSearchParams(location.search);q.delete('continue');q.set('level',l);if(go)q.set('go','1');else q.delete('go');return location.pathname+'?'+q.toString();};
 function card(t,sub,ms=2600){const c=$('lvlCard');clearTimeout(card.t);clearTimeout(card.hideT);c.querySelector('h2').textContent=t;c.querySelector('p').textContent=sub;c.classList.remove('hide');c.style.opacity=1;card.t=setTimeout(()=>{c.style.opacity=0;card.hideT=setTimeout(()=>c.classList.add('hide'),700);},ms);}
 function goLevel2(){if(mode==='trans')return;acidThreats.clear();frozenOrb.clear();clearInput();running=false;mode='trans';firing=false;fireId=null;lockT=null;try{localStorage.setItem('szUnlocked','2');sessionStorage.setItem('szCarry',JSON.stringify({score,runKills,runSeconds,runShots,runHits,runBestStart,ranks,overdrive,overdriveMax,reserveArmor,eliteKills,runUplinks,momentum:momentum.state}));}catch(e){}
- document.body.classList.remove('playing');card('LEVEL 2','Ember Isle unlocked — prepare to drop',4000);snd(220,1.2,'sawtooth',.12,3);levelTimer=setTimeout(()=>location.href=lvURL(2,true),2600);}
-function nextWave(){if(mode!=='play')return;waveBreak=-1;wave++;currentEncounter=createEncounter(wave,LEVEL);W.setEncounter?.(wave,{motion:!reducedMotion()});startFieldObjective();elitePending=currentEncounter.elite;toSpawn=waveTotal=currentEncounter.count;spawnT=1.5;announce('WAVE '+String(wave).padStart(2,'0')+' · '+currentEncounter.name,3);textAt('encounterName',currentEncounter.name);textAt('encounterHint',currentEncounter.hint);textAt('objective','');snd(320,.3,'triangle',.1,1.5);updHud();}
-function completeWave(){acidThreats.clear();waveBreak=4;if(LEVEL===1&&wave>=5){LS('szUnlocked','2');const island=document.querySelector('#lvlSel button[data-l="2"]');if(island){island.disabled=false;island.classList.remove('locked');island.setAttribute('aria-label','Select Ember Isle');}}const healed=Math.min(loadout.recovery,100-hp);lastRecovery=healed;hp=Math.min(100,hp+loadout.recovery);announce('WAVE CLEAR'+(healed>0?' · +'+Math.ceil(healed)+' HEALTH':' · AREA SECURED'),3.5);snd(520,.28,'sine',.1,1.5);updHud();}
+ saveIslandTransition();document.body.classList.remove('playing');card('LEVEL 2','Ember Isle unlocked — prepare to drop',4000);snd(220,1.2,'sawtooth',.12,3);levelTimer=setTimeout(()=>location.href=lvURL(2,true),2600);}
+function nextWave(){if(mode!=='play')return;waveBreak=-1;wave++;currentEncounter=createEncounter(wave,LEVEL);W.setEncounter?.(wave,{motion:!reducedMotion()});startFieldObjective();elitePending=currentEncounter.elite;toSpawn=waveTotal=currentEncounter.count;spawnT=1.5;announce('WAVE '+String(wave).padStart(2,'0')+' · '+currentEncounter.name,3);textAt('encounterName',currentEncounter.name);textAt('encounterHint',currentEncounter.hint);textAt('objective','');snd(320,.3,'triangle',.1,1.5);updHud();saveRun();}
+function completeWave(){acidThreats.clear();waveBreak=4;if(LEVEL===1&&wave>=5){LS('szUnlocked','2');const island=document.querySelector('#lvlSel button[data-l="2"]');if(island){island.disabled=false;island.classList.remove('locked');island.setAttribute('aria-label','Select Ember Isle');}}const healed=Math.min(loadout.recovery,100-hp);lastRecovery=healed;hp=Math.min(100,hp+loadout.recovery);announce('WAVE CLEAR'+(healed>0?' · +'+Math.ceil(healed)+' HEALTH':' · AREA SECURED'),3.5);snd(520,.28,'sine',.1,1.5);updHud();saveRun();}
 function begin(){if(graphicsLost)return;reset();ensureAudio();$('start').classList.add('hide');$('over').classList.add('hide');fireT=0;document.activeElement?.blur();
- if(introDone){spawnPlayer();yaw=0;startPlay();}else startIntro();if(LEVEL===2&&!introDone)card('EMBER ISLE','THE SECOND DEPLOYMENT');lockPointer();}
+ if(introDone){spawnPlayer();yaw=0;startPlay();}else startIntro();if(LEVEL===2&&!introDone)card('EMBER ISLE','THE SECOND DEPLOYMENT');lockPointer();saveRun();}
 function goFS(){try{const el=document.documentElement,f=el.requestFullscreen||el.webkitRequestFullscreen;if(f&&!(document.fullscreenElement||document.webkitFullscreenElement)){const r=f.call(el,{navigationUI:'hide'});r?.catch?.(()=>{});}}catch(e){}}
 const fsOK=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);if(!fsOK||matchMedia('(display-mode: fullscreen),(display-mode: standalone)').matches||navigator.standalone)$('fsBtn').classList.add('hide');
 function toggleFullscreen(e){e?.stopPropagation();try{if(document.fullscreenElement||document.webkitFullscreenElement){const r=(document.exitFullscreen||document.webkitExitFullscreen).call(document);r?.catch?.(()=>{});}else goFS();}catch(e){}}
@@ -535,6 +538,115 @@ if($('endlessBtn'))$('endlessBtn').onclick=continueEndless;
 if($('pauseRejumpBtn'))$('pauseRejumpBtn').onclick=()=>{if(mode!=='play'||rjReady>(gamePaused?pauseStarted:performance.now()))return;resumeGame();rejump();};
 document.querySelectorAll('#upgradeChoices button').forEach((button,index)=>button.addEventListener('click',()=>chooseUpgrade(index)));if($('upgradeMenuBtn'))$('upgradeMenuBtn').onclick=returnToMenu;
 syncAudio();updHud();
+// ---------- local run persistence ----------
+let lastRunSaveAt = -Infinity, restoringRun = false;
+function runSnapshot() {
+ if (!['play','intro','upgrade'].includes(mode) && !(mode==='over'&&debriefOutcome==='victory')) return null;
+ const number = Math.max(1,wave), encounter = createEncounter(number,LEVEL);
+ const fresh = wave===0, position = mode==='intro' ? DT : player.position;
+ return {
+  schema:1, level:LEVEL, phase:mode==='upgrade'?'upgrade':mode==='over'?'victory':'play', wave:number,
+  score, hp, weapon:weapon.id, ranks:{...ranks}, campaignComplete,
+  waveTotal:fresh?encounter.count:waveTotal, toSpawn:fresh?encounter.count:toSpawn,
+  spawnT:fresh?1.5:Math.max(0,spawnT), waveBreak:fresh?-1:waveBreak,
+  elitePending:fresh?encounter.elite:elitePending, lastRecovery,
+  player:{position:position.toArray(),height:mode==='intro'?0:Math.max(0,Math.min(100,player.position.y-groundH(player.position.x,player.position.z))),yaw,pitch,fuel:jetFuel,velocity:mode==='intro'?0:vy},
+  stats:{runKills,runShots,runHits,runSeconds,runBestStart,eliteKills,runUplinks},
+  armor:reserveArmor,overdrive,overdriveMax,momentum:momentum.state,time:gT,
+  frozenCooldown:frozenOrb.state.cooldown,redeployCooldown:Math.max(0,Math.min(3,(rjReady-(gamePaused?pauseStarted:performance.now()))/1000)),
+  choices:offeredUpgrades.map(choice=>choice.id),
+  field:fresh?null:{...fieldUplink.state,position:fieldUplink.position.toArray()},
+  drops:rewards.active.map(drop=>({type:drop.type,position:drop.position.toArray(),age:drop.age||0})),
+  zombies:zombies.filter(z=>!z.userData.dead).map(z=>{
+   const u=z.userData;
+   return {type:u.type,elite:u.elite||null,position:z.position.toArray(),hp:u.hp,maxHp:u.maxHp||u.hp,speed:u.speed,
+    attackWind:u.attackWind||0,attackCooldown:u.attackCooldown||0,spitCooldown:u.spitCooldown||0,frostTime:u.frostTime||0,slamWind:u.slamWind||0,slamCooldown:u.slamCooldown||0,slamCenter:u.slamCenter?.toArray()||null};
+  })
+ };
+}
+function writeRun(data) {
+ lastRunSaveAt=performance.now();
+ const ok=writeGameSave('soldier',data);
+ textAt('saveStatus',ok?'Progress saved on this device.':'Saving is unavailable in this browser. Keep this tab open to continue your run.');
+ $('saveStatus')?.classList.toggle('save-unavailable',!ok);
+ return ok;
+}
+function saveRun() {
+ if(restoringRun)return false;
+ const data=runSnapshot();
+ if(!data){lastRunSaveAt=performance.now();return false;}
+ return writeRun(data);
+}
+function saveIslandTransition() {
+ const carry=runSnapshotForTransition();
+ if(carry)writeRun(carry);
+}
+function runSnapshotForTransition() {
+ // The next island must be recoverable even if the phone closes during its
+ // cinematic transition, before sessionStorage can be consumed on that page.
+ const previous=mode;mode='play';const carry=runSnapshot();mode=previous;
+ if(!carry)return null;
+ const encounter=createEncounter(1,2);
+ return {...carry,level:2,phase:'play',wave:1,waveTotal:encounter.count,toSpawn:encounter.count,spawnT:1.5,waveBreak:-1,elitePending:encounter.elite,
+  zombies:[],drops:[],choices:[],field:null,lastRecovery:0,frozenCooldown:0,redeployCooldown:3,
+  player:{position:[0,0,0],height:0,yaw:0,pitch:-.1,fuel:1,velocity:0}};
+}
+function refreshRunUi() {
+ const saved=parseSoldierSave(readGameSave('soldier')?.data), button=$('continueBtn'), info=$('savedRunInfo');
+ button?.classList.toggle('hide',!saved);info?.classList.toggle('hide',!saved);
+ if(button)button.disabled=!saved||!canStartGame();
+ if(saved)textAt('savedRunInfo',(saved.level===2?'EMBER ISLE':'PALM ISLE')+' · WAVE '+String(saved.wave).padStart(2,'0')+' · '+saved.score.toLocaleString()+' SCORE');
+}
+function restoreGroundPoint(target, coordinates, altitude=0) {
+ const [x,,z]=coordinates;
+ const safe=(px,pz)=>onLand(px,pz,.45)&&groundH(px,pz)>.35&&lavaF(px,pz)<.1;
+ if(safe(x,z)){target.set(x,groundH(x,z)+altitude,z);return;}
+ for(let radius=1;radius<=18;radius+=1.5)for(let n=0;n<16;n++){
+  const px=x+Math.cos(n*Math.PI/8)*radius,pz=z+Math.sin(n*Math.PI/8)*radius;
+  if(safe(px,pz)){target.set(px,groundH(px,pz),pz);return;}
+ }
+ target.copy(pickDrop());
+}
+function continueSavedRun() {
+ const saved=parseSoldierSave(readGameSave('soldier')?.data);
+ if(!saved||graphicsLost){refreshRunUi();return false;}
+ if(saved.level!==LEVEL){const query=new URLSearchParams(location.search);query.set('level',saved.level);query.set('continue','1');query.delete('go');location.href=location.pathname+'?'+query;return true;}
+ restoringRun=true;
+ try{
+  reset();clearTimeout(card.t);clearTimeout(card.hideT);clearTimeout(levelTimer);levelTimer=null;
+  mode='play';running=false;introDone=true;rejumping=false;iPhase='';heliOn=false;heli.visible=false;chute.visible=false;streaks.visible=false;
+  $('start').classList.add('hide');$('over').classList.add('hide');$('skipBtn').classList.add('hide');$('lvlCard').classList.add('hide');
+  document.body.classList.remove('intro','paused');document.body.classList.add('playing');
+  weapon=getWeapon(saved.weapon);LS('szWeapon',weapon.id);syncWeapon();fireT=0;
+  ranks=restoreRanks(saved.ranks);loadout=bonuses(ranks);score=saved.score;hp=saved.hp;wave=saved.wave;
+  ({runKills,runShots,runHits,runSeconds,runBestStart,eliteKills,runUplinks}=saved.stats);
+  reserveArmor=saved.armor;overdrive=saved.overdrive;overdriveMax=saved.overdriveMax;lastRecovery=saved.lastRecovery;campaignComplete=saved.campaignComplete;
+  currentEncounter=createEncounter(wave,LEVEL);waveTotal=saved.waveTotal;toSpawn=saved.toSpawn;spawnT=saved.spawnT;waveBreak=saved.waveBreak;elitePending=saved.elitePending;
+  gT=saved.time;W.setEncounter?.(wave,{immediate:true,motion:!reducedMotion()});momentum.restore(saved.momentum,{active:true});
+  restoreGroundPoint(player.position,saved.player.position,saved.player.height);yaw=saved.player.yaw;pitch=saved.player.pitch;jetFuel=saved.player.fuel;vy=saved.player.velocity;
+  flightMovement=player.position.y-groundH(player.position.x,player.position.z)>.05;player.rotation.set(0,yaw+Math.PI,0);view.follow=view.boom;
+  rjReady=performance.now()+saved.redeployCooldown*1000;rjShown=-1;frozenOrb.restore(saved.frozenCooldown);
+  for(const enemy of saved.zombies){
+   const z=spawn(enemy.elite,enemy.type),u=z.userData;
+   restoreGroundPoint(z.position,enemy.position);u.hp=enemy.hp;u.maxHp=enemy.maxHp;u.speed=enemy.speed;
+   for(const key of ['attackWind','attackCooldown','spitCooldown','frostTime','slamWind','slamCooldown'])u[key]=enemy[key];
+   if(enemy.slamCenter)u.slamCenter=new THREE.Vector3(...enemy.slamCenter);
+  }
+  for(const drop of saved.drops){const at=new THREE.Vector3();restoreGroundPoint(at,drop.position);const entry=rewards.spawn(drop.type,at);if(entry)entry.age=drop.age;}
+  if(saved.field){const at=new THREE.Vector3();restoreGroundPoint(at,saved.field.position);fieldUplink.restore({...saved.field,position:at.toArray()});}else startFieldObjective();
+  if(LEVEL===2)LS('szUnlocked','2');
+  bannerTime=0;$('waveBanner')?.classList.remove('show');progressionHudKey='';updateMomentumHud();updateFieldHud();updHud();updateAbilityHud();
+  if(saved.phase==='upgrade'){showUpgrades(saved.choices);}
+  else if(saved.phase==='victory'){mode='over';running=false;document.body.classList.remove('playing');showOutcome(true);runSummary();$('over').classList.remove('hide');document.exitPointerLock?.();}
+  else{running=true;announce('WELCOME BACK · WAVE '+String(wave).padStart(2,'0'),2.5);if(inactiveWindow||document.hidden)pauseGame();else lockPointer();}
+  syncAudio();ensureAudio();lastRunSaveAt=performance.now();clock.getDelta();renderFrame();
+  return true;
+ }finally{restoringRun=false;}
+}
+$('continueBtn')?.addEventListener('click',continueSavedRun);
+addEventListener('pagehide',()=>saveRun());
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRun();});
+document.querySelectorAll('.games-return,.brand[href="./"]').forEach(link=>link.addEventListener('click',()=>saveRun()));
 // ---------- loop ----------
 const camRc=new THREE.Raycaster(),camAnchor=new THREE.Vector3(),camSight=new THREE.Vector3(),clock=new THREE.Clock(),closeup=Q.get('view')==='closeup';let camOverride=null;
 spawnPlayer();
@@ -594,7 +706,7 @@ function loop(){requestAnimationFrame(loop);const _t0=performance.now();
  const nn=alt>150?1.5:.1;if(cam.near!==nn){cam.near=nn;cam.updateProjectionMatrix();}
  const sc=mode==='intro'?(iPhase==='heli'?heli.position:P):P;sun.position.copy(sc).addScaledVector(SUN_DIR,90);sun.target.position.copy(sc);
  if(MEDQ&&(frameN++&1)===0)renderer.shadowMap.needsUpdate=true;
- W.update(T,cam,!reducedMotion());renderFrame();PF.calls=renderer.info.render.calls;PF.tris=renderer.info.render.triangles;PF.ms.push(performance.now()-_t0);if(PF.ms.length>600)PF.ms.shift();}
+ W.update(T,cam,!reducedMotion());renderFrame();PF.calls=renderer.info.render.calls;PF.tris=renderer.info.render.triangles;PF.ms.push(performance.now()-_t0);if(PF.ms.length>600)PF.ms.shift();if(performance.now()-lastRunSaveAt>=5000)saveRun();}
 $('ver').textContent='build '+BUILD+' · '+TIER;
 // ---------- dynamic resolution scaler (hysteresis) + auto tier downgrade + FPS counter ----------
 let lastNow=performance.now(),winSum=0,winN=0,slowW=0,fastW=0,degraded=0;const NOSCALE=Q.get('noscale')==='1';
@@ -626,12 +738,14 @@ function prewarm(){const zs=Object.keys(ZT).map(t=>{const z=makeZombie(t);z.posi
  heli.visible=chute.visible=false;TP.forEach(t=>t.visible=false);}
 prewarm();
 if(closeup){$('start').classList.add('hide');$('hud').classList.add('hide');}
-if(DEBUG)window.__game={get cameraMode(){return cameraMode},setCameraView,get jetpack(){return{active:jetActive,fuel:jetFuel,held:!!keys.Space||jumpButtonHeld,velocity:vy}},get frozenOrb(){return frozenOrb.state},castFrozenOrb,get encounter(){return{id:currentEncounter.id,name:currentEncounter.name,roster:[...currentEncounter.roster],gap:currentEncounter.gap}},get momentum(){return momentum.state},get campaignComplete(){return campaignComplete},get weather(){return W.weather?.state||null},get threats(){return acidThreats.active},spawnSpitter(){const z=spawn(null,'spitter');z.position.copy(player.position).add(new THREE.Vector3(0,0,-12));z.position.y=groundH(z.position.x,z.position.z);return z;},get field(){return{...fieldUplink.state,position:fieldUplink.position.toArray(),completed:runUplinks}},get progression(){return{ranks:{...ranks},choices:offeredUpgrades.map(({id,rank})=>({id,rank})),overdrive,shield:reserveArmor,eliteKills,drops:rewards.active.map(e=>({id:e.id,type:e.type,position:e.position.toArray(),age:e.age})),elites:zombies.filter(z=>z.userData.elite&&!z.userData.dead).map(z=>({name:z.userData.eliteName,hp:z.userData.hp,maxHp:z.userData.maxHp,slamWind:z.userData.slamWind||0,slamCooldown:z.userData.slamCooldown||0})),bonuses:{...loadout}}},spawnDrop(type='medkit',offset=2){return dropReward(type,player.position.clone().add(new THREE.Vector3(offset,0,0)))?.id;},spawnElite(commander=false){const z=spawn(commander?'commander':'elite');z.position.copy(player.position).add(new THREE.Vector3(0,0,-5));z.position.y=groundH(z.position.x,z.position.z);return z;},get weapon(){return{id:weapon.id,name:weapon.name,pellets:weapon.pellets.length,range:weapon.range,assistRange:weapon.assistRange,burstRound,cooldown:fireT}},get graphicsLost(){return graphicsLost},get combat(){return{kills:runKills,seconds:runSeconds,shots:runShots,hits:runHits,waveTotal,impacts:impacts.active,impactCapacity:impacts.capacity}},colliders:{circles:W.circles,boxes:W.boxes},get mode(){return mode},get phase(){return iPhase},get paused(){return gamePaused},pause:pauseGame,resume:resumeGame,returnToMenu,get muted(){return muted},get toSpawn(){return toSpawn},get waveBreak(){return waveBreak},get bestScore(){return bestScore},get time(){return gT},get firing(){return firing||fireId!==null},get score(){return score},set score(v){score=v;rememberScore();updHud();},get heads(){return headsDetached},get yaw(){return yaw},get alt(){return player.position.y},aimLog,level:LEVEL,scene,player,camera:cam,setView(y,p=-.1){yaw=y;pitch=THREE.MathUtils.clamp(p,cameraMode==='first'?-1.35:-.7,cameraMode==='first'?1.35:.55);},get zombies(){return zombies},PF,tier:TIER,qSet,detect:DETECT,merge:MERGE,get scale(){return rScale},get programs(){return renderer.info.programs.length},landed,get drop(){return[DT.x,DT.z]},get hp(){return hp},set hp(v){hp=Math.max(0,Math.min(100,v));updHud();},get rjCD(){return (rjReady-performance.now())/1000},set rjCD(v){rjReady=performance.now()+v*1000},get lavaHurt(){return lavaHurt},get wave(){return wave},get pos(){return[player.position.x,player.position.y,player.position.z]},
+if(DEBUG)window.__game={save:saveRun,continueRun:continueSavedRun,get cameraMode(){return cameraMode},setCameraView,get jetpack(){return{active:jetActive,fuel:jetFuel,held:!!keys.Space||jumpButtonHeld,velocity:vy}},get frozenOrb(){return frozenOrb.state},castFrozenOrb,get encounter(){return{id:currentEncounter.id,name:currentEncounter.name,roster:[...currentEncounter.roster],gap:currentEncounter.gap}},get momentum(){return momentum.state},get campaignComplete(){return campaignComplete},get weather(){return W.weather?.state||null},get threats(){return acidThreats.active},spawnSpitter(){const z=spawn(null,'spitter');z.position.copy(player.position).add(new THREE.Vector3(0,0,-12));z.position.y=groundH(z.position.x,z.position.z);return z;},get field(){return{...fieldUplink.state,position:fieldUplink.position.toArray(),completed:runUplinks}},get progression(){return{ranks:{...ranks},choices:offeredUpgrades.map(({id,rank})=>({id,rank})),overdrive,shield:reserveArmor,eliteKills,drops:rewards.active.map(e=>({id:e.id,type:e.type,position:e.position.toArray(),age:e.age})),elites:zombies.filter(z=>z.userData.elite&&!z.userData.dead).map(z=>({name:z.userData.eliteName,hp:z.userData.hp,maxHp:z.userData.maxHp,slamWind:z.userData.slamWind||0,slamCooldown:z.userData.slamCooldown||0})),bonuses:{...loadout}}},spawnDrop(type='medkit',offset=2){return dropReward(type,player.position.clone().add(new THREE.Vector3(offset,0,0)))?.id;},spawnElite(commander=false){const z=spawn(commander?'commander':'elite');z.position.copy(player.position).add(new THREE.Vector3(0,0,-5));z.position.y=groundH(z.position.x,z.position.z);return z;},get weapon(){return{id:weapon.id,name:weapon.name,pellets:weapon.pellets.length,range:weapon.range,assistRange:weapon.assistRange,burstRound,cooldown:fireT}},get graphicsLost(){return graphicsLost},get combat(){return{kills:runKills,seconds:runSeconds,shots:runShots,hits:runHits,waveTotal,impacts:impacts.active,impactCapacity:impacts.capacity}},colliders:{circles:W.circles,boxes:W.boxes},get mode(){return mode},get phase(){return iPhase},get paused(){return gamePaused},pause:pauseGame,resume:resumeGame,returnToMenu,get muted(){return muted},get toSpawn(){return toSpawn},get waveBreak(){return waveBreak},get bestScore(){return bestScore},get time(){return gT},get firing(){return firing||fireId!==null},get score(){return score},set score(v){score=v;rememberScore();updHud();},get heads(){return headsDetached},get yaw(){return yaw},get alt(){return player.position.y},aimLog,level:LEVEL,scene,player,camera:cam,setView(y,p=-.1){yaw=y;pitch=THREE.MathUtils.clamp(p,cameraMode==='first'?-1.35:-.7,cameraMode==='first'?1.35:.55);},get zombies(){return zombies},PF,tier:TIER,qSet,detect:DETECT,merge:MERGE,get scale(){return rScale},get programs(){return renderer.info.programs.length},landed,get drop(){return[DT.x,DT.z]},get hp(){return hp},set hp(v){hp=Math.max(0,Math.min(100,v));updHud();},get rjCD(){return (rjReady-performance.now())/1000},set rjCD(v){rjReady=performance.now()+v*1000},get lavaHurt(){return lavaHurt},get wave(){return wave},get pos(){return[player.position.x,player.position.y,player.position.z]},
  clearWave(){zombies.forEach(disposeZombie);zombies=[];toSpawn=0;waveBreak=-1;updHud();},damage(amount){hurt(amount);},
  setPos(x,z){player.position.set(x,groundH(x,z),z);},lavaSpot(){for(let k=0;k<5000;k++){const x=rnd(-60,60),z=rnd(-60,60);if(lavaF(x,z)>.95&&islandD(x,z)<.8&&lavaF(x+1.5,z)>.9&&lavaF(x-1.5,z)>.9)return[x,z];}return null;},winLevel(){goLevel2();},rejump(){rejump();},
  setAlt(y){player.position.y=y;},overview(on){camOverride=on?[new THREE.Vector3(...on[0]),new THREE.Vector3(...on[1])]:null;},
  spawnNear(){spawn();const z=zombies[zombies.length-1];z.position.set(player.position.x-Math.sin(yaw)*5,0,player.position.z-Math.cos(yaw)*5);z.position.y=groundH(z.position.x,z.position.z);z.userData.hp=1;}};
-if(Q.get('go')==='1'&&!closeup){
+refreshRunUi();
+if(Q.get('continue')==='1'&&!closeup){continueSavedRun();}
+else if(Q.get('go')==='1'&&!closeup){
  begin();
  if(LEVEL===2)try{
   const saved=sessionStorage.getItem('szCarry');sessionStorage.removeItem('szCarry');const c=JSON.parse(saved||'null');
@@ -641,4 +755,5 @@ if(Q.get('go')==='1'&&!closeup){
   }
  }catch(e){}
 }
+if(mode==='intro'||mode==='play')saveRun();
 loop();

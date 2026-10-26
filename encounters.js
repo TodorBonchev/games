@@ -26,7 +26,7 @@ export function createMomentum() {
     update(dt){if(chain){time=Math.max(0,time-dt);if(!time)clear();}},
     clear,
     reset(){clear();best=0;bestMultiplier=1;},
-    restore(saved){clear();best=Math.min(100000,Math.max(0,Math.floor(Number(saved?.best)||0)));bestMultiplier=Math.max(1,Math.min(3,Math.floor(Number(saved?.bestMultiplier)||1)));},
+    restore(saved,{active=false}={}){clear();best=Math.min(100000,Math.max(0,Math.floor(Number(saved?.best)||0)));bestMultiplier=Math.max(1,Math.min(3,Math.floor(Number(saved?.bestMultiplier)||1)));if(active){chain=Math.max(0,Math.min(best,Math.floor(Number(saved?.chain)||0)));time=Math.max(0,Math.min(7,Number(saved?.time)||0));if(!time)chain=0;}},
     get state(){return{chain,time,best,multiplier:multiplier(),bestMultiplier};}
   };
 }

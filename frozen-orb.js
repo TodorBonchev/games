@@ -152,6 +152,7 @@ export function createFrozenOrb(scene, { low = false, groundH = () => 0, blocked
   }
   return {
     cast, update, clear, reset, capacity: CAPACITY,
+    restore(savedCooldown) { clear(); cooldown = Number.isFinite(savedCooldown) ? Math.max(0, Math.min(8, savedCooldown)) : 0; },
     get state() { return { cooldown, ready: !disposed && cooldown === 0, active: orb.visible, shards: activeCount, position: orb.position.toArray() }; },
     dispose() { if (disposed) return; clear(); disposed = true; root.removeFromParent(); for (const geometry of [core.geometry, shell.geometry, lattice.geometry, ringGeometry, shardGeometry]) geometry.dispose(); for (const material of [ice, glow, rim, lattice.material, shardMaterial]) material.dispose(); shardMesh.dispose(); },
   };

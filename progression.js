@@ -27,6 +27,13 @@ export function upgradeChoices(ranks, random=Math.random) {
   for(const boon of BOONS)if(selected.length<3)selected.push(boon);
   return selected.map(perk=>({...perk,rank:perk.id in ranks?ranks[perk.id]+1:0,text:perk.description((ranks[perk.id]||0)+1)}));
 }
+export function restoreUpgradeChoices(ids, ranks) {
+  const definitions = [...PERKS, ...BOONS];
+  if (!Array.isArray(ids) || ids.length !== 3 || new Set(ids).size !== 3) return upgradeChoices(ranks);
+  const choices = ids.map(id => definitions.find(perk => perk.id === id));
+  if (choices.some(perk => !perk || (perk.id in ranks && ranks[perk.id] >= 3))) return upgradeChoices(ranks);
+  return choices.map(perk => ({ ...perk, rank: perk.id in ranks ? ranks[perk.id] + 1 : 0, text: perk.description((ranks[perk.id] || 0) + 1) }));
+}
 export function buildSummary(ranks) {
   return PERKS.filter(perk=>ranks[perk.id]>0).map(perk=>`${perk.short} ${['','I','II','III'][ranks[perk.id]]}`).join(' · ')||'Standard issue · Your build starts after wave one';
 }

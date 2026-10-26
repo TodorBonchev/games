@@ -1,6 +1,7 @@
-import { createGarden, PLANTS, ROWS, COLS } from './garden-game.js?v2';
-import { createGardenScene } from './garden-scene.js?v2';
+import { createGarden, parseGardenSave, PLANTS, ROWS, COLS } from './garden-game.js?v3';
+import { createGardenScene } from './garden-scene.js?v3';
 import { LEVELS } from './garden-levels.js';
+import { readGameSave, writeGameSave, removeGameSave } from './save-store.js';
 
 const $ = id => document.getElementById(id);
 const game = createGarden({ level: new URLSearchParams(location.search).get('level') || 1 });
@@ -20,6 +21,9 @@ let resumeAfterLevels = false;
 let lastMode = 'ready', lastWave = 0, bannerUntil = 0, messageUntil = 0;
 let lastFrame = performance.now(), lastUI = 0, lastRender = 0, frameId = 0;
 let layoutDirty = true, viewDirty = true, renderingStopped = false;
+let lastSavedTime = -Infinity;
+let savedRun = readGameSave('garden');
+if (!parseGardenSave(savedRun?.data)) savedRun = null;
 const timeLabel = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
 function requestFrame() {
@@ -27,6 +31,39 @@ function requestFrame() {
 }
 function invalidate() { viewDirty = true; requestFrame(); }
 function text(element, value) { if (element.textContent !== String(value)) element.textContent = value; }
+
+function saveProgress() {
+  if (state.mode === 'lost') { removeGameSave('garden'); savedRun = null; text($('saveStatus'), 'This run has ended. Your earned stars are kept.'); return false; }
+  const snapshot = game.snapshot();
+  if (!snapshot) return false;
+  lastSavedTime = state.time;
+  const ok = writeGameSave('garden', { ...snapshot, selected, speed });
+  text($('saveStatus'), ok ? 'Progress saved on this device.' : 'Saving is unavailable in this browser. Keep this tab open to continue your run.');
+  $('saveStatus').classList.toggle('save-unavailable', !ok);
+  return ok;
+}
+function continueRun() {
+  if (graphicsLost) return;
+  const record = readGameSave('garden');
+  if (!record || !game.restore(record.data)) { hint('This saved garden could not be opened. You can start a new run.', true); return; }
+  syncLevel();
+  $('introPanel').hidden = true;
+  document.body.classList.add('garden-playing');
+  lastWave = state.wave; bannerUntil = 0;
+  speed = record.data.speed === 2 ? 2 : 1;
+  $('speedBtn').textContent = `${speed}×`;
+  $('speedBtn').setAttribute('aria-pressed', String(speed === 2));
+  $('speedBtn').setAttribute('aria-label', `Switch to ${speed === 1 ? 'double' : 'normal'} speed`);
+  select(['bloom', 'pea', 'nut', 'shovel'].includes(record.data.selected) ? record.data.selected : 'bloom');
+  if (state.mode === 'paused') game.resume();
+  lastMode = state.mode;
+  lastFrame = performance.now();
+  lastSavedTime = state.time;
+  syncUI();
+  if (state.mode === 'won') showMenu();
+  else hint('Welcome back. Your garden is just where you left it.', false, 4);
+  invalidate();
+}
 
 function hint(message, error = false, duration = 4) {
   if ($('playHint').textContent !== message) $('playHint').textContent = message;
@@ -49,6 +86,7 @@ function act(row, col) {
   const result = selected === 'shovel' ? game.remove(row, col) : game.place(selected, row, col);
   hint(result.reason, !result.ok, 3);
   syncUI();
+  saveProgress();
   invalidate();
 }
 for (let row = 0; row < ROWS; row++) {
@@ -215,6 +253,7 @@ function showMenu() {
   $('restartBtn').hidden = lost || state.mode === 'ready' || (won && !next);
   text($('restartBtn'), won ? 'REPLAY THIS GARDEN' : 'START LEVEL AGAIN');
   if (!menu.open) menu.showModal();
+  saveProgress();
   invalidate();
 }
 function start(levelId) {
@@ -235,6 +274,7 @@ function start(levelId) {
   select('bloom');
   hint(game.level.tip, false, 9);
   lastFrame = performance.now();
+  saveProgress();
   syncUI();
   invalidate();
 }
@@ -246,6 +286,7 @@ function togglePause() {
   invalidate();
 }
 $('startBtn').addEventListener('click', start);
+$('continueRunBtn').addEventListener('click', continueRun);
 $('pauseBtn').addEventListener('click', togglePause);
 $('resumeBtn').addEventListener('click', () => {
   if (graphicsLost) return;
@@ -263,6 +304,7 @@ $('speedBtn').addEventListener('click', () => {
   $('speedBtn').textContent = `${speed}×`;
   $('speedBtn').setAttribute('aria-pressed', String(speed === 2));
   $('speedBtn').setAttribute('aria-label', `Switch to ${speed === 1 ? 'double' : 'normal'} speed`);
+  saveProgress();
 });
 $('helpBtn').addEventListener('click', () => {
   resumeAfterHelp = state.mode === 'playing';
@@ -287,12 +329,15 @@ document.addEventListener('keydown', event => {
   if ((event.code === 'KeyP' || event.code === 'Escape') && state.mode === 'playing') { event.preventDefault(); togglePause(); }
 });
 document.addEventListener('visibilitychange', () => {
+  if (document.hidden) saveProgress();
   if (document.hidden && state.mode === 'playing') { game.pause(); showMenu(); }
   if (document.hidden) { resumeAfterHelp = false; resumeAfterLevels = false; }
   lastFrame = performance.now();
   if (document.hidden) { cancelAnimationFrame(frameId); frameId = 0; }
   else invalidate();
 });
+addEventListener('pagehide', saveProgress);
+document.querySelectorAll('a[href="./"]').forEach(link => link.addEventListener('click', saveProgress));
 motion.addEventListener('change', invalidate);
 
 let previousSun = -1;
@@ -345,7 +390,7 @@ function syncUI() {
       button.className = 'sun-drop';
       button.innerHTML = '☀<span>25</span>';
       button.setAttribute('aria-label', 'Collect 25 sun');
-      button.addEventListener('click', () => { if (game.collectSun(sun.id)) { hint('+25 sun. A little sunshine goes a long way.', false, 2); syncUI(); invalidate(); } });
+      button.addEventListener('click', () => { if (game.collectSun(sun.id)) { hint('+25 sun. A little sunshine goes a long way.', false, 2); syncUI(); saveProgress(); invalidate(); } });
       sunButtons.set(sun.id, button);
       $('sunDrops').append(button);
     }
@@ -375,6 +420,7 @@ function syncUI() {
     lastMode = state.mode;
     if (state.mode === 'won' || state.mode === 'lost') showMenu();
   }
+  if (state.mode === 'playing' && state.time - lastSavedTime >= 5) saveProgress();
 }
 function frame(now) {
   frameId = 0;
@@ -397,12 +443,22 @@ syncUI();
 view.render(state, 0);
 $('startBtn').disabled = false;
 $('startBtn').innerHTML = 'LET’S GROW <span aria-hidden="true">→</span>';
+if (savedRun) {
+  document.body.classList.add('has-saved-run');
+  $('continueRunBtn').hidden = false;
+  $('continueRunBtn').disabled = false;
+  $('startBtn').classList.add('new-garden-button');
+  $('startBtn').innerHTML = 'START A NEW GARDEN <span aria-hidden="true">→</span>';
+  $('savedRunInfo').hidden = false;
+  text($('savedRunInfo'), `SAVED · GARDEN ${savedRun.data.level} · WAVE ${savedRun.data.wave}`);
+}
 $('levelsBtn').disabled = false;
 document.body.dataset.ready = 'true';
+if (savedRun && new URLSearchParams(location.search).get('continue') === '1') continueRun();
 invalidate();
 if (new URLSearchParams(location.search).get('debug') === '1') {
   window.__garden = {
-    game, view, select, start,
+    game, view, select, start, save: saveProgress, continueRun,
     advance(seconds) { game.tick(seconds); syncUI(); view.render(state, state.time); },
     stopRendering() { renderingStopped = true; cancelAnimationFrame(frameId); frameId = 0; },
   };

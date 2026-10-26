@@ -28,7 +28,7 @@
       type="font/ttf"
       crossorigin
     />
-    <link rel="stylesheet" href="styles.css?v20" />
+    <link rel="stylesheet" href="styles.css?v21" />
     <title>Soldier vs Zombies — Island Survival</title>
     <script type="importmap">
       {
@@ -318,6 +318,8 @@
               <span class="level-indicator" aria-hidden="true">↗</span>
             </button>
           </div>
+          <button id="continueBtn" class="primary-button hide" disabled><span>CONTINUE RUN</span><span aria-hidden="true">→</span></button>
+          <p id="savedRunInfo" class="deploy-note hide"></p>
           <button id="startBtn" class="primary-button" disabled>
             <span>DEPLOY NOW</span><span aria-hidden="true">→</span>
           </button>
@@ -428,7 +430,7 @@
       <div class="dialog-card pause-card">
         <p class="eyebrow"><span class="live-dot"></span> OPERATION ON HOLD</p>
         <h1 id="pauseTitle">Take a breath.</h1>
-        <p class="dialog-intro">Your position is secure. Ready when you are.</p>
+        <p class="dialog-intro">Your position is secure. Ready when you are.</p><p id="saveStatus" class="save-status" role="status">Progress saves on this device.</p>
         <button id="resumeBtn" class="primary-button">
           <span>RESUME OPERATION</span><span aria-hidden="true">→</span>
         </button>
@@ -588,6 +590,6 @@
     </section>
     <div id="fps" class="hide"></div>
     <div id="ver"></div>
-    <script type="module" src="boot.js?v20"></script>
+    <script type="module" src="boot.js?v21"></script>
   </body>
 </html>

@@ -11,6 +11,41 @@ export const PLANTS = Object.freeze({
 
 export const WAVES = getLevel(1).enemies;
 
+export function parseGardenSave(saved) {
+  const number = (value, min, max) => Number.isFinite(value) && value >= min && value <= max;
+  const integer = (value, min, max) => Number.isInteger(value) && number(value, min, max);
+  const row = value => integer(value, 0, ROWS - 1);
+  const col = value => integer(value, 0, COLS - 1);
+  const id = value => integer(value, 1, 10000000);
+  if (!saved || saved.schema !== 1 || !['playing', 'paused', 'won'].includes(saved.mode) || !integer(saved.level, 1, 5)) return null;
+  const level = getLevel(saved.level), total = level.enemies.length;
+  if (!number(saved.time, 0, 86400) || !integer(saved.sun, 0, 10000000) || !integer(saved.wave, 1, level.waveCount) || !integer(saved.spawned, 0, total) || !integer(saved.defeated, 0, saved.spawned)) return null;
+  const list = (values, limit, check) => Array.isArray(values) && values.length <= limit && values.every(value => value && id(value.id) && check(value));
+  if (!list(saved.plants, ROWS * COLS, plant => PLANTS[plant.type] && row(plant.row) && col(plant.col) && number(plant.hp, 0.001, PLANTS[plant.type].hp) && number(plant.fire, 0, 2) && number(plant.produce, 0, 10) && number(plant.age, 0, 86400))) return null;
+  if (new Set(saved.plants.map(plant => plant.row * COLS + plant.col)).size !== saved.plants.length) return null;
+  if (!list(saved.zombies, MAX_ZOMBIES, zombie => row(zombie.row) && number(zombie.x, -1.12, COLS + 0.3) && number(zombie.hp, 0.001, zombie.maxHp) && number(zombie.maxHp, 1, 1000) && number(zombie.age, 0, 86400) && number(zombie.hit, 0, 0.2) && typeof zombie.armored === 'boolean' && typeof zombie.runner === 'boolean' && !(zombie.armored && zombie.runner))) return null;
+  if (saved.zombies.length !== saved.spawned - saved.defeated) return null;
+  if (!list(saved.peas, ROWS * COLS * 3, pea => row(pea.row) && number(pea.x, 0, COLS + 1))) return null;
+  if (!list(saved.suns, 100, sun => row(sun.row) && number(sun.x, 0, COLS) && number(sun.age, 0, 14))) return null;
+  const all = [...saved.plants, ...saved.zombies, ...saved.peas, ...saved.suns];
+  if (new Set(all.map(value => value.id)).size !== all.length) return null;
+  if (!saved.cooldowns || !Object.keys(PLANTS).every(type => number(saved.cooldowns[type], 0, PLANTS[type].cooldown)) || !number(saved.nextSkySun, saved.time, saved.time + 10)) return null;
+  if (!Array.isArray(saved.mowers) || saved.mowers.length !== ROWS || new Set(saved.mowers.map(mower => mower?.row)).size !== ROWS || !saved.mowers.every(mower => mower && row(mower.row) && number(mower.x, -0.85, COLS + 2) && typeof mower.active === 'boolean' && typeof mower.spent === 'boolean' && (!mower.active || mower.spent))) return null;
+  if (saved.wave !== (saved.spawned ? level.enemies[saved.spawned - 1].wave : 1)) return null;
+  if (saved.mode === 'won' && (saved.spawned !== total || saved.defeated !== total)) return null;
+  return {
+    mode: saved.mode === 'won' ? 'won' : 'paused', level: level.id,
+    time: saved.time, sun: saved.sun, wave: saved.wave, spawned: saved.spawned, defeated: saved.defeated,
+    plants: saved.plants.map(({ id, type, row, col, hp, fire, produce, age }) => ({ id, type, row, col, hp, fire, produce, age })),
+    zombies: saved.zombies.map(({ id, row, x, hp, maxHp, armored, runner, age, hit }) => ({ id, row, x, hp, maxHp, armored, runner, age, hit, speed: armored ? 0.14 : runner ? 0.32 : 0.19, biting: false })),
+    peas: saved.peas.map(({ id, x, row }) => ({ id, x, row })),
+    suns: saved.suns.map(({ id, x, row, age }) => ({ id, x, row, age, life: 14, value: 25 })),
+    mowers: saved.mowers.map(({ row, x, active, spent }) => ({ id: `mower-${row}`, row, x, active, spent })).sort((a, b) => a.row - b.row),
+    cooldowns: Object.fromEntries(Object.keys(PLANTS).map(type => [type, saved.cooldowns[type]])),
+    nextSkySun: saved.nextSkySun, effects: [],
+  };
+}
+
 export function createGarden({ random = Math.random, level = 1 } = {}) {
   let serial = 0;
   let garden = getLevel(level);
@@ -160,5 +195,18 @@ export function createGarden({ random = Math.random, level = 1 } = {}) {
       remaining -= dt;
     }
   }
-  return { state, get level() { return garden; }, start, reset, pause, resume, place, remove, collectSun, tick };
+  function snapshot() {
+    if (!['playing', 'paused', 'won'].includes(state.mode)) return null;
+    const { effects, ...saved } = state;
+    return JSON.parse(JSON.stringify({ schema: 1, ...saved }));
+  }
+  function restore(saved) {
+    const next = parseGardenSave(saved);
+    if (!next) return false;
+    garden = getLevel(next.level);
+    Object.assign(state, next);
+    serial = Math.max(0, ...[...state.plants, ...state.zombies, ...state.peas, ...state.suns].map(value => value.id));
+    return true;
+  }
+  return { state, get level() { return garden; }, start, reset, pause, resume, place, remove, collectSun, tick, snapshot, restore };
 }

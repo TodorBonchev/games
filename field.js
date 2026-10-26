@@ -79,6 +79,16 @@ export function createFieldUplink(scene, groundH) {
   }
   return {
     position, place, update, reset,
+    restore(saved) {
+      reset();
+      if (!saved?.active) return;
+      place(new THREE.Vector3(...saved.position));
+      captured = !!saved.captured;
+      progress = Math.max(0, Math.min(UPLINK_SECONDS, saved.progress || 0));
+      doneTime = Math.max(0, saved.doneTime || 0);
+      root.visible = !captured || doneTime <= 4;
+      updateColor();
+    },
     get state() { return { active, captured, progress, inside, contested: blocked, doneTime, radius: UPLINK_RADIUS, duration: UPLINK_SECONDS }; },
     dispose() { reset(); root.removeFromParent(); for (const mesh of [body, glow, ring]) { mesh.geometry.dispose(); mesh.material.dispose(); } },
   };

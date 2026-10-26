@@ -8,7 +8,7 @@ if (start) start.disabled = true;
 if (status) status.textContent = 'Preparing your island…';
 await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 try {
-  const game = await import('./main.js?v20');
+  const game = await import('./main.js?v21');
   document.body.dataset.ready = 'true';
   if (start) start.disabled = !game.canStartGame();
   if (status) status.textContent = 'Systems ready · Your island awaits';

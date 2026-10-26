@@ -11,6 +11,10 @@
 }
 .games-return { display:block; color:var(--paper); text-align:center; padding:16px 12px; min-height:44px; font:600 11px var(--mono); text-decoration:none; letter-spacing:.08em; }
 .games-return:hover { color:var(--amber); }
+.save-status { font:10px/1.6 var(--mono); color:var(--muted); }
+.save-status.save-unavailable { color:#f2ba8c; }
+#continueBtn { margin-bottom:7px; }
+#savedRunInfo { margin:0 0 13px; }
 * {
   box-sizing: border-box;
 }

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { ROWS, COLS } from './garden-game.js?v2';
+import { ROWS, COLS } from './garden-game.js?v3';
 import { getLevel, MAX_ZOMBIES } from './garden-levels.js';
 
 const CELL = 1.45;

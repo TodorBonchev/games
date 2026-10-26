@@ -13,7 +13,8 @@
     "test:abilities": "node tests/abilities-browser.mjs",
     "test:garden": "node tests/garden-browser.mjs",
     "test:phone": "node tests/garden-browser.mjs --phone-only",
-    "test:campaign": "node tests/garden-browser.mjs --campaign-only"
+    "test:campaign": "node tests/garden-browser.mjs --campaign-only",
+    "test:saves": "node tests/garden-browser.mjs --saves-only"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

@@ -21,6 +21,16 @@ Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.ht
 
 To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Both portrait and landscape have dedicated menus, camera framing, and thumb controls. Rotate during a run without losing progress; lift and place your thumbs again after rotating.
 
+## Saved progress
+
+Both games automatically save their current run to **localStorage** in this browser. Saves update every five active seconds, on important actions, when pausing, and when leaving or hiding the page. Use **Continue run / Continue garden** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
+
+Garden Guard restores the chosen level, plants and health, enemies, sun resources and drops, projectiles, seed cooldowns, used lawnmowers, wave progress, selected plant, and game speed. A completed garden can resume at its victory screen and continue to the next garden. Each level’s best stars and time stay separate from its current run.
+
+Soldier vs Zombies restores the island, wave and remaining enemies, health, score, weapon, upgrade build, supplies, armor, Overdrive, field uplink progress, statistics, jetpack fuel, and ability cooldown. Pending upgrade choices are retained; the Palm-to-Ember transition is saved independently of the old tab session. Positions are moved to nearby walkable ground when the regenerated island scenery requires it. In-flight spells, acid, and cosmetic effects are cleared on restore. A completed campaign can resume into endless play.
+
+Starting a fresh run replaces that game’s checkpoint. Defeat or **End run & return** clears the unfinished run; scores, island unlocks, preferences, and earned stars are kept. Each game has its own save slot. No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues and the pause screen reports that saving is unavailable.
+
 ## Garden Guard
 
 An original Plants vs. Zombies-inspired lane defense game, rendered with the locally bundled Three.js engine. All plants, zombies, lawnmowers, the cottage, and the garden are modeled in code.
@@ -121,6 +131,7 @@ npm run test:abilities
 npm run test:garden
 npm run test:phone
 npm run test:campaign
+npm run test:saves
 ```
 
 Use `CHROMIUM_PATH=/path/to/chromium npm run test:browser` to use an installed browser. Screenshots go into ignored `test-results/`. The browser check covers both islands, high/medium/low graphics, desktop and mobile layouts, simultaneous touch movement and firing, keyboard dialog navigation, saved preferences, real WebGL context loss/recovery, pause, and returning to the briefing. It needs permission to run Chromium and bind a localhost port. Visual quality, sound, and physical touch controls still benefit from hands-on playtesting.
@@ -130,6 +141,8 @@ The mobile suite checks seven emulated phone sizes, notch insets, 44px touch tar
 The abilities suite checks tap/hold jetpack flight, steering, fuel, touch cancellation, Frozen Orb cooldowns, simultaneous touch controls, and first-person switching in a real browser.
 
 The garden suite checks the game picker, real WebGL rendering, phones, landscape rotation, touch and keyboard planting, sun collection, shovel refunds, pause, help, victory, defeat, restart, saved completion, graphics restoration, and launching the existing shooter. The campaign suite plays all five levels using only collected sun and legal planting, then checks next-level navigation, the level picker, replay, and saved stars after a reload. The phone suite checks seven phone sizes at 2× or 3× density, simulated notches, 44px main controls, complete lawn visibility, rotation, GPU budgets, and no rendering while paused. Screenshots and measurements are written to `test-results/`.
+
+The save suite checks real closing/reopening, Continue controls on small portrait and landscape phones, independent game slots, hub continuation, corrupt data, and blocked storage. Unit tests also cover exact lawn restoration, unique restored IDs, pending upgrades, and island transitions.
 
 Run `npm run test:garden -- --capture-art` to refresh the garden thumbnail and responsive WebP previews. Use `npm run test:garden -- --prepare-previews` to re-encode the existing source previews without running the full suite. The hub serves 480px or 960px images instead of the full PNG sources.
 
