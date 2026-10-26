@@ -8,6 +8,7 @@ A collection of standalone Three.js browser games. The home page is a lightweigh
 | --- | --- | --- |
 | **Soldier vs Zombies** | [Launch the shooter](https://todorbonchev.github.io/games/soldier.html) | The existing two-island survival campaign, jetpack, Frozen Orb, weapons, upgrades, and endless mode. |
 | **Garden Guard** | [Launch garden defense](https://todorbonchev.github.io/games/garden.html) | Five garden defense levels with five lanes, three plant types, runners, armored zombies, and up to five waves. |
+| **Borrowed Tomorrow** | [Launch the time sail](https://todorbonchev.github.io/games/borrowed.html) | Six clockworld chambers where your two recorded past selves steer a triangular weapon. Flow and Rift difficulties, clockblooms, crosswinds, armor, and a final boss. |
 
 ## Play locally
 
@@ -17,19 +18,53 @@ With Node.js installed, run:
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html` and `/garden.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
+Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html`, `/garden.html`, and `/borrowed.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
 
 To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Both portrait and landscape have dedicated menus, camera framing, and thumb controls. Rotate during a run without losing progress; lift and place your thumbs again after rotating.
 
 ## Saved progress
 
-Both games automatically save their current run to **localStorage** in this browser. Saves update every five active seconds, on important actions, when pausing, and when leaving or hiding the page. Use **Continue run / Continue garden** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
+All three games automatically save their current run to **localStorage** in this browser. Saves update every five active seconds, on important actions, when pausing, and when leaving or hiding the page. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
 
 Garden Guard restores the chosen level, plants and health, enemies, sun resources and drops, projectiles, seed cooldowns, used lawnmowers, wave progress, selected plant, and game speed. A completed garden can resume at its victory screen and continue to the next garden. Each level’s best stars and time stay separate from its current run.
 
 Soldier vs Zombies restores the island, wave and remaining enemies, health, score, weapon, upgrade build, supplies, armor, Overdrive, field uplink progress, statistics, jetpack fuel, and ability cooldown. Pending upgrade choices are retained; the Palm-to-Ember transition is saved independently of the old tab session. Positions are moved to nearby walkable ground when the regenerated island scenery requires it. In-flight spells, acid, and cosmetic effects are cleared on restore. A completed campaign can resume into endless play.
 
+Borrowed Tomorrow restores the chamber, difficulty, exact loop clock, player and enemies, incoming shots, health, beats, bloom repairs, boss health, cooldowns, random sequence, and both recorded routes, including borrow teleports. You can also resume between loops or from a completed chamber. Chamber stars, best scores, fewest loops, sound, and difficulty preference are stored separately from the run.
+
 Starting a fresh run replaces that game’s checkpoint. Defeat or **End run & return** clears the unfinished run; scores, island unlocks, preferences, and earned stars are kept. Each game has its own save slot. No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues and the pause screen reports that saving is unavailable.
+
+## Borrowed Tomorrow
+
+An original game built around a **time sail**: you move one corner of a glowing triangle, while your previous two routes move the other corners. The first loop supplies two crystal anchors. Bank that loop, and your route replaces an anchor; bank another, and both corners are past versions of you. Your echoes replay exactly what you did and then wait at their endpoints. Every few seconds you are cooperating with a decision you made earlier.
+
+**Hold SNAP** to catch machines inside the sail and turn them into beats. Put a glowing clockbloom inside the triangle, then snap to feed it those beats. Repair all three blooms to finish the room. Bloom II wakes on loop two, and III on loop three, so learning to leave useful memories is part of the goal. Later chambers require a sail edge to skim the bloom. A wide sail hits harder and turns enemy shots into more beats.
+
+Bank early when your route is useful, or let the loop clock run out. Repairs and beats carry over; machines reset and you recover up to 30 health. You keep only the last two memories. The three starting corners alternate each loop. Leave yourself spread-out endpoints and useful paths rather than a folded triangle. Running out of health or loops ends the attempt.
+
+| Chamber | What changes |
+| --- | --- |
+| 1 · A thread in time | Learn to catch machines, feed blooms, and record a useful route. |
+| 2 · The turning garden | The remaining crystal anchor rotates. Sentries start firing. |
+| 3 · Crosswind engine | Wind pushes the present. Past routes stay fixed. Skim blooms with an edge. |
+| 4 · The narrow hour | Crystal pillars constrain movement; armor and expanding clockwaves demand care. |
+| 5 · Three-body weather | The blooms drift around their orbits while both echoes replay their routes. |
+| 6 · Tomorrow, unbroken | Repair three blooms to expose the Unwinder, then catch its heart in a wide sail. |
+
+**Flow** gives more health, longer loops, slower machines, and more generous bloom edges. **Rift** tightens those margins. All chambers can be selected directly. Win in the room's par number of loops with at most five hits for three stars; finish within par plus two loops for two stars. Replay to improve your records.
+
+| Action | Keyboard / mouse | Phone |
+| --- | --- | --- |
+| Move / reshape sail | WASD, arrows, or click the garden | Left thumb joystick |
+| Snap repeatedly | Hold Space or E, or hold SNAP | Hold SNAP with right thumb |
+| Dash through danger | Shift | DASH |
+| Jump to your farther echo | Q | BORROW, available from loop two |
+| Bank the current route | R | BANK LOOP |
+| Pause / resume | P or Esc | Pause / Keep weaving |
+
+Dash briefly protects you and damages machines you pass through. Borrow jumps to the farther echo's position, which folds the sail until you move away; the jump is preserved in the next recording. Both abilities have cooldowns. The game includes contextual hints, a route preview between loops, optional synthesized sound, help, a final ending, and system reduced-motion support. Leaving the page, losing focus, or losing the WebGL context pauses the game.
+
+Phone controls support simultaneous movement and snapping, pointer cancellation, portrait and landscape, safe-area insets, and rotation during play. Touch rendering caps the framebuffer at 420,000 pixels and 1.35× density, disables multisample antialiasing, and targets 30 fps. Enemies, characters, glows, shots, and particles use shared instance batches. The simulation caps machines at 36, shots at 96, and effects at 72. Menus and paused or finished rooms render only when something changes. These are rendering budgets, not a guarantee of frame rate on every phone.
 
 ## Garden Guard
 
@@ -132,6 +167,7 @@ npm run test:garden
 npm run test:phone
 npm run test:campaign
 npm run test:saves
+npm run test:borrowed
 ```
 
 Use `CHROMIUM_PATH=/path/to/chromium npm run test:browser` to use an installed browser. Screenshots go into ignored `test-results/`. The browser check covers both islands, high/medium/low graphics, desktop and mobile layouts, simultaneous touch movement and firing, keyboard dialog navigation, saved preferences, real WebGL context loss/recovery, pause, and returning to the briefing. It needs permission to run Chromium and bind a localhost port. Visual quality, sound, and physical touch controls still benefit from hands-on playtesting.
@@ -144,6 +180,8 @@ The garden suite checks the game picker, real WebGL rendering, phones, landscape
 
 The save suite checks real closing/reopening, Continue controls on small portrait and landscape phones, independent game slots, hub continuation, corrupt data, and blocked storage. Unit tests also cover exact lawn restoration, unique restored IDs, pending upgrades, and island transitions.
 
+The Borrowed Tomorrow suite completes all six chambers through legal controls in a real WebGL browser, tests keyboard and simultaneous touch input, and covers seven phone sizes with notches, rotation, bank/borrow flows, persistent memories, records, hub continuation, blocked/corrupt storage, and context recovery. A crowded arena test checks draw-call and geometry reuse. Pure simulation tests also complete every chamber in Flow and Rift and compare deterministic clocks and restored futures. Refresh its real-game hub thumbnail with `npm run test:borrowed -- --capture-art`.
+
 Run `npm run test:garden -- --capture-art` to refresh the garden thumbnail and responsive WebP previews. Use `npm run test:garden -- --prepare-previews` to re-encode the existing source previews without running the full suite. The hub serves 480px or 960px images instead of the full PNG sources.
 
 Phone rendering uses instanced plant, zombie, mower, projectile, and shadow batches. Garden Guard caps its framebuffer at 360,000 pixels and 1.25× density, disables multisample antialiasing on touch devices, and renders active play at up to 30 frames per second. The phone menu is static; paused, finished, help, and background screens stop rendering until something changes. Tile geometry is recalculated only after resizing, and the HUD refreshes at ten updates per second. The shooter keeps adaptive graphics and caps touch devices at 60 frames per second in play and 30 in its animated menu. These are resource budgets; actual performance depends on the device.
@@ -155,3 +193,5 @@ The locally bundled Barlow Condensed display font is licensed under the [SIL Ope
 For shooter development inspection, `/soldier.html?debug=1` exposes `window.__game`; `?level=2` previews Ember Isle, and `?q=low`, `?q=medium`, or `?q=high` selects a rendering tier. These are local development shortcuts, not access controls.
 
 For Garden Guard, `/garden.html?debug=1` exposes `window.__garden` with the simulation and scene for local inspection. Append `&level=2` through `&level=5` to preview another garden. Normal play does not expose these helpers.
+
+Borrowed Tomorrow follows the same separation: `borrowed.html`, `borrowed.css`, `borrowed-main.js` (input, UI, sound, saves), `borrowed-scene.js` (Three.js), `borrowed-game.js` (fixed-clock simulation), and `borrowed-levels.js` (six chamber definitions). `/borrowed.html?debug=1&level=5` exposes `window.__borrowed` for local inspection. Normal play does not expose this helper.

@@ -12,12 +12,14 @@ test('each game has its own save and clearing a run keeps scores, stars and the 
   storage.setItem('games:garden:level3', '{"stars":3,"time":140}');
   assert.ok(writeGameSave('soldier', { schema: 1, level: 2, wave: 3 }, storage));
   assert.ok(writeGameSave('garden', { schema: 1, level: 4, wave: 2 }, storage));
+  assert.ok(writeGameSave('borrowed', { schema: 1, level: 5, loop: 3 }, storage));
   assert.equal(readGameSave('soldier', storage).data.level, 2);
   assert.equal(readGameSave('garden', storage).data.level, 4);
   assert.ok(readGameSave('garden', storage).savedAt > 0);
   assert.ok(removeGameSave('soldier', storage));
   assert.equal(readGameSave('soldier', storage), null);
   assert.equal(readGameSave('garden', storage).data.wave, 2);
+  assert.equal(readGameSave('borrowed', storage).data.loop, 3);
   assert.equal(storage.getItem('szBest'), '900');
   assert.equal(storage.getItem('games:garden:level3'), '{"stars":3,"time":140}');
 });

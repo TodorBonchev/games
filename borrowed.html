@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1424" />
+  <meta name="description" content="Weave a time sail with your past selves. Catch tiny machines, repair a broken clockworld, and leave yourself a better tomorrow. A free 3D game with six chambers." />
+  <title>Borrowed Tomorrow — Games</title>
+  <link rel="icon" href="assets/games-icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preload" href="assets/fonts/barlow-condensed-800.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="stylesheet" href="borrowed.css?v1" />
+  <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+  <div class="clock-shell">
+    <header class="topbar">
+      <a class="back-link" href="./" aria-label="Back to all games"><span aria-hidden="true">←</span><span>games.</span></a>
+      <div class="brand"><span class="brand-mark" aria-hidden="true">△</span><span>BORROWED <b>TOMORROW</b></span></div>
+      <nav class="tools" aria-label="Game options">
+        <button id="soundButton" class="icon-button" aria-label="Turn sound on" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Zm4 4 6 6m0-6-6 6"/></svg></button>
+        <button id="helpButton" class="icon-button" aria-label="How to play">?</button>
+        <button id="pauseButton" class="icon-button" aria-label="Pause game" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14m8-14v14"/></svg></button>
+      </nav>
+    </header>
+    <main class="game-shell">
+      <div class="hud" id="hud" aria-label="Game status">
+        <div class="chamber-heading"><span class="micro" id="chamberNumber">CHAMBER 01 / 06</span><strong id="chamberName">A thread in time</strong></div>
+        <div class="loop-clock"><span class="micro" id="loopLabel">LOOP 1 / 7</span><div><strong id="clockValue">26</strong><span>s</span><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16"/><circle id="clockRing" cx="20" cy="20" r="16"/></svg></div></div>
+        <div class="thread-health"><span class="micro">YOUR THREAD <b id="healthValue">100%</b></span><div class="health-track"><i id="healthFill"></i></div><span id="scoreValue">0 points</span></div>
+      </div>
+      <div class="bloom-strip" id="bloomStrip" aria-label="Bloom repairs">
+        <div class="bloom-status" data-bloom="0"><span>Ⅰ</span><i><b></b></i><em>0 / 4</em></div>
+        <div class="bloom-status" data-bloom="1"><span>Ⅱ</span><i><b></b></i><em>LOOP 2</em></div>
+        <div class="bloom-status" data-bloom="2"><span>Ⅲ</span><i><b></b></i><em>LOOP 3</em></div>
+        <div class="beat-count"><span aria-hidden="true">✦</span><strong id="beatValue">0</strong><span>BEATS</span></div>
+      </div>
+      <section class="stage" id="timeStage" aria-label="Three-dimensional clock garden. Move to reshape the triangular sail.">
+        <div class="world-label" id="youLabel">YOU</div>
+        <div class="world-label echo-label" id="echoLabel1">ANCHOR</div>
+        <div class="world-label echo-label second-echo" id="echoLabel2">ANCHOR</div>
+        <div class="world-label flower-label" id="bloomLabel0">Ⅰ</div>
+        <div class="world-label flower-label" id="bloomLabel1">Ⅱ</div>
+        <div class="world-label flower-label" id="bloomLabel2">Ⅲ</div>
+        <div class="boss-health" id="bossHealth" hidden><span>THE UNWINDER</span><i><b id="bossFill"></b></i></div>
+        <div class="sail-readout" id="sailReadout"><i></i><span>SAIL OPEN</span></div>
+        <p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+        <div class="hint" id="hint"><span id="hintText">Your past is your most useful invention.</span></div>
+      </section>
+      <footer class="control-deck" id="controls">
+        <div class="steering">
+          <div class="joystick" id="joystick" role="group" aria-label="Movement joystick"><span class="joystick-ring"></span><span id="joystickKnob" class="joystick-knob"></span><span class="joystick-label">MOVE</span></div>
+          <div class="keyboard-move"><kbd>W</kbd><div><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div><span>MOVE · OR CLICK THE GARDEN</span></div>
+        </div>
+        <div class="bank-control"><button id="bankButton" class="bank-button" disabled><span aria-hidden="true">↺</span><span>BANK LOOP<small id="bankDetail">LEAVE A MEMORY</small></span></button><span class="key-note"><kbd>R</kbd> / REWIND</span></div>
+        <div class="skills">
+          <div class="small-skills"><button id="borrowButton" class="skill" disabled><span aria-hidden="true">⇄</span><span>BORROW<small>AFTER LOOP 1</small></span><kbd>Q</kbd></button><button id="dashButton" class="skill" disabled><span aria-hidden="true">↯</span><span>DASH<small>READY</small></span><kbd>SHIFT</kbd></button></div>
+          <button id="snapButton" class="snap-button" disabled><svg viewBox="0 0 40 36" aria-hidden="true"><path d="M20 3 37 32H3Z"/><path d="M20 12v10m-5-5h10"/></svg><strong>SNAP</strong><small>HOLD <span class="desktop-key">/ SPACE</span></small></button>
+        </div>
+      </footer>
+    </main>
+    <p class="save-status" id="saveStatus" role="status">AUTOSAVE ON THIS DEVICE</p>
+  </div>
+  <div class="modal-layer" id="modalLayer" hidden>
+    <section class="panel" id="gamePanel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" tabindex="-1">
+      <div id="panelContent"></div>
+    </section>
+  </div>
+  <div class="loading" id="loading"><span class="loading-mark">△</span><strong>Finding your way back to tomorrow…</strong></div>
+  <noscript><div class="loading">JavaScript is needed to play. <a href="./">Back to games</a></div></noscript>
+  <script type="module" src="borrowed-main.js?v1"></script>
+</body>
+</html>

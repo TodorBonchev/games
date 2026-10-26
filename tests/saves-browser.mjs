@@ -89,7 +89,7 @@ export async function checkSaves(browser, baseURL) {
     assert.ok(actual.cooldown <= soldier.data.frozenCooldown && actual.cooldown > 0);
     assert.ok(await page.evaluate(key => !!localStorage.getItem(key), SAVE_KEYS.garden), 'saving the shooter keeps the garden save');
     await page.locator('#pausePanel .games-return').tap();
-    await page.waitForFunction(() => [...document.querySelectorAll('[data-play-label]')].every(label => label.textContent === 'CONTINUE RUN'));
+    await page.waitForFunction(() => [...document.querySelectorAll('.garden-card [data-play-label], .soldier-card [data-play-label]')].every(label => label.textContent === 'CONTINUE RUN'));
     await page.screenshot({ path: 'test-results/saves/hub-both-saved.png', fullPage: true });
     await page.locator('.soldier-card').tap(); await ready(page);
     assert.equal(await page.locator('#score').textContent(), String(soldier.data.score));
