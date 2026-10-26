@@ -5,6 +5,8 @@ import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
+import { checkPhones } from './phone-browser.mjs';
+import { checkCampaign } from './campaign-browser.mjs';
 
 const port = 5182;
 const baseURL = process.env.GAMES_TEST_URL || `http://127.0.0.1:${port}`;
@@ -34,6 +36,34 @@ try {
     await page.evaluate(() => document.fonts.ready);
   };
   const cell = (page, row, col) => page.locator(`.lawn-cell[data-row="${row}"][data-col="${col}"]`);
+  async function preparePreviews() {
+    const page = await browser.newPage();
+    await page.goto(`${baseURL}/garden.html?debug=1`);
+    await ready(page);
+    const previews = await page.evaluate(async () => {
+      const output = [];
+      for (const [name, source] of [['soldier', 'high-tier-gameplay.png'], ['garden', 'assets/garden-preview.png']]) {
+        const image = new Image(); image.src = source; await image.decode();
+        for (const width of [480, 960]) {
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = Math.round(image.naturalHeight * width / image.naturalWidth);
+          canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+          output.push({ name, width, data: canvas.toDataURL('image/webp', 0.8).split(',')[1] });
+        }
+      }
+      return output;
+    });
+    for (const preview of previews) await writeFile(`assets/${preview.name}-preview-${preview.width}.webp`, Buffer.from(preview.data, 'base64'));
+    await page.close();
+    console.log('Prepared responsive WebP game previews.');
+  }
+  if (process.argv.includes('--prepare-previews')) {
+    await preparePreviews();
+  } else if (process.argv.includes('--campaign-only')) {
+    await checkCampaign(browser, baseURL);
+  } else if (process.argv.includes('--phone-only') || process.argv.includes('--phone-baseline')) {
+    await checkPhones(browser, baseURL, { baseline: process.argv.includes('--phone-baseline') });
+  } else {
   if (process.argv.includes('--capture-art')) {
     const page = await browser.newPage({ viewport: { width: 1100, height: 1100 }, deviceScaleFactor: 1 });
     monitor(page);
@@ -63,6 +93,7 @@ try {
     for (const icon of icons) await writeFile(`assets/games-icon-${icon.size}.png`, Buffer.from(icon.data, 'base64'));
     await page.close();
     console.log('Captured the actual Three.js garden for the hub thumbnail.');
+    await preparePreviews();
   }
   for (const spec of [
     { name: 'desktop', width: 1280, height: 960, touch: false },
@@ -197,6 +228,8 @@ try {
   assert.equal(await page.evaluate(() => window.__garden.game.state.mode), 'paused', 'graphics restoration waits for the player');
   await page.locator('#resumeBtn').click();
   assert.equal(await page.evaluate(() => window.__garden.game.state.mode), 'playing');
+  await page.evaluate(() => window.__garden.advance(0.1));
+  assert.ok(await page.evaluate(() => window.__garden.view.renderer.info.render.calls > 0), 'the restored instanced garden renders again');
   console.log('Keyboard controls, resources, complete victory, defeat, restart and WebGL recovery passed.');
   await page.goto(`${baseURL}/soldier.html?debug=1&q=low&noscale=1`);
   await ready(page);
@@ -211,6 +244,7 @@ try {
   assert.equal(await page.locator('.game-card').count(), 2, 'the existing shooter launches and returns to the hub');
   assert.deepEqual(errors, [], 'no browser errors, missing assets or external runtime dependencies');
   console.log('Soldier vs Zombies still deploys, plays and returns to the hub. All game browser checks passed.');
+  }
 } finally {
   await browser?.close();
   server?.kill();

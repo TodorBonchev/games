@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGarden, PLANTS, WAVES } from '../garden-game.js';
+import { LEVELS, MAX_ZOMBIES } from '../garden-levels.js';
+import { playGarden } from './garden-strategy.mjs';
 
 const fresh = () => { const game = createGarden({ random: () => 0.5 }); game.start(); return game; };
 const collect = game => { for (const sun of [...game.state.suns]) game.collectSun(sun.id); };
@@ -134,4 +136,51 @@ test('restart clears defeated enemies, suns, timers, cooldowns and spent mowers'
   for (const list of ['plants', 'zombies', 'peas', 'suns', 'effects']) assert.equal(game.state[list].length, 0);
   assert.ok(game.state.mowers.every(mower => !mower.spent && !mower.active));
   assert.deepEqual(game.state.cooldowns, { bloom: 0, pea: 0, nut: 0 });
+});
+
+test('all five gardens can be cleared with legal purchases and collected sun', () => {
+  assert.equal(LEVELS.length, 5);
+  for (const level of LEVELS) {
+    const game = createGarden({ level: level.id, random: () => 0.5 });
+    game.start();
+    const result = playGarden(game);
+    assert.equal(result.mode, 'won', `${level.name}: a legal strategy can win`);
+    assert.equal(result.level, level.id);
+    assert.equal(result.defeated, level.enemies.length);
+    assert.equal(result.wave, level.waveCount);
+    assert.ok(result.sun >= 0);
+    assert.ok(result.zombies.length <= MAX_ZOMBIES);
+  }
+});
+
+test('later gardens introduce runners, less frequent sky sun and longer attacks', () => {
+  const first = createGarden({ level: 1 }), dusk = createGarden({ level: 4 }), rush = createGarden({ level: 3 });
+  first.start(); dusk.start(); rush.start();
+  first.tick(13); dusk.tick(13); rush.tick(76);
+  assert.equal(first.state.suns.length, 2);
+  assert.equal(dusk.state.suns.length, 1);
+  const runner = rush.state.zombies.find(zombie => zombie.runner);
+  assert.ok(runner && runner.speed > 0.19 && !runner.armored);
+  assert.equal(LEVELS[3].waveCount, 4);
+  assert.equal(LEVELS[4].waveCount, 5);
+});
+
+test('changing or replaying gardens starts fresh without leaking wave, sun or mower state', () => {
+  const game = fresh();
+  game.tick(90);
+  game.start(5);
+  assert.equal(game.state.level, 5);
+  assert.equal(game.state.sun, 300);
+  assert.equal(game.state.time, 0);
+  assert.equal(game.state.spawned, 0);
+  assert.ok(game.state.mowers.every(mower => !mower.spent));
+  game.tick(10);
+  game.start();
+  assert.equal(game.state.level, 5, 'replay keeps the selected garden');
+  assert.equal(game.state.time, 0);
+  assert.equal(game.state.sun, 300);
+  game.reset(3);
+  assert.equal(game.state.mode, 'ready');
+  assert.equal(game.state.level, 3);
+  assert.equal(game.state.sun, 250);
 });

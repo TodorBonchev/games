@@ -11,7 +11,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 const LEVEL=new URLSearchParams(location.search).get('level')==='2'?2:1;
 const WM=LEVEL===2?await import('./world2.js?v19'):await import('./world.js?v19');const {buildWorld,groundH,islandD,shoreR,SUN_DIR,FOG_COLOR,iceF,lavaF,LIGHTS}=WM;
-export const BUILD='v19 · flight & frost';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
+export const BUILD='v20 · phone ready';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
 const MOBILE=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;if(MOBILE)document.body.classList.add('touch');
 // ---------- quality tiers ----------
 const QL=['auto','low','medium','high'];const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){return null;}};
@@ -538,7 +538,12 @@ syncAudio();updHud();
 // ---------- loop ----------
 const camRc=new THREE.Raycaster(),camAnchor=new THREE.Vector3(),camSight=new THREE.Vector3(),clock=new THREE.Clock(),closeup=Q.get('view')==='closeup';let camOverride=null;
 spawnPlayer();
-let gT=0,lavaHurt=0,frameN=0;const PF={ms:[],calls:0,tris:0};function loop(){requestAnimationFrame(loop);const _t0=performance.now(),dt=Math.min(clock.getDelta(),.05);if(graphicsContext.isContextLost())markGraphicsLost();if(gamePaused||graphicsLost||mode==='upgrade'){lastNow=_t0;return;}scaler(_t0);gT+=dt;const T=gT,P=player.position;
+let gT=0,lavaHurt=0,frameN=0,lastMobileFrameAt=-Infinity;const PF={ms:[],calls:0,tris:0};
+function loop(){requestAnimationFrame(loop);const _t0=performance.now();
+ // Keep high-refresh phones within a useful battery and thermal budget.
+ if(document.hidden){clock.getDelta();lastNow=_t0;return;}
+ if(MOBILE){const interval=1000/(mode==='play'||mode==='intro'?60:30);if(_t0-lastMobileFrameAt<interval-.5)return;lastMobileFrameAt=_t0;}
+ const dt=Math.min(clock.getDelta(),.05);if(graphicsContext.isContextLost())markGraphicsLost();if(gamePaused||graphicsLost||mode==='upgrade'){lastNow=_t0;return;}scaler(_t0);gT+=dt;const T=gT,P=player.position;
  flashTime=Math.max(0,flashTime-dt);if(!flashTime){player.userData.flash.visible=false;player.userData.flashLight.intensity=0;}impacts.update(dt);recoil*=Math.exp(-16*dt);hitTime=Math.max(0,hitTime-dt);bannerTime=Math.max(0,bannerTime-dt);damageTime=Math.max(0,damageTime-dt);
  if(!hitTime)$('hitmarker')?.classList.remove('show');if(!bannerTime)$('waveBanner')?.classList.remove('show');if(!damageTime)$('vig').classList.remove('hurt');
  if(mode==='intro')intro(dt);updHeli(dt);

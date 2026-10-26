@@ -1,5 +1,6 @@
 // The complete level simulation. Coordinates are lawn cells, independent of 3D
 // rendering, so the same rules run on phones and in deterministic tests.
+import { getLevel, MAX_ZOMBIES } from './garden-levels.js';
 export const ROWS = 5;
 export const COLS = 8;
 export const PLANTS = Object.freeze({
@@ -8,24 +9,17 @@ export const PLANTS = Object.freeze({
   nut: Object.freeze({ name: 'Shellnut', cost: 75, hp: 700, cooldown: 6, description: 'A tough little wall. Buys you time.', key: '3' }),
 });
 
-export const WAVES = Object.freeze([
-  { at: 18, row: 2, wave: 1 }, { at: 25, row: 1, wave: 1 }, { at: 32, row: 3, wave: 1 },
-  { at: 52, row: 0, wave: 2 }, { at: 57, row: 4, wave: 2 }, { at: 62, row: 2, wave: 2 },
-  { at: 67, row: 1, wave: 2 }, { at: 72, row: 3, wave: 2 }, { at: 77, row: 0, wave: 2, armored: true },
-  { at: 95, row: 2, wave: 3, armored: true }, { at: 99, row: 4, wave: 3 },
-  { at: 103, row: 0, wave: 3 }, { at: 107, row: 1, wave: 3, armored: true },
-  { at: 111, row: 3, wave: 3 }, { at: 115, row: 2, wave: 3 },
-  { at: 119, row: 4, wave: 3, armored: true }, { at: 123, row: 0, wave: 3 },
-  { at: 127, row: 3, wave: 3, armored: true },
-].map(Object.freeze));
+export const WAVES = getLevel(1).enemies;
 
-export function createGarden({ random = Math.random } = {}) {
+export function createGarden({ random = Math.random, level = 1 } = {}) {
   let serial = 0;
+  let garden = getLevel(level);
   const state = {};
-  function reset() {
+  function reset(levelId = garden.id) {
+    garden = getLevel(levelId);
     serial = 0;
     Object.assign(state, {
-      mode: 'ready', time: 0, sun: 200, wave: 1, spawned: 0, defeated: 0,
+      mode: 'ready', level: garden.id, time: 0, sun: garden.startSun, wave: 1, spawned: 0, defeated: 0,
       plants: [], zombies: [], peas: [], suns: [], effects: [],
       cooldowns: { bloom: 0, pea: 0, nut: 0 }, nextSkySun: 5,
       mowers: Array.from({ length: ROWS }, (_, row) => ({ id: `mower-${row}`, row, x: -0.85, active: false, spent: false })),
@@ -35,8 +29,8 @@ export function createGarden({ random = Math.random } = {}) {
   reset();
   const id = () => ++serial;
   const effect = (kind, x, row) => state.effects.push({ id: id(), kind, x, row, age: 0 });
-  function start() {
-    reset();
+  function start(levelId = garden.id) {
+    reset(levelId);
     state.mode = 'playing';
   }
   function pause() { if (state.mode === 'playing') state.mode = 'paused'; }
@@ -88,13 +82,13 @@ export function createGarden({ random = Math.random } = {}) {
     for (const type of Object.keys(PLANTS)) state.cooldowns[type] = Math.max(0, state.cooldowns[type] - dt);
     if (state.time >= state.nextSkySun) {
       dropSun(0.3 + random() * (COLS - 1.6), Math.floor(random() * ROWS));
-      state.nextSkySun += 7;
+      state.nextSkySun += garden.skyInterval;
     }
-    while (state.spawned < WAVES.length && state.time >= WAVES[state.spawned].at) {
-      const spawn = WAVES[state.spawned++];
+    while (state.zombies.length < MAX_ZOMBIES && state.spawned < garden.enemies.length && state.time >= garden.enemies[state.spawned].at) {
+      const spawn = garden.enemies[state.spawned++];
       state.wave = spawn.wave;
-      const hp = spawn.armored ? 235 : 100;
-      state.zombies.push({ id: id(), row: spawn.row, x: COLS + 0.2, hp, maxHp: hp, armored: !!spawn.armored, speed: spawn.armored ? 0.14 : 0.19, age: 0, biting: false, hit: 0 });
+      const hp = Math.round((spawn.armored ? 235 : spawn.runner ? 75 : 100) * garden.health);
+      state.zombies.push({ id: id(), row: spawn.row, x: COLS + 0.2, hp, maxHp: hp, armored: !!spawn.armored, runner: !!spawn.runner, speed: spawn.armored ? 0.14 : spawn.runner ? 0.32 : 0.19, age: 0, biting: false, hit: 0 });
     }
     for (const plant of state.plants) {
       plant.age += dt;
@@ -113,7 +107,10 @@ export function createGarden({ random = Math.random } = {}) {
     for (const pea of state.peas) {
       const previous = pea.x;
       pea.x += dt * 5.5;
-      const target = state.zombies.filter(z => z.hp > 0 && z.row === pea.row && z.x + 0.24 >= previous && z.x - 0.24 <= pea.x).sort((a, b) => a.x - b.x)[0];
+      let target;
+      for (const zombie of state.zombies) {
+        if (zombie.hp > 0 && zombie.row === pea.row && zombie.x + 0.24 >= previous && zombie.x - 0.24 <= pea.x && (!target || zombie.x < target.x)) target = zombie;
+      }
       if (target) {
         const damage = 25;
         if (target.hp <= damage) kill(target);
@@ -125,7 +122,10 @@ export function createGarden({ random = Math.random } = {}) {
       if (zombie.hp <= 0) continue;
       zombie.age += dt;
       zombie.hit = Math.max(0, zombie.hit - dt);
-      const meal = state.plants.filter(p => p.hp > 0 && p.row === zombie.row && zombie.x >= p.col - 0.35 && zombie.x <= p.col + 0.6).sort((a, b) => b.col - a.col)[0];
+      let meal;
+      for (const plant of state.plants) {
+        if (plant.hp > 0 && plant.row === zombie.row && zombie.x >= plant.col - 0.35 && zombie.x <= plant.col + 0.6 && (!meal || plant.col > meal.col)) meal = plant;
+      }
       zombie.biting = !!meal;
       if (meal) meal.hp -= dt * 24;
       else zombie.x -= zombie.speed * dt;
@@ -149,7 +149,7 @@ export function createGarden({ random = Math.random } = {}) {
     state.suns = state.suns.filter(s => s.age < s.life);
     for (const fx of state.effects) fx.age += dt;
     state.effects = state.effects.filter(fx => fx.age < 0.55);
-    if (state.mode === 'playing' && state.spawned === WAVES.length && state.zombies.length === 0) state.mode = 'won';
+    if (state.mode === 'playing' && state.spawned === garden.enemies.length && state.zombies.length === 0) state.mode = 'won';
   }
   function tick(seconds) {
     if (!Number.isFinite(seconds) || seconds <= 0) return;
@@ -160,5 +160,5 @@ export function createGarden({ random = Math.random } = {}) {
       remaining -= dt;
     }
   }
-  return { state, start, reset, pause, resume, place, remove, collectSun, tick };
+  return { state, get level() { return garden; }, start, reset, pause, resume, place, remove, collectSun, tick };
 }

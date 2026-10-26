@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { ROWS, COLS } from './garden-game.js';
+import { ROWS, COLS } from './garden-game.js?v2';
+import { getLevel, MAX_ZOMBIES } from './garden-levels.js';
 
 const CELL = 1.45;
 const xAt = col => (col - (COLS - 1) / 2) * CELL;
 const zAt = row => (row - (ROWS - 1) / 2) * CELL;
 
-export function createGardenScene(container, { onLost, onRestored } = {}) {
+export function createGardenScene(container, { onLost, onRestored, onResize } = {}) {
   const mobile = matchMedia('(pointer: coarse)').matches;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 2));
+  const renderer = new THREE.WebGLRenderer({ antialias: !mobile, alpha: false, powerPreference: 'low-power' });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.22;
@@ -43,10 +43,10 @@ export function createGardenScene(container, { onLost, onRestored } = {}) {
   function geo(kind) {
     if (!geometries.has(kind)) {
       const geometry = kind === 'box' ? new THREE.BoxGeometry(1, 1, 1)
-        : kind === 'sphere' ? new THREE.SphereGeometry(1, 12, 8)
-        : kind === 'cylinder' ? new THREE.CylinderGeometry(1, 1, 1, 10)
-        : kind === 'cone' ? new THREE.ConeGeometry(1, 1, 10)
-        : new THREE.TorusGeometry(1, 0.1, 5, 16);
+        : kind === 'sphere' ? new THREE.SphereGeometry(1, mobile ? 8 : 12, mobile ? 6 : 8)
+        : kind === 'cylinder' ? new THREE.CylinderGeometry(1, 1, 1, mobile ? 8 : 10)
+        : kind === 'cone' ? new THREE.ConeGeometry(1, 1, mobile ? 6 : 10)
+        : new THREE.TorusGeometry(1, 0.1, 5, mobile ? 12 : 16);
       geometries.set(kind, geometry);
     }
     return geometries.get(kind);
@@ -177,10 +177,11 @@ export function createGardenScene(container, { onLost, onRestored } = {}) {
     return model;
   }
   const zombieTemplates = new Map();
-  function zombieTemplate(armored) {
-    if (zombieTemplates.has(armored)) return zombieTemplates.get(armored);
+  function zombieTemplate(armored, runner = false) {
+    const variant = armored ? 'armored' : runner ? 'runner' : 'zombie';
+    if (zombieTemplates.has(variant)) return zombieTemplates.get(variant);
     const group = new THREE.Group();
-    box(group, '#66566a', 0, 0.65, 0, 0.37, 0.49, 0.28, [0, 0, 0.12]);
+    box(group, runner ? '#4b8990' : '#66566a', 0, 0.65, 0, 0.37, 0.49, 0.28, [0, 0, 0.12]);
     box(group, '#e6d8b1', -0.08, 0.76, 0.15, 0.11, 0.26, 0.035, [0, 0, 0.18]);
     box(group, '#ac6951', -0.07, 0.71, 0.18, 0.045, 0.17, 0.025);
     ball(group, '#91a674', -0.08, 1.12, 0, 0.26, 0.29, 0.23);
@@ -201,10 +202,11 @@ export function createGardenScene(container, { onLost, onRestored } = {}) {
       box(group, '#d47b39', -0.07, 1.32, 0, 0.66, 0.07, 0.57);
     } else {
       box(group, '#5e6749', -0.14, 1.38, -0.02, 0.16, 0.04, 0.2, [0, 0, 0.2]);
+      if (runner) box(group, '#e6bb62', -0.08, 1.32, 0.02, 0.48, 0.07, 0.40);
     }
     const model = mergeModel(group);
     model.rotation.y = -0.12;
-    zombieTemplates.set(armored, model);
+    zombieTemplates.set(variant, model);
     return model;
   }
   function mowerTemplate() {
@@ -218,24 +220,41 @@ export function createGardenScene(container, { onLost, onRestored } = {}) {
     return mergeModel(group);
   }
   const mowerModel = mowerTemplate();
-  const entities = new Map();
-  const shadows = new Map();
+  // Repeated models share one GPU draw per material, including their shadows.
+  // Capacities follow the actual level limits; no per-frame meshes are created.
+  const batches = new Map();
+  const transform = new THREE.Object3D();
+  const instanceMatrix = new THREE.Matrix4();
+  function makeBatch(name, template, capacity) {
+    template.updateMatrix();
+    const parts = template.isMesh ? [template] : template.children;
+    const meshes = parts.map(part => {
+      const mesh = new THREE.InstancedMesh(part.geometry, part.material, capacity);
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.castShadow = part.castShadow;
+      mesh.receiveShadow = part.receiveShadow;
+      mesh.frustumCulled = false;
+      mesh.count = 0;
+      scene.add(mesh);
+      return mesh;
+    });
+    const batch = { meshes, capacity, count: 0, base: template.matrix.clone() };
+    batches.set(name, batch);
+    return batch;
+  }
   const shadowGeometry = new THREE.CircleGeometry(0.44, 16).rotateX(-Math.PI / 2);
   const shadowMaterial = new THREE.MeshBasicMaterial({ color: '#31452b', transparent: true, opacity: 0.13, depthWrite: false });
-  function entity(key, template, x, row) {
-    let object = entities.get(key);
-    if (!object) {
-      object = template.clone();
-      scene.add(object);
-      entities.set(key, object);
-      const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
-      shadow.position.y = 0.143;
-      scene.add(shadow);
-      shadows.set(key, shadow);
-    }
-    object.position.set(xAt(x), 0.15, zAt(row));
-    shadows.get(key).position.set(xAt(x), 0.143, zAt(row));
-    return object;
+  const shadowModel = new THREE.Mesh(shadowGeometry, shadowMaterial);
+  function instance(name, template, capacity, x, row, y = 0.15, scale = 1, rotation = 0) {
+    const batch = batches.get(name) || makeBatch(name, template, capacity);
+    if (batch.count >= batch.capacity) return;
+    transform.position.set(xAt(x), y, zAt(row));
+    transform.scale.setScalar(scale);
+    transform.rotation.set(0, 0, rotation);
+    transform.updateMatrix();
+    instanceMatrix.multiplyMatrices(transform.matrix, batch.base);
+    for (const mesh of batch.meshes) mesh.setMatrixAt(batch.count, instanceMatrix);
+    batch.count++;
   }
   const peaTemplate = new THREE.Mesh(geo('sphere'), mat('#b5e16b'));
   peaTemplate.scale.setScalar(0.105);
@@ -265,7 +284,10 @@ export function createGardenScene(container, { onLost, onRestored } = {}) {
     camera.lookAt(0, 0.2, -0.15);
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
+    const ratio = Math.min(devicePixelRatio, mobile ? 1.25 : 2, mobile ? Math.sqrt(360000 / (width * height)) : Infinity);
+    renderer.setPixelRatio(ratio);
     renderer.setSize(width, height, false);
+    onResize?.();
   }
   resize();
   const resizeObserver = new ResizeObserver(resize);
@@ -281,43 +303,47 @@ export function createGardenScene(container, { onLost, onRestored } = {}) {
     { id: 'k', type: 'nut', row: 3, col: 4 },
   ];
   const demoZombies = [{ id: 'a', row: 0, x: 6.7 }, { id: 'b', row: 2, x: 6.3, armored: true }, { id: 'c', row: 4, x: 7.4 }];
+  let activeLevel;
   function render(state, time) {
-    const used = new Set();
+    if (activeLevel !== state.level) {
+      activeLevel = state.level;
+      const { theme } = getLevel(state.level);
+      scene.background.set(theme.sky);
+      scene.fog.color.set(theme.sky);
+      mat('#cddcc3').color.set(theme.sky);
+      mat('#90b65a').color.set(theme.grass[0]);
+      mat('#9fc36a').color.set(theme.grass[1]);
+      mat('#72984f').color.set(theme.turf);
+      sunlight.color.set(theme.light);
+    }
+    for (const batch of batches.values()) batch.count = 0;
     const demo = state.mode === 'ready';
     for (const plant of demo ? demoPlants : state.plants) {
-      const key = `plant-${plant.id}`;
-      const model = entity(key, plantTemplate(plant.type), plant.col, plant.row);
       const grow = demo ? 1 : Math.min(1, 0.3 + plant.age * 3);
-      model.scale.setScalar(grow);
-      model.rotation.z = reduced.matches ? 0 : Math.sin(time * 2 + plant.row + plant.col) * 0.025;
-      used.add(key);
+      const sway = reduced.matches ? 0 : Math.sin(time * 2 + plant.row + plant.col) * 0.025;
+      instance(`plant:${plant.type}`, plantTemplate(plant.type), ROWS * COLS, plant.col, plant.row, 0.15, grow, sway);
+      instance('shadow', shadowModel, ROWS * COLS + MAX_ZOMBIES + ROWS, plant.col, plant.row, 0.143, grow);
     }
     for (const zombie of demo ? demoZombies : state.zombies) {
-      const key = `zombie-${zombie.id}`;
-      const model = entity(key, zombieTemplate(zombie.armored), zombie.x, zombie.row);
-      const walk = reduced.matches ? 0 : Math.sin((demo ? time : zombie.age) * 6 + zombie.row) * 0.035;
-      model.rotation.z = walk;
-      model.position.y += Math.abs(walk) * 0.5;
-      model.scale.setScalar(zombie.hit > 0 ? 1.06 : 1);
-      used.add(key);
+      const walk = reduced.matches ? 0 : Math.sin((demo ? time : zombie.age) * (zombie.runner ? 9 : 6) + zombie.row) * 0.035;
+      const variant = zombie.armored ? 'armored' : zombie.runner ? 'runner' : 'zombie';
+      instance(variant, zombieTemplate(zombie.armored, zombie.runner), MAX_ZOMBIES, zombie.x, zombie.row, 0.15 + Math.abs(walk) * 0.5, zombie.hit > 0 ? 1.06 : 1, walk);
+      instance('shadow', shadowModel, ROWS * COLS + MAX_ZOMBIES + ROWS, zombie.x, zombie.row, 0.143);
     }
     for (const mower of state.mowers) {
       if (mower.spent && !mower.active) continue;
-      const key = mower.id;
-      entity(key, mowerModel, mower.x, mower.row);
-      used.add(key);
+      instance('mower', mowerModel, ROWS, mower.x, mower.row);
+      instance('shadow', shadowModel, ROWS * COLS + MAX_ZOMBIES + ROWS, mower.x, mower.row, 0.143);
     }
     for (const pea of state.peas) {
-      const key = `pea-${pea.id}`;
-      const mesh = entity(key, peaTemplate, pea.x, pea.row);
-      mesh.position.y = 1.1;
-      used.add(key);
+      instance('projectile', peaTemplate, ROWS * COLS * 3, pea.x, pea.row, 1.1);
     }
-    for (const [key, model] of entities) {
-      if (used.has(key)) continue;
-      scene.remove(model, shadows.get(key));
-      entities.delete(key);
-      shadows.delete(key);
+    for (const batch of batches.values()) {
+      for (const mesh of batch.meshes) {
+        mesh.count = batch.count;
+        mesh.visible = batch.count > 0;
+        if (batch.count) mesh.instanceMatrix.needsUpdate = true;
+      }
     }
     hover.visible = hoverRow >= 0 && hoverCol >= 0 && state.mode === 'playing';
     if (hover.visible) hover.position.set(xAt(hoverCol), 0.15, zAt(hoverRow));
@@ -331,6 +357,7 @@ export function createGardenScene(container, { onLost, onRestored } = {}) {
   }
   function dispose() {
     resizeObserver.disconnect();
+    for (const batch of batches.values()) for (const mesh of batch.meshes) mesh.dispose();
     for (const geometry of [...geometries.values(), ...mergedGeometries, shadowGeometry, hover.geometry]) geometry.dispose();
     for (const material of [...materials.values(), shadowMaterial, hover.material]) material.dispose();
     renderer.dispose();

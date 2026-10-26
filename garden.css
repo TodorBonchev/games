@@ -48,7 +48,7 @@ a {
 .garden-app {
   max-width:1250px;
   margin:auto;
-  padding:0 36px
+  padding:env(safe-area-inset-top, 0px) max(36px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(36px, env(safe-area-inset-left, 0px))
 }
 .garden-nav {
   height:79px;
@@ -73,6 +73,11 @@ a {
   font-size:19px
 }
 .small-brand {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:44px;
+  min-height:44px;
   font-size:25px;
   font-weight:800;
   letter-spacing:-1.4px;
@@ -82,6 +87,16 @@ a {
 }
 .small-brand>span {
   color:#d5843d
+}
+.small-brand.level-picker {
+  font:600 11px var(--mono);
+  letter-spacing:.6px;
+  min-width:94px;
+  min-height:44px;
+  padding:9px;
+  border:1px solid var(--line);
+  border-radius:4px;
+  background:#e8ebda;
 }
 .help-button {
   min-height:44px;
@@ -675,6 +690,20 @@ h2 {
 .secondary-button:hover {
   background:#e5e7d5
 }
+.levels-dialog {
+  width:calc(100% - 28px);
+  max-width:min(560px, calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 28px));
+}
+.level-choices { display:flex; flex-direction:column; gap:9px; margin:21px 0 14px; }
+.garden-level-card { display:flex; align-items:center; gap:14px; width:100%; min-height:76px; padding:13px; text-align:left; border:1px solid var(--line); border-radius:4px; background:#f1f0e1; }
+.garden-level-card:hover { background:#e6ead4; }
+.garden-level-card[aria-pressed=true] { border:2px solid var(--green); padding:12px; }
+.level-index { font:800 27px Barlow,Impact,sans-serif; color:var(--green); min-width:30px; }
+.level-card-copy { display:flex; flex:1; flex-direction:column; gap:6px; }
+.level-card-copy>strong { font-size:14px; }
+.level-card-copy>span { font:9px/1.6 var(--mono); color:var(--muted); }
+.level-stars { font-size:16px; color:#ac8031; min-width:38px; text-align:right; }
+.levels-dialog .secondary-button { position:sticky; bottom:0; background:#faf6e8; }
 .dialog-back {
   display:block;
   padding:17px 8px 3px;
@@ -778,7 +807,8 @@ kbd {
 }
 @media(max-width:1000px) {
   .garden-app {
-    padding:0 24px
+    padding-left:max(24px, env(safe-area-inset-left, 0px));
+    padding-right:max(24px, env(safe-area-inset-right, 0px))
   }
   .seed-heading {
     display:none
@@ -821,10 +851,11 @@ kbd {
 }
 @media(max-width:600px) {
   .garden-app {
-    padding:0 14px
+    padding-left:max(12px, env(safe-area-inset-left, 0px));
+    padding-right:max(12px, env(safe-area-inset-right, 0px))
   }
   .garden-nav {
-    height:61px
+    height:56px
   }
   .back-link,.help-button {
     font-size:8px;
@@ -844,21 +875,18 @@ kbd {
     font-size:23px
   }
   .game-heading {
-    padding:22px 0 19px;
+    padding:15px 0 14px;
     align-items:center;
     gap:12px
   }
   .game-heading .eyebrow {
-    font-size:5px;
-    letter-spacing:.4px;
-    gap:5px;
-    margin-bottom:9px
+    display:none
   }
   .eyebrow>span {
     width:9px
   }
   h1 {
-    font-size:44px;
+    font-size:clamp(32px,10vw,44px);
     letter-spacing:0
   }
   .level-label {
@@ -879,10 +907,10 @@ kbd {
   }
   .game-toolbar {
     padding:10px 10px;
-    gap:12px
+    gap:8px
   }
   .sun-counter {
-    min-width:85px;
+    min-width:75px;
     gap:7px
   }
   .sun-counter>svg {
@@ -900,14 +928,14 @@ kbd {
     min-width:0
   }
   .wave-status>div>span {
-    font-size:6px;
+    font-size:8px;
     max-width:100px;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap
   }
   .wave-status strong {
-    font-size:7px;
+    font-size:8px;
     white-space:nowrap
   }
   .wave-status>div:first-child {
@@ -918,7 +946,7 @@ kbd {
     gap:5px
   }
   .tool-button {
-    min-width:37px;
+    min-width:44px;
     min-height:44px;
     font-size:12px
   }
@@ -932,7 +960,7 @@ kbd {
     align-items:stretch
   }
   .seed-card {
-    min-height:99px;
+    min-height:92px;
     padding:4px 3px 23px;
     gap:0;
     flex-direction:column;
@@ -950,11 +978,10 @@ kbd {
     align-items:center
   }
   .seed-copy>strong {
-    font-size:10px
+    font-size:11px
   }
   .seed-copy>span {
-    font-size:4.5px;
-    letter-spacing:.1px
+    display:none
   }
   .seed-cost {
     font-size:10px;
@@ -978,17 +1005,14 @@ kbd {
     height:30px
   }
   .shovel-button>span {
-    font-size:5px;
+    font-size:7px;
     letter-spacing:.2px
   }
   .garden-stage {
-    height:clamp(285px,83vw,430px)
+    height:min(clamp(264px,83vw,400px), max(230px, calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 320px)))
   }
   .stage-label {
-    bottom:11px;
-    left:11px;
-    font-size:5px;
-    letter-spacing:.6px
+    display:none
   }
   .intro-card {
     padding:19px 21px 16px;
@@ -1046,8 +1070,8 @@ kbd {
     letter-spacing:.2px
   }
   .sun-drop {
-    min-width:40px;
-    min-height:40px;
+    min-width:44px;
+    min-height:44px;
     font-size:22px
   }
   .wave-banner {
@@ -1081,18 +1105,19 @@ kbd {
 }
 @media(max-height:520px) and (min-width:601px) {
   .garden-app {
-    padding:0 16px
+    padding-left:max(12px, env(safe-area-inset-left, 0px));
+    padding-right:max(12px, env(safe-area-inset-right, 0px))
   }
   .garden-nav {
-    height:43px
+    height:48px
   }
   .back-link,.help-button {
-    min-height:40px
+    min-height:44px
   }
   .game-shell {
     display:grid;
     grid-template-columns:138px minmax(0,1fr);
-    grid-template-rows:54px minmax(220px,calc(100dvh - 112px));
+    grid-template-rows:54px minmax(190px,calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 116px));
     column-gap:10px;
     padding-top:8px
   }
@@ -1119,8 +1144,8 @@ kbd {
     font-size:5px
   }
   .tool-button {
-    min-height:38px;
-    min-width:38px
+    min-height:44px;
+    min-width:44px
   }
   .seed-bank {
     grid-column:1;
@@ -1233,6 +1258,18 @@ kbd {
     font-size:8px;
     min-height:44px
   }
+}
+@media(pointer:coarse) {
+  .game-overlay,.garden-dialog::backdrop { backdrop-filter:none; }
+  .dialog-content>.keyboard-guide { display:none; }
+  .garden-dialog { max-height:calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 28px); max-width:calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 28px); }
+}
+@media(max-height:680px) and (max-width:600px) {
+  .intro-card { padding:16px 20px; }
+  .intro-sun { display:none; }
+  .intro-card h2 { font-size:39px; }
+  .intro-card>.eyebrow { font-size:5.5px; }
+  .garden-playing .garden-footer,.garden-playing .mower-note { display:none; }
 }
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after {

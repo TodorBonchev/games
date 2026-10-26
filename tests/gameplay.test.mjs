@@ -3,6 +3,20 @@ import assert from 'node:assert/strict';
 import { createGame } from './harness.mjs';
 import { Matrix4, Vector3, Raycaster } from '../vendor/three/build/three.module.js';
 
+test('120 Hz phones keep a 60 fps play budget without slowing the simulation clock', async t => {
+  const env = await createGame({ touch: true });
+  t.after(() => env.close());
+  const menuFrames = env.game.PF.ms.length;
+  env.step(1, 120);
+  assert.ok(env.game.PF.ms.length - menuFrames <= 32, 'the animated phone menu renders at about 30 fps');
+  env.start();
+  const before = { frames: env.game.PF.ms.length, time: env.game.time };
+  env.step(1, 120);
+  const frames = env.game.PF.ms.length - before.frames;
+  assert.ok(frames >= 55 && frames <= 62, `play uses about 60 renders per second (${frames})`);
+  assert.ok(Math.abs(env.game.time - before.time - 1) < 0.05, 'the game still advances one second at 120 Hz');
+});
+
 test('Palm Isle: deployment, combat, pause, recovery, persistence and restart', async t => {
   const env = await createGame();
   t.after(() => env.close());

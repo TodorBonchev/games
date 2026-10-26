@@ -4,10 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#f4f2e8" />
-    <meta name="description" content="Grow a little. Defend a lot. A free Three.js garden defense game with one playable level, three plants, and a very hungry horde." />
+    <meta name="description" content="Grow a little. Defend a lot. Five gardens, three plants, and a very hungry horde. A free Three.js lane defense game for touch and desktop." />
     <link rel="icon" href="assets/games-icon.svg" type="image/svg+xml" />
     <link rel="preload" href="assets/fonts/barlow-condensed-800.ttf" as="font" type="font/ttf" crossorigin />
-    <link rel="stylesheet" href="garden.css?v1" />
+    <link rel="stylesheet" href="garden.css?v2" />
     <title>Garden Guard — Games</title>
     <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
   </head>
@@ -15,11 +15,11 @@
     <div class="garden-app">
       <header class="garden-nav">
         <a class="back-link" href="./"><span aria-hidden="true">←</span> ALL GAMES</a>
-        <a class="small-brand" href="./" aria-label="Games home">games<span>.</span></a>
+        <button class="small-brand level-picker" id="levelsBtn" aria-label="Choose a garden level" disabled>01 / 05 ▾</button>
         <button class="help-button" id="helpBtn" aria-label="How to play Garden Guard"><span aria-hidden="true">?</span> HOW TO PLAY</button>
       </header>
       <main class="game-shell">
-        <div class="game-heading"><div><p class="eyebrow"><span></span> A LITTLE STRATEGY. A LOT OF CHLOROPHYLL.</p><h1>GARDEN GUARD<span>.</span></h1></div><div class="level-label"><span>LEVEL 01</span><strong>Backyard beginnings</strong><span id="levelBest">5 LANES · 3 WAVES · 1 LAWN TO SAVE</span></div></div>
+        <div class="game-heading"><div><p class="eyebrow"><span></span> A LITTLE STRATEGY. A LOT OF CHLOROPHYLL.</p><h1>GARDEN GUARD<span>.</span></h1></div><div class="level-label"><span id="levelNumber">LEVEL 01</span><strong id="levelName">Backyard beginnings</strong><span id="levelBest">5 LANES · 3 WAVES · 1 LAWN TO SAVE</span></div></div>
         <div class="game-toolbar">
           <div class="sun-counter" aria-label="Sun available"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="8"/><path d="M20 2v5m0 26v5M2 20h5m26 0h5M7 7l4 4m18 18 4 4M7 33l4-4M29 11l4-4"/></svg><div><strong id="sunCount">200</strong><span>SUN TO SPEND</span></div></div>
           <div class="wave-status"><div><span id="waveLabel">YOUR GARDEN AWAITS</span><strong id="waveCount">3 WAVES</strong></div><div class="wave-track" id="waveTrack" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="18" aria-valuenow="0"><span id="waveFill"></span><i></i><i></i></div></div>
@@ -37,16 +37,17 @@
           <div id="lawnGrid" class="lawn-grid" role="grid" aria-label="Planting lawn, five lanes and eight columns" aria-rowcount="5" aria-colcount="8"></div>
           <div id="sunDrops" class="sun-drops" role="group" aria-label="Collect sun"></div>
           <div class="wave-banner" id="waveBanner" role="status" hidden></div>
-          <section class="game-overlay" id="introPanel" aria-labelledby="introTitle"><div class="intro-card"><span class="intro-sun" aria-hidden="true">✺</span><p class="eyebrow">WELCOME TO THE NEIGHBORHOOD</p><h2 id="introTitle">YOUR LAWN.<br />YOUR RULES.</h2><p>Grow sun. Plant your defense.<br />Keep the zombies off your doorstep.</p><button id="startBtn" class="primary-button" disabled>PREPARING THE GARDEN… <span aria-hidden="true">→</span></button><span class="intro-note" id="loadStatus" role="status">A little world is growing.</span></div></section>
+          <section class="game-overlay" id="introPanel" aria-labelledby="introTitle"><div class="intro-card"><span class="intro-sun" aria-hidden="true">✺</span><p class="eyebrow" id="introKicker">WELCOME TO THE NEIGHBORHOOD</p><h2 id="introTitle">YOUR LAWN.<br />YOUR RULES.</h2><p id="introDescription">Grow sun. Plant your defense.<br />Keep the zombies off your doorstep.</p><button id="startBtn" class="primary-button" disabled>PREPARING THE GARDEN… <span aria-hidden="true">→</span></button><span class="intro-note" id="loadStatus" role="status">A little world is growing.</span></div></section>
         </div>
         <div class="garden-bottom"><p class="play-hint" id="playHint" role="status">Start with Sun blooms. They help your whole garden grow.</p><span class="mower-note"><i></i> ONE EMERGENCY MOWER PER LANE</span></div>
       </main>
       <footer class="garden-footer"><span>GROW A LITTLE. DEFEND A LOT.</span><a href="./">PART OF THE GAMES COLLECTION <span aria-hidden="true">↗</span></a></footer>
     </div>
-    <dialog id="menuDialog" class="garden-dialog" aria-labelledby="menuTitle" aria-describedby="menuDescription"><div class="dialog-content"><p id="menuEyebrow" class="eyebrow">A WELL-EARNED BREATHER</p><span class="result-icon" id="resultIcon" aria-hidden="true">✺</span><h2 id="menuTitle">GARDEN<br />ON PAUSE.</h2><p id="menuDescription">Your plants can wait. Take your time.</p><div id="resultStats" class="result-stats" hidden></div><button id="resumeBtn" class="primary-button">BACK TO THE GARDEN <span aria-hidden="true">→</span></button><button id="restartBtn" class="secondary-button">START LEVEL AGAIN</button><a class="dialog-back" href="./">← All games</a></div></dialog>
-    <dialog id="helpDialog" class="garden-dialog help-dialog" aria-labelledby="helpTitle"><div class="dialog-content"><p class="eyebrow">THE GARDENER’S FIELD GUIDE</p><h2 id="helpTitle">A LITTLE<br />GREEN POWER.</h2><ol class="how-to"><li><span>01</span><div><strong>Grow your budget.</strong><p>Tap the glowing suns to collect 25 sun. Plant Sun blooms for a steady supply every 10 seconds.</p></div></li><li><span>02</span><div><strong>Build a team.</strong><p>Choose a plant, then tap an empty lawn tile. Pea pods shoot right along their lane. Shellnuts soak up bites.</p></div></li><li><span>03</span><div><strong>Protect every lane.</strong><p>Keep Sun blooms toward the left. Cover all five lanes with Pea pods before the bigger waves arrive.</p></div></li><li><span>04</span><div><strong>Make it through three waves.</strong><p>Each lawnmower clears its lane once. After that, a zombie reaching your home ends the run. The shovel returns half a plant’s cost.</p></div></li></ol><p class="keyboard-guide"><kbd>1</kbd>–<kbd>3</kbd> PLANTS <kbd>4</kbd> SHOVEL <kbd>P</kbd> PAUSE<br />ARROW KEYS + ENTER TO PLANT ON THE LAWN</p><button id="helpClose" class="primary-button">GOT IT. LET’S GROW. <span aria-hidden="true">→</span></button></div></dialog>
+    <dialog id="menuDialog" class="garden-dialog" aria-labelledby="menuTitle" aria-describedby="menuDescription"><div class="dialog-content"><p id="menuEyebrow" class="eyebrow">A WELL-EARNED BREATHER</p><span class="result-icon" id="resultIcon" aria-hidden="true">✺</span><h2 id="menuTitle">GARDEN<br />ON PAUSE.</h2><p id="menuDescription">Your plants can wait. Take your time.</p><div id="resultStats" class="result-stats" hidden></div><button id="resumeBtn" class="primary-button">BACK TO THE GARDEN <span aria-hidden="true">→</span></button><button id="restartBtn" class="secondary-button">START LEVEL AGAIN</button><button id="chooseLevelBtn" class="secondary-button">CHOOSE A GARDEN</button><a class="dialog-back" href="./">← All games</a></div></dialog>
+    <dialog id="levelsDialog" class="garden-dialog levels-dialog" aria-labelledby="levelsTitle"><div class="dialog-content"><p class="eyebrow">FIVE GARDENS. ONE GREEN DEFENSE.</p><h2 id="levelsTitle">PICK YOUR<br />PATCH.</h2><p>Choose any garden to start a fresh run. Your best stars are saved for each level.</p><div id="levelChoices" class="level-choices"></div><button id="levelsClose" class="secondary-button">BACK TO THE GARDEN</button></div></dialog>
+    <dialog id="helpDialog" class="garden-dialog help-dialog" aria-labelledby="helpTitle"><div class="dialog-content"><p class="eyebrow">THE GARDENER’S FIELD GUIDE</p><h2 id="helpTitle">A LITTLE<br />GREEN POWER.</h2><ol class="how-to"><li><span>01</span><div><strong>Grow your budget.</strong><p>Tap the glowing suns to collect 25 sun. Plant Sun blooms for a steady supply every 10 seconds.</p></div></li><li><span>02</span><div><strong>Build a team.</strong><p>Choose a plant, then tap an empty lawn tile. Pea pods shoot right along their lane. Shellnuts soak up bites.</p></div></li><li><span>03</span><div><strong>Protect every lane.</strong><p>Keep Sun blooms toward the left. Cover all five lanes with Pea pods before the bigger waves arrive.</p></div></li><li><span>04</span><div><strong>Clear your garden.</strong><p>Later gardens add runners, tougher armor, and up to five waves. Each lawnmower clears its lane once. After that, a zombie reaching your home ends the run. The shovel returns half a plant’s cost.</p></div></li></ol><p class="keyboard-guide"><kbd>1</kbd>–<kbd>3</kbd> PLANTS <kbd>4</kbd> SHOVEL <kbd>P</kbd> PAUSE<br />ARROW KEYS + ENTER TO PLANT ON THE LAWN</p><button id="helpClose" class="primary-button">GOT IT. LET’S GROW. <span aria-hidden="true">→</span></button></div></dialog>
     <script type="module">
-      import('./garden-main.js?v1').catch(error => {
+      import('./garden-main.js?v2').catch(error => {
         console.error('Could not load Garden Guard:', error);
         const status = document.getElementById('loadStatus');
         status.textContent = 'The garden needs WebGL. Enable hardware acceleration and reload.';

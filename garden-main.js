@@ -1,18 +1,32 @@
-import { createGarden, PLANTS, ROWS, COLS, WAVES } from './garden-game.js';
-import { createGardenScene } from './garden-scene.js';
+import { createGarden, PLANTS, ROWS, COLS } from './garden-game.js?v2';
+import { createGardenScene } from './garden-scene.js?v2';
+import { LEVELS } from './garden-levels.js';
 
 const $ = id => document.getElementById(id);
-const game = createGarden();
+const game = createGarden({ level: new URLSearchParams(location.search).get('level') || 1 });
 const { state } = game;
 const stage = $('gardenStage');
 const menu = $('menuDialog');
 const help = $('helpDialog');
+const levels = $('levelsDialog');
 const cells = [];
 const sunButtons = new Map();
+const touch = matchMedia('(pointer: coarse)').matches;
+const motion = matchMedia('(prefers-reduced-motion: reduce)');
+const seeds = [...document.querySelectorAll('[data-seed]')];
+const seedMeters = seeds.map(button => button.querySelector('.seed-cooldown'));
 let selected = 'bloom', speed = 1, graphicsLost = false, resumeAfterHelp = false;
+let resumeAfterLevels = false;
 let lastMode = 'ready', lastWave = 0, bannerUntil = 0, messageUntil = 0;
-let lastFrame = performance.now(), lastUI = 0, frameId;
+let lastFrame = performance.now(), lastUI = 0, lastRender = 0, frameId = 0;
+let layoutDirty = true, viewDirty = true, renderingStopped = false;
 const timeLabel = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+
+function requestFrame() {
+  if (!frameId && !document.hidden && !renderingStopped) frameId = requestAnimationFrame(frame);
+}
+function invalidate() { viewDirty = true; requestFrame(); }
+function text(element, value) { if (element.textContent !== String(value)) element.textContent = value; }
 
 function hint(message, error = false, duration = 4) {
   if ($('playHint').textContent !== message) $('playHint').textContent = message;
@@ -21,7 +35,7 @@ function hint(message, error = false, duration = 4) {
 }
 function select(type) {
   selected = type;
-  for (const button of document.querySelectorAll('[data-seed]')) {
+  for (const button of seeds) {
     const active = button.dataset.seed === type;
     button.classList.toggle('selected', active);
     button.setAttribute('aria-pressed', String(active));
@@ -29,11 +43,13 @@ function select(type) {
   $('shovelBtn').setAttribute('aria-pressed', String(type === 'shovel'));
   for (const cell of cells) cell.classList.toggle('shoveling', type === 'shovel');
   hint(type === 'shovel' ? 'Tap a plant to dig it up. You get half its sun cost back.' : `${PLANTS[type].name} · ${PLANTS[type].cost} sun. ${PLANTS[type].description} Tap an empty patch to plant.`);
+  invalidate();
 }
 function act(row, col) {
   const result = selected === 'shovel' ? game.remove(row, col) : game.place(selected, row, col);
   hint(result.reason, !result.ok, 3);
   syncUI();
+  invalidate();
 }
 for (let row = 0; row < ROWS; row++) {
   const rowElement = document.createElement('div');
@@ -52,10 +68,11 @@ for (let row = 0; row < ROWS; row++) {
     button.disabled = true;
     button.innerHTML = '<span class="cell-health" hidden aria-hidden="true"><span></span></span>';
     button.addEventListener('click', () => act(row, col));
-    button.addEventListener('pointerenter', () => view.setHover(row, col));
+    button.addEventListener('pointerenter', () => { view.setHover(row, col); invalidate(); });
     button.addEventListener('focus', () => {
       for (const cell of cells) cell.tabIndex = cell === button ? 0 : -1;
       view.setHover(row, col);
+      invalidate();
     });
     button.addEventListener('keydown', event => {
       const movement = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }[event.key];
@@ -72,11 +89,13 @@ for (let row = 0; row < ROWS; row++) {
 }
 
 const view = createGardenScene(stage, {
+  onResize() { layoutDirty = true; invalidate(); },
   onLost() {
     graphicsLost = true;
     $('startBtn').disabled = true;
     game.pause();
     if (help.open) help.close();
+    if (levels.open) levels.close();
     showMenu();
     $('menuDescription').textContent = 'The graphics connection paused. Your garden is safe while it restores.';
     $('resumeBtn').textContent = 'RESTORING THE GARDEN…';
@@ -89,35 +108,96 @@ const view = createGardenScene(stage, {
     if (state.mode === 'ready' && menu.open) menu.close();
     else if (state.mode === 'paused') showMenu();
     syncUI();
+    invalidate();
   },
 });
-stage.addEventListener('pointerleave', () => view.setHover());
-document.querySelectorAll('[data-seed]').forEach(button => button.addEventListener('click', () => select(button.dataset.seed)));
+stage.addEventListener('pointerleave', () => { view.setHover(); invalidate(); });
+seeds.forEach(button => button.addEventListener('click', () => select(button.dataset.seed)));
 $('shovelBtn').addEventListener('click', () => select(selected === 'shovel' ? 'bloom' : 'shovel'));
 
-function bestRun() {
-  try { return JSON.parse(localStorage.getItem('games:garden:level1') || 'null'); }
+function bestRun(id = state.level) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(`games:garden:level${id}`) || 'null');
+    return saved && Number.isInteger(saved.stars) && saved.stars >= 1 && saved.stars <= 3 && Number.isFinite(saved.time) && saved.time >= 0 ? saved : null;
+  }
   catch { return null; }
 }
 function updateBest() {
   const best = bestRun();
-  if (best && Number.isFinite(best.stars) && Number.isFinite(best.time)) $('levelBest').textContent = `${'★'.repeat(Math.max(0, Math.min(3, best.stars)))} GARDEN SAVED · BEST ${timeLabel(best.time)}`;
+  $('levelBest').textContent = best ? `${'★'.repeat(best.stars)} GARDEN SAVED · BEST ${timeLabel(best.time)}` : `5 LANES · ${game.level.waveCount} WAVES · ${game.level.enemies.length} ZOMBIES`;
 }
+function syncLevel() {
+  const level = game.level;
+  text($('levelNumber'), `LEVEL ${String(level.id).padStart(2, '0')}`);
+  text($('levelName'), level.name);
+  text($('levelsBtn'), `${String(level.id).padStart(2, '0')} / 05 ▾`);
+  text($('introKicker'), `GARDEN ${level.id} · ${level.name.toUpperCase()}`);
+  text($('introDescription'), level.subtitle);
+  text($('loadStatus'), `GARDEN ${level.id} OF 5 · ${level.waveCount} WAVES · ${level.startSun} STARTING SUN`);
+  document.body.style.setProperty('--green', level.theme.accent);
+  document.body.dataset.level = level.id;
+  $('waveTrack').setAttribute('aria-valuemax', level.enemies.length);
+  $('waveTrack').querySelectorAll('i').forEach(marker => marker.remove());
+  for (let wave = 1; wave < level.waveCount; wave++) {
+    const marker = document.createElement('i');
+    marker.style.left = `${level.enemies.filter(enemy => enemy.wave <= wave).length / level.enemies.length * 100}%`;
+    $('waveTrack').append(marker);
+  }
+  updateBest();
+}
+function showLevels() {
+  resumeAfterLevels = state.mode === 'playing';
+  game.pause();
+  if (menu.open) menu.close();
+  $('levelChoices').replaceChildren();
+  for (const level of LEVELS) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'garden-level-card';
+    button.dataset.level = level.id;
+    button.setAttribute('aria-pressed', String(level.id === state.level));
+    const number = document.createElement('span'), copy = document.createElement('span'), title = document.createElement('strong'), detail = document.createElement('span'), stars = document.createElement('span');
+    number.className = 'level-index'; number.textContent = String(level.id).padStart(2, '0');
+    title.textContent = level.name;
+    detail.textContent = `${level.waveCount} WAVES · ${level.startSun} SUN · ${level.subtitle}`;
+    copy.className = 'level-card-copy'; copy.append(title, detail);
+    const best = bestRun(level.id);
+    stars.className = 'level-stars'; stars.textContent = best ? '★'.repeat(best.stars) : '→';
+    button.append(number, copy, stars);
+    button.addEventListener('click', () => { resumeAfterLevels = false; levels.close(); start(level.id); });
+    $('levelChoices').append(button);
+  }
+  levels.showModal();
+  syncUI();
+  invalidate();
+}
+$('levelsBtn').addEventListener('click', showLevels);
+$('chooseLevelBtn').addEventListener('click', showLevels);
+$('levelsClose').addEventListener('click', () => levels.close());
+levels.addEventListener('close', () => {
+  if (resumeAfterLevels && !graphicsLost) game.resume();
+  else if (state.mode === 'paused' && !graphicsLost) showMenu();
+  resumeAfterLevels = false;
+  lastFrame = performance.now();
+  syncUI();
+  invalidate();
+});
 function saveWin() {
   const used = state.mowers.filter(mower => mower.spent).length;
   const stars = used === 0 ? 3 : used <= 2 ? 2 : 1;
   const best = bestRun();
   if (!best || stars > best.stars || (stars === best.stars && state.time < best.time)) {
-    try { localStorage.setItem('games:garden:level1', JSON.stringify({ stars, time: state.time })); } catch { /* Play normally when storage is unavailable. */ }
+    try { localStorage.setItem(`games:garden:level${state.level}`, JSON.stringify({ stars, time: state.time })); } catch { /* Play normally when storage is unavailable. */ }
   }
   updateBest();
   return stars;
 }
 function showMenu() {
   const won = state.mode === 'won', lost = state.mode === 'lost';
-  $('menuEyebrow').textContent = won ? 'LEVEL 01 · BACKYARD SECURED' : lost ? 'THE NEIGHBORS GOT A LITTLE TOO CLOSE' : 'A WELL-EARNED BREATHER';
+  const next = won && state.level < LEVELS.length;
+  $('menuEyebrow').textContent = won ? `LEVEL ${String(state.level).padStart(2, '0')} · GARDEN SECURED` : lost ? 'THE NEIGHBORS GOT A LITTLE TOO CLOSE' : 'A WELL-EARNED BREATHER';
   $('menuTitle').innerHTML = won ? 'LAWN ORDER.<br />RESTORED.' : lost ? 'GARDEN<br />OVERRUN.' : 'GARDEN<br />ON PAUSE.';
-  $('menuDescription').textContent = won ? 'All three waves cleared. A little green power goes a long way.' : lost ? 'A zombie reached your home. Grow more sun early, then put a Pea pod in every lane.' : 'Your plants can wait. Take your time.';
+  $('menuDescription').textContent = won ? `All ${game.level.waveCount} waves cleared.${next ? ' Your next garden is waiting.' : ' The last lawn is still standing. Replay any garden to improve your stars.'}` : lost ? `A zombie reached your home. ${game.level.tip}` : 'Your plants can wait. Take your time.';
   $('resultIcon').textContent = won ? '★'.repeat(saveWin()) : lost ? '↻' : '✺';
   $('resultStats').hidden = !won && !lost;
   if (won || lost) {
@@ -130,16 +210,19 @@ function showMenu() {
       $('resultStats').append(stat);
     }
   }
-  $('resumeBtn').innerHTML = `${won ? 'GROW AGAIN' : lost ? 'GIVE IT ANOTHER GROW' : 'BACK TO THE GARDEN'} <span aria-hidden="true">→</span>`;
+  $('resumeBtn').innerHTML = `${next ? 'NEXT GARDEN' : won ? 'GROW AGAIN' : lost ? 'GIVE IT ANOTHER GROW' : 'BACK TO THE GARDEN'} <span aria-hidden="true">→</span>`;
   $('resumeBtn').disabled = graphicsLost;
-  $('restartBtn').hidden = won || lost || state.mode === 'ready';
+  $('restartBtn').hidden = lost || state.mode === 'ready' || (won && !next);
+  text($('restartBtn'), won ? 'REPLAY THIS GARDEN' : 'START LEVEL AGAIN');
   if (!menu.open) menu.showModal();
+  invalidate();
 }
-function start() {
+function start(levelId) {
   if (graphicsLost) return;
   if (menu.open) menu.close();
   if (help.open) help.close();
-  game.start();
+  game.start(typeof levelId === 'number' ? levelId : state.level);
+  syncLevel();
   lastMode = 'playing';
   lastWave = 0;
   bannerUntil = 0;
@@ -148,22 +231,26 @@ function start() {
   $('speedBtn').setAttribute('aria-pressed', 'false');
   $('speedBtn').setAttribute('aria-label', 'Switch to double speed');
   $('introPanel').hidden = true;
+  document.body.classList.add('garden-playing');
   select('bloom');
-  hint('Start with two Sun blooms on the left. Then choose Pea pods to protect each lane.', false, 9);
+  hint(game.level.tip, false, 9);
   lastFrame = performance.now();
   syncUI();
+  invalidate();
 }
 function togglePause() {
   if (graphicsLost || help.open) return;
   if (state.mode === 'playing') { game.pause(); showMenu(); }
   else if (state.mode === 'paused') { game.resume(); menu.close(); lastFrame = performance.now(); }
   syncUI();
+  invalidate();
 }
 $('startBtn').addEventListener('click', start);
 $('pauseBtn').addEventListener('click', togglePause);
 $('resumeBtn').addEventListener('click', () => {
   if (graphicsLost) return;
   if (state.mode === 'paused') togglePause();
+  else if (state.mode === 'won' && state.level < LEVELS.length) start(state.level + 1);
   else start();
 });
 $('restartBtn').addEventListener('click', start);
@@ -181,57 +268,69 @@ $('helpBtn').addEventListener('click', () => {
   resumeAfterHelp = state.mode === 'playing';
   game.pause();
   help.showModal();
+  syncUI();
+  invalidate();
 });
 $('helpClose').addEventListener('click', () => help.close());
 help.addEventListener('close', () => {
   if (resumeAfterHelp && !graphicsLost) game.resume();
-  else if (state.mode === 'paused') showMenu();
+  else if (state.mode === 'paused' && !graphicsLost) showMenu();
   resumeAfterHelp = false;
   lastFrame = performance.now();
   syncUI();
+  invalidate();
 });
 document.addEventListener('keydown', event => {
-  if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || help.open || menu.open) return;
+  if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || help.open || menu.open || levels.open) return;
   const type = { Digit1: 'bloom', Digit2: 'pea', Digit3: 'nut', Digit4: 'shovel' }[event.code];
   if (type) { event.preventDefault(); select(type); }
   if ((event.code === 'KeyP' || event.code === 'Escape') && state.mode === 'playing') { event.preventDefault(); togglePause(); }
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && state.mode === 'playing') { game.pause(); showMenu(); }
-  if (document.hidden) resumeAfterHelp = false;
+  if (document.hidden) { resumeAfterHelp = false; resumeAfterLevels = false; }
   lastFrame = performance.now();
+  if (document.hidden) { cancelAnimationFrame(frameId); frameId = 0; }
+  else invalidate();
 });
+motion.addEventListener('change', invalidate);
 
 let previousSun = -1;
 function syncUI() {
+  const relayout = layoutDirty;
+  layoutDirty = false;
   if (previousSun !== state.sun) { $('sunCount').textContent = state.sun; previousSun = state.sun; }
   $('pauseBtn').disabled = !['playing', 'paused'].includes(state.mode) || graphicsLost;
   $('speedBtn').disabled = !['playing', 'paused'].includes(state.mode) || graphicsLost;
   $('waveTrack').setAttribute('aria-valuenow', state.defeated);
-  $('waveFill').style.width = `${state.defeated / WAVES.length * 100}%`;
-  $('waveLabel').textContent = state.mode === 'ready' ? 'YOUR GARDEN AWAITS' : state.time < 18 ? `FIRST ZOMBIE IN ${Math.max(0, Math.ceil(18 - state.time))}S` : `WAVE ${state.wave} OF 3`;
-  $('waveCount').textContent = state.mode === 'ready' ? '3 WAVES' : `${state.defeated} / ${WAVES.length}`;
-  for (const button of document.querySelectorAll('[data-seed]')) {
+  $('waveFill').style.width = `${state.defeated / game.level.enemies.length * 100}%`;
+  const firstEnemy = game.level.enemies[0].at;
+  text($('waveLabel'), state.mode === 'ready' ? 'YOUR GARDEN AWAITS' : state.time < firstEnemy ? `FIRST ZOMBIE IN ${Math.max(0, Math.ceil(firstEnemy - state.time))}S` : `WAVE ${state.wave} OF ${game.level.waveCount}`);
+  text($('waveCount'), state.mode === 'ready' ? `${game.level.waveCount} WAVES` : `${state.defeated} / ${game.level.enemies.length}`);
+  for (const [index, button] of seeds.entries()) {
     const type = button.dataset.seed;
     button.classList.toggle('unaffordable', state.sun < PLANTS[type].cost);
-    button.querySelector('.seed-cooldown').style.transform = `scaleX(${state.cooldowns[type] / PLANTS[type].cooldown})`;
+    const transform = `scaleX(${state.cooldowns[type] / PLANTS[type].cooldown})`;
+    if (seedMeters[index].style.transform !== transform) seedMeters[index].style.transform = transform;
     button.title = `${PLANTS[type].description}${state.cooldowns[type] > 0 ? ` Ready in ${Math.ceil(state.cooldowns[type])} seconds.` : ''}`;
   }
   const planting = state.mode === 'playing' && !graphicsLost;
   for (const cell of cells) {
     const row = Number(cell.dataset.row), col = Number(cell.dataset.col);
-    const bounds = view.cellBounds(row, col);
-    cell.style.left = `${bounds.left}px`;
-    cell.style.top = `${bounds.top}px`;
-    cell.style.width = `${bounds.width}px`;
-    cell.style.height = `${bounds.height}px`;
+    if (relayout) {
+      const bounds = view.cellBounds(row, col);
+      cell.style.left = `${bounds.left}px`;
+      cell.style.top = `${bounds.top}px`;
+      cell.style.width = `${bounds.width}px`;
+      cell.style.height = `${bounds.height}px`;
+    }
     cell.disabled = !planting;
     const plant = state.plants.find(plant => plant.row === row && plant.col === col);
     const label = `Lane ${row + 1}, column ${col + 1}: ${plant ? `${PLANTS[plant.type].name}, ${Math.ceil(plant.hp)} health` : 'empty patch'}`;
     if (cell.getAttribute('aria-label') !== label) cell.setAttribute('aria-label', label);
     const health = cell.firstElementChild;
     health.hidden = !plant || plant.hp >= PLANTS[plant.type].hp;
-    if (plant) {
+    if (plant && !health.hidden) {
       health.style.setProperty('--hp', `${Math.max(0, plant.hp / PLANTS[plant.type].hp * 100)}%`);
       health.classList.toggle('low', plant.hp < PLANTS[plant.type].hp * 0.4);
     }
@@ -246,13 +345,15 @@ function syncUI() {
       button.className = 'sun-drop';
       button.innerHTML = '☀<span>25</span>';
       button.setAttribute('aria-label', 'Collect 25 sun');
-      button.addEventListener('click', () => { if (game.collectSun(sun.id)) { hint('+25 sun. A little sunshine goes a long way.', false, 2); syncUI(); } });
+      button.addEventListener('click', () => { if (game.collectSun(sun.id)) { hint('+25 sun. A little sunshine goes a long way.', false, 2); syncUI(); invalidate(); } });
       sunButtons.set(sun.id, button);
       $('sunDrops').append(button);
     }
-    const position = view.project(sun.x, sun.row, 1.5);
-    button.style.left = `${position.x}px`;
-    button.style.top = `${position.y}px`;
+    if (relayout || !button.style.left) {
+      const position = view.project(sun.x, sun.row, 1.5);
+      button.style.left = `${position.x}px`;
+      button.style.top = `${position.y}px`;
+    }
     button.classList.toggle('expiring', sun.age > sun.life - 3);
     button.disabled = !planting;
   }
@@ -264,11 +365,11 @@ function syncUI() {
   if (state.spawned > 0 && state.wave !== lastWave && state.mode === 'playing') {
     lastWave = state.wave;
     bannerUntil = state.time + 4;
-    $('waveBanner').textContent = state.wave === 3 ? 'FINAL WAVE · DIG IN!' : `WAVE 0${state.wave} · HERE THEY COME`;
+    $('waveBanner').textContent = state.wave === game.level.waveCount ? 'FINAL WAVE · DIG IN!' : `WAVE 0${state.wave} · HERE THEY COME`;
   }
   $('waveBanner').hidden = state.time >= bannerUntil || state.mode !== 'playing';
   if (state.time > messageUntil && state.mode === 'playing') {
-    hint(state.suns.length ? 'A little sunshine! Tap the glowing suns to collect them.' : state.time < 18 ? 'Build your sun supply, then place Pea pods in each lane.' : selected === 'shovel' ? 'Tap a plant to remove it and recover half its sun cost.' : 'Pea pods fire to the right. Keep every lane covered.', false, 2);
+    hint(state.suns.length ? 'A little sunshine! Tap the glowing suns to collect them.' : state.time < firstEnemy ? game.level.tip : selected === 'shovel' ? 'Tap a plant to remove it and recover half its sun cost.' : 'Pea pods fire to the right. Keep every lane covered.', false, 2);
   }
   if (state.mode !== lastMode) {
     lastMode = state.mode;
@@ -276,25 +377,33 @@ function syncUI() {
   }
 }
 function frame(now) {
-  frameId = requestAnimationFrame(frame);
+  frameId = 0;
+  if (document.hidden) return;
+  const active = state.mode === 'playing' && !graphicsLost;
+  const demo = state.mode === 'ready' && !touch && !motion.matches && !help.open && !levels.open && !graphicsLost;
+  const interval = active ? 1000 / (touch ? 30 : 60) : 1000 / 15;
+  if (!viewDirty && now - lastRender < interval - 0.5) { if (active || demo) requestFrame(); return; }
   const dt = Math.min(0.1, Math.max(0, (now - lastFrame) / 1000));
   lastFrame = now;
-  if (!graphicsLost) game.tick(dt * speed);
-  if (now - lastUI >= 80) { syncUI(); lastUI = now; }
-  view.render(state, state.mode === 'ready' ? now / 1000 : state.time);
+  if (active) game.tick(dt * speed);
+  if (viewDirty || layoutDirty || now - lastUI >= 100) { syncUI(); lastUI = now; }
+  if (active || demo || viewDirty) view.render(state, state.mode === 'ready' ? now / 1000 : state.time);
+  viewDirty = false;
+  lastRender = now;
+  if (active || demo) requestFrame();
 }
-updateBest();
+syncLevel();
 syncUI();
 view.render(state, 0);
 $('startBtn').disabled = false;
 $('startBtn').innerHTML = 'LET’S GROW <span aria-hidden="true">→</span>';
-$('loadStatus').textContent = 'ONE LEVEL · THREE WAVES · PLENTY OF SUNSHINE';
+$('levelsBtn').disabled = false;
 document.body.dataset.ready = 'true';
-frameId = requestAnimationFrame(frame);
+invalidate();
 if (new URLSearchParams(location.search).get('debug') === '1') {
   window.__garden = {
     game, view, select, start,
     advance(seconds) { game.tick(seconds); syncUI(); view.render(state, state.time); },
-    stopRendering() { cancelAnimationFrame(frameId); },
+    stopRendering() { renderingStopped = true; cancelAnimationFrame(frameId); frameId = 0; },
   };
 }

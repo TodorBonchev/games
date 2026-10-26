@@ -42,7 +42,7 @@ a:focus-visible {
 .site-shell {
   max-width:1384px;
   margin:auto;
-  padding:0 64px
+  padding:env(safe-area-inset-top, 0px) max(64px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(64px, env(safe-area-inset-left, 0px))
 }
 .site-header {
   height:113px;
@@ -130,6 +130,7 @@ h1 span {
   color:var(--muted);
   margin:26px 0 0
 }
+.quick-play { display:none; }
 .hero-stamp {
   position:relative;
   width:192px;
@@ -396,7 +397,8 @@ h3>span {
 }
 @media(max-width:900px) {
   .site-shell {
-    padding:0 32px
+    padding-left:max(32px, env(safe-area-inset-left, 0px));
+    padding-right:max(32px, env(safe-area-inset-right, 0px))
   }
   .site-header {
     height:90px;
@@ -447,10 +449,11 @@ h3>span {
 }
 @media(max-width:600px) {
   .site-shell {
-    padding:0 22px
+    padding-left:max(22px, env(safe-area-inset-left, 0px));
+    padding-right:max(22px, env(safe-area-inset-right, 0px))
   }
   .site-header {
-    height:79px
+    height:66px
   }
   .wordmark {
     font-size:30px
@@ -464,7 +467,7 @@ h3>span {
     letter-spacing:.8px
   }
   .hero {
-    padding:43px 0 40px;
+    padding:27px 0 26px;
     position:relative
   }
   .hero-copy {
@@ -474,15 +477,15 @@ h3>span {
   .eyebrow {
     font-size:8px;
     letter-spacing:1px;
-    margin-bottom:21px
+    margin-bottom:16px
   }
   h1 {
-    font-size:85px;
+    font-size:clamp(50px,16vw,74px);
     line-height:.88
   }
   .hero-description {
     font-size:13px;
-    margin-top:21px;
+    margin-top:15px;
     line-height:1.8
   }
   .hero-stamp {
@@ -506,14 +509,14 @@ h3>span {
     gap:23px
   }
   .game-art {
-    aspect-ratio:1.55
+    aspect-ratio:1.8
   }
   .art-title {
-    font-size:39px;
+    font-size:clamp(28px,8.5vw,38px);
     bottom:21px
   }
   .game-info {
-    padding:23px 22px 21px
+    padding:19px 20px
   }
   .game-category {
     font-size:8px
@@ -557,6 +560,21 @@ h3>span {
   .footer-brand {
     font-size:22px
   }
+}
+@media(max-width:600px), (max-width:1024px) and (max-height:520px) {
+  .quick-play { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+  .quick-play a { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; padding:10px 12px; border:1px solid var(--line); border-radius:3px; font-size:11px; }
+  .quick-play a>span { color:var(--orange); }
+  .collection-link,.wordmark,.footer-brand { min-height:44px; display:flex; align-items:center; }
+}
+@media(max-height:520px) and (min-width:601px) and (max-width:1024px) {
+  .site-header { height:58px; }
+  .hero { padding:24px 0; }
+  h1 { font-size:64px; }
+  .hero .eyebrow { margin-bottom:12px; font-size:8px; }
+  .hero-description { font-size:12px; line-height:1.6; margin-top:10px; }
+  .hero-stamp { display:none; }
+  .quick-play { margin-top:14px; }
 }
 @media(prefers-reduced-motion:reduce) {
   html {

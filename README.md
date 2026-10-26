@@ -7,7 +7,7 @@ A collection of standalone Three.js browser games. The home page is a lightweigh
 | Game | Play | What's included |
 | --- | --- | --- |
 | **Soldier vs Zombies** | [Launch the shooter](https://todorbonchev.github.io/games/soldier.html) | The existing two-island survival campaign, jetpack, Frozen Orb, weapons, upgrades, and endless mode. |
-| **Garden Guard** | [Launch garden defense](https://todorbonchev.github.io/games/garden.html) | One original garden defense sample level with five lanes, three plant types, and three zombie waves. |
+| **Garden Guard** | [Launch garden defense](https://todorbonchev.github.io/games/garden.html) | Five garden defense levels with five lanes, three plant types, runners, armored zombies, and up to five waves. |
 
 ## Play locally
 
@@ -25,7 +25,17 @@ To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open yo
 
 An original Plants vs. Zombies-inspired lane defense game, rendered with the locally bundled Three.js engine. All plants, zombies, lawnmowers, the cottage, and the garden are modeled in code.
 
-**Backyard beginnings** is one complete sample level: start with **200 sun**, defend **five lanes across eight columns**, and stop **18 zombies over three waves**. A successful run takes about two to three minutes. Cone-wearing zombies take more hits. Each lane has one emergency lawnmower; a later zombie reaching home ends the run.
+Choose any of **five gardens** with the **01 / 05** button. Each has five lanes across eight columns, its own wave schedule, lighting, starting resources, and saved completion stars. Winning offers **Next garden**; replay and direct level selection are available throughout. Each new garden starts with fresh plants, sun, and emergency mowers.
+
+| Level | Garden | Waves | Zombies | Starting sun | Challenge |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Backyard beginnings | 3 | 18 | 200 | Learn to grow sun and defend the lawn. |
+| 2 | Sunny side | 3 | 24 | 225 | Early attacks on the outside lanes, then more armor. |
+| 3 | Runner’s row | 3 | 26 | 250 | Faster runners arrive among the walkers. |
+| 4 | Dusk patrol | 4 | 29 | 225 | Sky sun arrives every nine seconds; protect your blooms. |
+| 5 | Last lawn standing | 5 | 40 | 300 | The longest siege, with tougher enemies and mixed rushes. |
+
+Runs last about two to four minutes. Cone-wearing zombies take more hits; runners wear turquoise and yellow and move faster. Each lane has one emergency lawnmower; a later zombie reaching home ends the run.
 
 | Plant | Cost | Role |
 | --- | --- | --- |
@@ -37,7 +47,7 @@ Tap a seed packet, then an empty lawn tile. Tap glowing suns to collect **25 sun
 
 Mouse and touch use the same controls. On a keyboard, **1–3** select plants, **4** selects the shovel, and **P / Esc** pauses. Tab onto the lawn, use arrow keys to choose a patch, and press Enter or Space to plant. The **1× / 2×** button changes game speed. Help and pause freeze the level; switching browser tabs also pauses it. Best completion stars and time are saved separately from the shooter's settings.
 
-The level includes victory and defeat screens, restart, WebGL context recovery, keyboard dialog navigation, and links back to all games. It works in portrait and landscape; rotating preserves the current run. Garden Guard has one level in this first sample.
+The level includes victory and defeat screens, restart, WebGL context recovery, keyboard dialog navigation, and links back to all games. It works in portrait and landscape; rotating preserves the current run. All five gardens are available from the level picker. Each stores its own best stars and time.
 
 ## Soldier vs Zombies
 
@@ -109,6 +119,8 @@ npm run test:browser
 npm run test:mobile
 npm run test:abilities
 npm run test:garden
+npm run test:phone
+npm run test:campaign
 ```
 
 Use `CHROMIUM_PATH=/path/to/chromium npm run test:browser` to use an installed browser. Screenshots go into ignored `test-results/`. The browser check covers both islands, high/medium/low graphics, desktop and mobile layouts, simultaneous touch movement and firing, keyboard dialog navigation, saved preferences, real WebGL context loss/recovery, pause, and returning to the briefing. It needs permission to run Chromium and bind a localhost port. Visual quality, sound, and physical touch controls still benefit from hands-on playtesting.
@@ -117,12 +129,16 @@ The mobile suite checks seven emulated phone sizes, notch insets, 44px touch tar
 
 The abilities suite checks tap/hold jetpack flight, steering, fuel, touch cancellation, Frozen Orb cooldowns, simultaneous touch controls, and first-person switching in a real browser.
 
-The garden suite checks the game picker, real WebGL rendering, 320px and 390px phones, landscape rotation, touch and keyboard planting, sun collection, shovel refunds, pause, help, victory, defeat, restart, saved completion, graphics restoration, and launching the existing shooter. Screenshots are written to `test-results/`. Run `npm run test:garden -- --capture-art` to also refresh `assets/garden-preview.png` from the actual garden scene. Pure simulation tests include a full legal playthrough that wins without spending more sun than it collects.
+The garden suite checks the game picker, real WebGL rendering, phones, landscape rotation, touch and keyboard planting, sun collection, shovel refunds, pause, help, victory, defeat, restart, saved completion, graphics restoration, and launching the existing shooter. The campaign suite plays all five levels using only collected sun and legal planting, then checks next-level navigation, the level picker, replay, and saved stars after a reload. The phone suite checks seven phone sizes at 2× or 3× density, simulated notches, 44px main controls, complete lawn visibility, rotation, GPU budgets, and no rendering while paused. Screenshots and measurements are written to `test-results/`.
 
-Each game owns its entry page and UI. The shooter is `soldier.html` with its existing modules. Garden Guard uses `garden.html`, `garden-main.js` (controls and UI), `garden-scene.js` (Three.js rendering), and `garden-game.js` (deterministic level rules). To add a game, give it a separate entry page and add its link to `index.html`; keep the hub free of gameplay code.
+Run `npm run test:garden -- --capture-art` to refresh the garden thumbnail and responsive WebP previews. Use `npm run test:garden -- --prepare-previews` to re-encode the existing source previews without running the full suite. The hub serves 480px or 960px images instead of the full PNG sources.
+
+Phone rendering uses instanced plant, zombie, mower, projectile, and shadow batches. Garden Guard caps its framebuffer at 360,000 pixels and 1.25× density, disables multisample antialiasing on touch devices, and renders active play at up to 30 frames per second. The phone menu is static; paused, finished, help, and background screens stop rendering until something changes. Tile geometry is recalculated only after resizing, and the HUD refreshes at ten updates per second. The shooter keeps adaptive graphics and caps touch devices at 60 frames per second in play and 30 in its animated menu. These are resource budgets; actual performance depends on the device.
+
+Each game owns its entry page and UI. The shooter is `soldier.html` with its existing modules. Garden Guard uses `garden.html`, `garden-main.js` (controls and UI), `garden-scene.js` (Three.js rendering), and `garden-game.js` (deterministic rules), and `garden-levels.js` (five level definitions). To add a game, give it a separate entry page and add its link to `index.html`; keep the hub free of gameplay code.
 
 The locally bundled Barlow Condensed display font is licensed under the [SIL Open Font License](assets/fonts/OFL.txt). No external font requests are needed.
 
 For shooter development inspection, `/soldier.html?debug=1` exposes `window.__game`; `?level=2` previews Ember Isle, and `?q=low`, `?q=medium`, or `?q=high` selects a rendering tier. These are local development shortcuts, not access controls.
 
-For Garden Guard, `/garden.html?debug=1` exposes `window.__garden` with the simulation and scene for local inspection. Normal play does not expose these helpers.
+For Garden Guard, `/garden.html?debug=1` exposes `window.__garden` with the simulation and scene for local inspection. Append `&level=2` through `&level=5` to preview another garden. Normal play does not expose these helpers.
