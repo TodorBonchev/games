@@ -9,6 +9,9 @@ A collection of standalone Three.js browser games. The home page is a lightweigh
 | **Soldier vs Zombies** | [Launch the shooter](https://todorbonchev.github.io/games/soldier.html) | The existing two-island survival campaign, jetpack, Frozen Orb, weapons, upgrades, and endless mode. |
 | **Garden Guard** | [Launch garden defense](https://todorbonchev.github.io/games/garden.html) | Five garden defense levels with five lanes, three plant types, runners, armored zombies, and up to five waves. |
 | **Borrowed Tomorrow** | [Launch the time sail](https://todorbonchev.github.io/games/borrowed.html) | Six clockworld chambers where your two recorded past selves steer a triangular weapon. Flow and Rift difficulties, clockblooms, crosswinds, armor, and a final boss. |
+| **Moonbounce** | [Launch Moonbounce](https://todorbonchev.github.io/games/moonbounce.html) | A one-thumb 3D arcade game: gather little moons, lift to send them bouncing, pick powers, and face the big grump. |
+| **Popwake** | [Launch Popwake](https://todorbonchev.github.io/games/popwake.html) | Draw a trail of jelly dominoes and start a chain reaction to wake every jelly in eight handmade puzzles. |
+| **Pond Post** | [Launch Pond Post](https://todorbonchev.github.io/games/pondpost.html) | Help a little frog deliver mail by leaping across floating lily pads, collecting stamps, and navigating five routes. |
 
 ## Play locally
 
@@ -18,13 +21,13 @@ With Node.js installed, run:
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html`, `/garden.html`, and `/borrowed.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
+Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html`, `/garden.html`, `/borrowed.html`, `/moonbounce.html`, `/popwake.html`, and `/pondpost.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
 
 To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Both portrait and landscape have dedicated menus, camera framing, and thumb controls. Rotate during a run without losing progress; lift and place your thumbs again after rotating.
 
 ## Saved progress
 
-All three games automatically save their current run to **localStorage** in this browser. Saves update every five active seconds, on important actions, when pausing, and when leaving or hiding the page. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
+All six games automatically save their current progress to **localStorage** in this browser. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
 
 Garden Guard restores the chosen level, plants and health, enemies, sun resources and drops, projectiles, seed cooldowns, used lawnmowers, wave progress, selected plant, and game speed. A completed garden can resume at its victory screen and continue to the next garden. Each level’s best stars and time stay separate from its current run.
 
@@ -32,7 +35,55 @@ Soldier vs Zombies restores the island, wave and remaining enemies, health, scor
 
 Borrowed Tomorrow restores the chamber, difficulty, exact loop clock, player and enemies, incoming shots, health, beats, bloom repairs, boss health, cooldowns, random sequence, and both recorded routes, including borrow teleports. You can also resume between loops or from a completed chamber. Chamber stars, best scores, fewest loops, sound, and difficulty preference are stored separately from the run.
 
-Starting a fresh run replaces that game’s checkpoint. Defeat or **End run & return** clears the unfinished run; scores, island unlocks, preferences, and earned stars are kept. Each game has its own save slot. No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues and the pause screen reports that saving is unavailable.
+Moonbounce restores the wave, health, enemies, orbiting and loose moons, flying moons and shots, score, combo, chosen powers, and random sequence. An unchosen power selection and the final victory screen can also be resumed. The best score and sound preference are saved separately from the current run.
+
+Popwake restores the selected puzzle and its current board or chain reaction. Completing a puzzle saves its best stars and unlocks the next one. An interrupted drawing is discarded safely, so you can draw a fresh trail after resuming. Puzzle progress is stored separately from the other games.
+
+Pond Post saves the route, current lily pad and checkpoint, collected stamps, score, and route records separately from the other games. An interrupted aim is cleared safely so a restored run cannot launch unexpectedly.
+
+Starting a fresh run replaces that game’s checkpoint. In the action games, defeat or **End run & return** clears the unfinished run; scores, island unlocks, preferences, and earned stars are kept. Each game has its own save slot. No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues.
+
+## Pond Post
+
+Help a little frog carry the post across five forest ponds. Hold and pull back to aim, watch the predicted arc, then release to leap onto the next lily pad. Collect stamps along the way and reach the mailbox to finish the route. Some pads move and the wind changes, so each jump is a small timing puzzle.
+
+There are no lives to lose: a missed jump returns the frog to the last safe pad. Aim for the centers of pads to make perfect landings and build a streak. The game supports phone play in portrait and landscape and saves route progress on the device.
+
+For three stars, collect at least half the stamps, make two perfect landings, and miss at most once. The predicted arc accounts for wind and moving pads. A flight can be resumed from the exact point where it was saved.
+
+| Action | Phone | Keyboard / mouse |
+| --- | --- | --- |
+| Aim and leap | Hold anywhere, pull back, and release | Drag and release, or press Space, adjust with arrows or WASD, and press Space / Enter |
+| Pause / resume | Pause / Keep hopping | P / Esc |
+
+The scene supports interrupted touches, rotation, background pausing, reduced motion, and WebGL recovery. On touch devices it caps the framebuffer at 420,000 pixels and 1.35× density, disables multisample antialiasing, and targets 30 frames per second. Actual performance depends on the device.
+
+## Popwake
+
+Draw a connected trail of jelly dominoes from the glowing starter, then lift your finger to set off a chain reaction. Your goal is to wake every sleeping jelly in eight handcrafted puzzles. Trails can revisit a square to branch, so a single pop can travel in more than one direction. Each puzzle has a limited trail budget; only new squares use it.
+
+Pops can wake a nearby jelly or ignite another domino. Gold jellies have a larger ripple that can reach across rocks, but your finger and dominoes must go around those rocks. Each puzzle shows a budget and a three-star target. Use no more than the target without a hint for three stars; longer successful routes earn one or two stars.
+
+There is no timer or lives counter. Redraw as often as you like, or use a hint when you need a nudge. A hint caps that attempt at two stars and remains active when you redraw; replay the puzzle for a fresh unhinted attempt. Puzzle completion and best stars are saved on the device. Popwake uses locally bundled Three.js and supports phone play in portrait and landscape.
+
+| Action | Phone | Keyboard / mouse |
+| --- | --- | --- |
+| Draw a trail | Drag from the blue spark across neighboring cells | Drag with the mouse, or press Space and use arrow keys or WASD |
+| Start the chain | Lift your finger | Release the mouse, or press Space / Enter |
+| Redraw / hint | REDRAW / HINT | R / H |
+| Pause / resume | Pause / Keep popping | P / Esc |
+
+The board supports interrupted touches, resizing, reduced motion, background pausing, and WebGL recovery. On touch devices the renderer limits its framebuffer to 420,000 pixels and 1.35× density, avoids multisample antialiasing, and targets 15 frames per second while idle and 30 while drawing or reacting. Reduced motion stops idle rendering while keeping chain reactions visible. Models and effects use reusable Three.js instance batches; actual performance depends on the device.
+
+## Moonbounce
+
+A little star gathers moons into an orbit. **Touch and drag anywhere in the play area to move; lift your finger to launch every moon in the orbit.** They seek nearby space creatures and bounce between targets or off the rail. Creatures leave more moons to gather, and nearby pops can set off a chain. Collect the returning moons and send them out again. On a computer, drag and release with the mouse, or use WASD / arrow keys to move and Space to launch. The LAUNCH button also works with touch or a keyboard.
+
+The orbit begins with four moons and holds ten; a power can increase its capacity. Launch six or more at once to create a **Moonstorm**, giving each launched moon extra damage and an extra bounce. Orbiting moons also absorb a close enemy or shot, becoming loose moons that can be picked up again. Move away from enemies and their shots to protect your star. A few moons appear over time if the field gets sparse, so an empty orbit is recoverable. Hitting several creatures close together earns a chain and a score bonus.
+
+Play five waves of increasingly lively creatures. After each of the first four waves, choose one of three powers to keep for the rest of the run: more capacity, stronger moons, extra bounces, faster movement, a larger collection range, or extra health. Each new wave restores some health. Wave five ends with the Big Grump. New runs shuffle the visitor and power sequence. There is a victory screen, best score, replay, optional synthesized sound, help, and local autosave.
+
+The complete game works with one thumb in portrait or landscape, including after a rotation or interrupted touch. It also supports keyboard navigation, reduced motion, background pausing, and WebGL context recovery. On touch devices rendering caps its framebuffer at 420,000 pixels and 1.35× density, avoids multisample antialiasing, and targets 30 fps. Models, moons, shots, and effects use shared Three.js instance batches. The simulation caps loose moons at 80, orbiting moons at 22, launched moons at 96, enemies at 40, and incoming shots and effects at 80 each. Actual frame rate depends on the device.
 
 ## Borrowed Tomorrow
 
@@ -168,6 +219,9 @@ npm run test:phone
 npm run test:campaign
 npm run test:saves
 npm run test:borrowed
+npm run test:moonbounce
+npm run test:popwake
+npm run test:pondpost
 ```
 
 Use `CHROMIUM_PATH=/path/to/chromium npm run test:browser` to use an installed browser. Screenshots go into ignored `test-results/`. The browser check covers both islands, high/medium/low graphics, desktop and mobile layouts, simultaneous touch movement and firing, keyboard dialog navigation, saved preferences, real WebGL context loss/recovery, pause, and returning to the briefing. It needs permission to run Chromium and bind a localhost port. Visual quality, sound, and physical touch controls still benefit from hands-on playtesting.
@@ -182,6 +236,12 @@ The save suite checks real closing/reopening, Continue controls on small portrai
 
 The Borrowed Tomorrow suite completes all six chambers through legal controls in a real WebGL browser, tests keyboard and simultaneous touch input, and covers seven phone sizes with notches, rotation, bank/borrow flows, persistent memories, records, hub continuation, blocked/corrupt storage, and context recovery. A crowded arena test checks draw-call and geometry reuse. Pure simulation tests also complete every chamber in Flow and Rift and compare deterministic clocks and restored futures. Refresh its real-game hub thumbnail with `npm run test:borrowed -- --capture-art`.
 
+The Moonbounce suite plays all five waves using legal movement, launches, and offered powers. In a real browser it also checks drag and release, pointer cancellation, backgrounding, rotation, notches, 44px controls, pause, graphics restoration, local saves and upgrade choices, the completed run, and seven phone layouts. It checks the crowded scene's draw calls and reuse of geometry. The simulation tests run multiple seeds and verify deterministic clocks, projectiles, and restores. Refresh the actual 3D hub thumbnail with `npm run test:moonbounce -- --capture-art`.
+
+The Popwake suite completes all eight puzzles with legal trails and three-star solutions. Real-browser checks cover keyboard controls, a fully drawn branching trail, interrupted fingers, rotation, safe areas, pause, context recovery, an in-progress reaction restored from local storage, hints and records, blocked/corrupt storage, and seven phone layouts. The preview is captured from a live chain reaction with `npm run test:popwake -- --capture-art`.
+
+The Pond Post suite completes all five routes through legal jumps and compares predicted landings with the actual results. Browser checks cover real touch gestures on seven phone layouts, interruptions and rotation, keyboard controls, a resumed midair flight, missed-jump recovery, independent saves, graphics restoration, and blocked or corrupt storage. Capture its live-game preview with `npm run test:pondpost -- --capture-art`.
+
 Run `npm run test:garden -- --capture-art` to refresh the garden thumbnail and responsive WebP previews. Use `npm run test:garden -- --prepare-previews` to re-encode the existing source previews without running the full suite. The hub serves 480px or 960px images instead of the full PNG sources.
 
 Phone rendering uses instanced plant, zombie, mower, projectile, and shadow batches. Garden Guard caps its framebuffer at 360,000 pixels and 1.25× density, disables multisample antialiasing on touch devices, and renders active play at up to 30 frames per second. The phone menu is static; paused, finished, help, and background screens stop rendering until something changes. Tile geometry is recalculated only after resizing, and the HUD refreshes at ten updates per second. The shooter keeps adaptive graphics and caps touch devices at 60 frames per second in play and 30 in its animated menu. These are resource budgets; actual performance depends on the device.
@@ -195,3 +255,9 @@ For shooter development inspection, `/soldier.html?debug=1` exposes `window.__ga
 For Garden Guard, `/garden.html?debug=1` exposes `window.__garden` with the simulation and scene for local inspection. Append `&level=2` through `&level=5` to preview another garden. Normal play does not expose these helpers.
 
 Borrowed Tomorrow follows the same separation: `borrowed.html`, `borrowed.css`, `borrowed-main.js` (input, UI, sound, saves), `borrowed-scene.js` (Three.js), `borrowed-game.js` (fixed-clock simulation), and `borrowed-levels.js` (six chamber definitions). `/borrowed.html?debug=1&level=5` exposes `window.__borrowed` for local inspection. Normal play does not expose this helper.
+
+Moonbounce uses `moonbounce.html`, `moonbounce.css`, `moonbounce-main.js` (input, UI, sound, saves), `moonbounce-scene.js` (Three.js), and `moonbounce-game.js` (fixed-clock simulation and waves). `/moonbounce.html?debug=1&seed=82941` exposes `window.__moonbounce` with a repeatable test seed. Normal play uses a fresh seed and does not expose the helper.
+
+Popwake uses `popwake.html`, `popwake.css`, `popwake-main.js` (input, UI, sound, saves), `popwake-scene.js` (Three.js), and `popwake-game.js` (puzzles and fixed-clock chain reactions). `/popwake.html?debug=1` exposes `window.__popwake` for local inspection. Normal play does not expose this helper.
+
+Pond Post uses `pondpost.html`, `pondpost.css`, `pondpost-main.js` (input, UI, sound, saves), `pondpost-scene.js` (Three.js), and `pondpost-game.js` (fixed-clock flight and routes). `/pondpost.html?debug=1` exposes `window.__pondpost` for local inspection. Normal play does not expose this helper.

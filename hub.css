@@ -200,9 +200,11 @@ h1 span {
   transform:translateY(-5px);
   border-color:#c7d5b88c
 }
-.borrowed-card{grid-column:1/-1;display:grid;grid-template-columns:1.1fr 1fr;background:#192331;border-color:#acc4df30}
-.borrowed-card .game-art{aspect-ratio:1.6;background:#0b1424;min-height:100%}
-.borrowed-card .game-info{display:flex;flex-direction:column;justify-content:center;padding:30px 34px}
+.borrowed-card,.moonbounce-card,.popwake-card,.pondpost-card{grid-column:1/-1;display:grid;grid-template-columns:1.1fr 1fr}
+.borrowed-card{background:#192331;border-color:#acc4df30}
+.borrowed-card .game-art,.moonbounce-card .game-art,.popwake-card .game-art,.pondpost-card .game-art{aspect-ratio:1.6;min-height:100%}
+.borrowed-card .game-art{background:#0b1424}
+.borrowed-card .game-info,.moonbounce-card .game-info,.popwake-card .game-info,.pondpost-card .game-info{display:flex;flex-direction:column;justify-content:center;padding:30px 34px}
 .borrowed-card .game-category,.borrowed-card .play-link>span:last-child{color:#a1e3da}
 .borrowed-card .game-description{color:#aab9cf;max-width:360px}
 .borrowed-card .game-tags{color:#aab9cf}
@@ -210,9 +212,33 @@ h1 span {
 .borrowed-card .art-tag{background:#e6b6ce;color:#271b30;border-color:#e6b6ce}
 .borrowed-card .art-shade{background:linear-gradient(180deg,#0b14242a 0%,transparent 35%,#0b1424ed 100%)}
 .borrowed-card .art-title{font-size:clamp(26px,3vw,42px);color:#fae7ed}
-.borrowed-card .play-link{margin-top:25px}
-@media(max-width:900px){.borrowed-card{display:block}.borrowed-card .game-art{aspect-ratio:1.9;min-height:0}.borrowed-card .game-info{display:block;padding:25px 26px 21px}.borrowed-card .game-description{max-width:none}.borrowed-card .art-title{font-size:clamp(28px,5vw,42px)}}
-@media(max-width:600px){.borrowed-card .game-art{aspect-ratio:1.8}.borrowed-card .game-info{padding:19px 20px}.borrowed-card .art-title{font-size:clamp(26px,7vw,36px)}}
+.borrowed-card .play-link,.moonbounce-card .play-link,.popwake-card .play-link,.pondpost-card .play-link{margin-top:25px}
+.moonbounce-card{background:#292843;border-color:#bcb3ee40}
+.moonbounce-card .game-art{background:#4f4d83}
+.moonbounce-card .game-category,.moonbounce-card .play-link>span:last-child,.moonbounce-card .game-save-note{color:#ffdb91}
+.moonbounce-card .game-description{color:#c5c7dd;max-width:360px}
+.moonbounce-card .game-tags{color:#c5c7dd}
+.moonbounce-card .art-tag{background:#ffda96;color:#332749;border-color:#ffda96}
+.moonbounce-card .art-shade{background:linear-gradient(180deg,#2826493b 0%,transparent 33%,#24223add 100%)}
+.moonbounce-card .art-title{font-size:clamp(26px,3vw,42px);color:#fff6dc}
+.popwake-card{background:#34292f;border-color:#f5bbad40}
+.popwake-card .game-art{background:#b46f70}
+.popwake-card .game-category,.popwake-card .play-link>span:last-child,.popwake-card .game-save-note{color:#ffc3a8}
+.popwake-card .game-description{color:#e3c8c6;max-width:360px}
+.popwake-card .game-tags{color:#e3c8c6}
+.popwake-card .art-tag{background:#ffd4ba;color:#432734;border-color:#ffd4ba}
+.popwake-card .art-shade{background:linear-gradient(180deg,#412a3030 0%,transparent 33%,#30212cdf 100%)}
+.popwake-card .art-title{font-size:clamp(26px,3vw,42px);color:#fff7e6}
+.pondpost-card{background:#18342f;border-color:#a6d5ba45}
+.pondpost-card .game-art{background:#437e64}
+.pondpost-card .game-category,.pondpost-card .play-link>span:last-child,.pondpost-card .game-save-note{color:#ffca89}
+.pondpost-card .game-description{color:#c0d8c6;max-width:360px}
+.pondpost-card .game-tags{color:#c0d8c6}
+.pondpost-card .art-tag{background:#ffd29d;color:#25382e;border-color:#ffd29d}
+.pondpost-card .art-shade{background:linear-gradient(180deg,#122b2338 0%,transparent 33%,#102b25df 100%)}
+.pondpost-card .art-title{font-size:clamp(26px,3vw,42px);color:#fff7e6}
+@media(max-width:900px){.borrowed-card,.moonbounce-card,.popwake-card,.pondpost-card{display:block}.borrowed-card .game-art,.moonbounce-card .game-art,.popwake-card .game-art,.pondpost-card .game-art{aspect-ratio:1.9;min-height:0}.borrowed-card .game-info,.moonbounce-card .game-info,.popwake-card .game-info,.pondpost-card .game-info{display:block;padding:25px 26px 21px}.borrowed-card .game-description,.moonbounce-card .game-description,.popwake-card .game-description,.pondpost-card .game-description{max-width:none}.borrowed-card .art-title,.moonbounce-card .art-title,.popwake-card .art-title,.pondpost-card .art-title{font-size:clamp(28px,5vw,42px)}}
+@media(max-width:600px){.borrowed-card .game-art,.moonbounce-card .game-art,.popwake-card .game-art,.pondpost-card .game-art{aspect-ratio:1.8}.borrowed-card .game-info,.moonbounce-card .game-info,.popwake-card .game-info,.pondpost-card .game-info{padding:19px 20px}.borrowed-card .art-title,.moonbounce-card .art-title,.popwake-card .art-title,.pondpost-card .art-title{font-size:clamp(26px,7vw,36px)}}
 .game-art {
   position:relative;
   aspect-ratio:1.56;
@@ -576,8 +602,9 @@ h3>span {
   }
 }
 @media(max-width:600px), (max-width:1024px) and (max-height:520px) {
-  .quick-play { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
-  .quick-play a { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; padding:10px 12px; border:1px solid var(--line); border-radius:3px; font-size:11px; }
+  .hero-copy { flex:1; min-width:0; }
+  .quick-play { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:18px; }
+  .quick-play a { display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0; min-height:44px; padding:10px 8px; border:1px solid var(--line); border-radius:3px; font-size:11px; }
   .quick-play a>span { color:var(--orange); }
   .collection-link,.wordmark,.footer-brand { min-height:44px; display:flex; align-items:center; }
 }
@@ -589,6 +616,17 @@ h3>span {
   .hero-description { font-size:12px; line-height:1.6; margin-top:10px; }
   .hero-stamp { display:none; }
   .quick-play { margin-top:14px; }
+}
+@media(max-height:520px) and (orientation:landscape) {
+  .site-header { height:58px; }
+  .hero { padding:20px 0; }
+  .hero-copy { flex:1; min-width:0; }
+  .hero-stamp { display:none; }
+  .hero .eyebrow { margin-bottom:10px; font-size:8px; }
+  h1 { font-size:clamp(48px,9vw,64px); }
+  .hero-description { display:none; }
+  .quick-play { grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:10px; }
+  .quick-play a { gap:4px; padding:8px 6px; font-size:11px; }
 }
 @media(prefers-reduced-motion:reduce) {
   html {

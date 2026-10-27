@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f9f2e2" />
+  <meta name="description" content="A tiny galaxy in your pocket. Gather a ring of little moons, then send them bouncing through a colorful space adventure." />
+  <title>Moonbounce — Games</title>
+  <link rel="icon" href="assets/games-icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preload" href="assets/fonts/barlow-condensed-800.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="stylesheet" href="moonbounce.css?v1" />
+  <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+  <div class="game-app">
+    <header class="topbar">
+      <a class="home-button" href="./" aria-label="Back to all games"><span aria-hidden="true">←</span><span class="home-word">games.</span></a>
+      <a class="brand" href="./" aria-label="Moonbounce, back to all games"><span class="brand-planet" aria-hidden="true">✦</span>moonbounce<span class="brand-dot">!</span></a>
+      <nav class="nav-buttons" aria-label="Game options">
+        <button class="icon-button" id="soundButton" aria-label="Turn sound on" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Zm4 4 6 6m0-6-6 6"/></svg></button>
+        <button class="icon-button help-button" id="helpButton" aria-label="How to play">?</button>
+        <button class="icon-button" id="pauseButton" aria-label="Pause game" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14m8-14v14"/></svg></button>
+      </nav>
+    </header>
+    <main class="game-main">
+      <section class="hud" id="hud" aria-label="Game status">
+        <div class="wave-info"><span class="eyebrow">SPACE PARTY</span><strong id="waveLabel">WAVE 1 <small>/ 5</small></strong></div>
+        <div class="goal-info"><span id="goalLabel">0 / 10 BOUNCED</span><div class="goal-track"><i id="goalFill"></i></div><small id="waveName">HELLO, LITTLE MOONS</small></div>
+        <div class="life-info"><span><b aria-hidden="true">♥</b> <strong id="healthValue">100</strong></span><div class="health-track"><i id="healthFill"></i></div><small id="scoreValue">0 POINTS</small></div>
+      </section>
+      <section class="stage" id="gameStage" tabindex="0" aria-label="Game area. Drag to move, then lift to launch your moons. Keyboard: WASD or arrow keys to move, Space to launch.">
+        <div class="stage-note" id="stageNote"><span class="note-star" aria-hidden="true">✦</span><span id="noteText">DRAG ANYWHERE TO MOVE</span></div>
+        <div class="boss-meter" id="bossMeter" hidden><span>THE BIG GRUMP</span><div><i id="bossFill"></i></div></div>
+        <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+        <div class="touch-stick" id="touchStick" aria-hidden="true" hidden><span class="touch-knob" id="touchKnob"></span></div>
+        <div class="screen-flash" id="screenFlash" aria-hidden="true"></div>
+      </section>
+      <footer class="play-controls" id="controls">
+        <div class="orbit-info"><div class="orbit-icon" aria-hidden="true"><span>✦</span><i></i><i></i></div><div><span class="eyebrow">YOUR LITTLE MOONS</span><strong><span id="moonCount">4</span><small id="moonCapacity"> / 8</small></strong></div></div>
+        <div class="control-hint"><strong id="controlTitle">DRAG TO MOVE</strong><span id="controlText">Lift your finger to launch!</span></div>
+        <button class="launch-button" id="launchButton" aria-label="Launch your orbiting moons" disabled><span aria-hidden="true">↗</span><strong>LAUNCH</strong></button>
+      </footer>
+    </main>
+    <div class="save-note" id="saveStatus" role="status">AUTOSAVE ON THIS DEVICE</div>
+  </div>
+  <div class="modal-layer" id="modalLayer" hidden>
+    <section class="panel" id="gamePanel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" tabindex="-1"><div id="panelContent"></div></section>
+  </div>
+  <div class="loading" id="loading"><span class="loading-star" aria-hidden="true">✦</span><strong>Making a little space for you…</strong></div>
+  <noscript><div class="loading"><strong>JavaScript is needed to play.</strong><a href="./">Back to games</a></div></noscript>
+  <script type="module" src="moonbounce-main.js?v1"></script>
+</body>
+</html>

@@ -13,6 +13,9 @@ test('each game has its own save and clearing a run keeps scores, stars and the 
   assert.ok(writeGameSave('soldier', { schema: 1, level: 2, wave: 3 }, storage));
   assert.ok(writeGameSave('garden', { schema: 1, level: 4, wave: 2 }, storage));
   assert.ok(writeGameSave('borrowed', { schema: 1, level: 5, loop: 3 }, storage));
+  assert.ok(writeGameSave('moonbounce', { schema: 1, wave: 4, mode: 'playing' }, storage));
+  assert.ok(writeGameSave('popwake', { schema: 1, level: 3, mode: 'running' }, storage));
+  assert.ok(writeGameSave('pondpost', { schema: 1, level: 4, mode: 'flying' }, storage));
   assert.equal(readGameSave('soldier', storage).data.level, 2);
   assert.equal(readGameSave('garden', storage).data.level, 4);
   assert.ok(readGameSave('garden', storage).savedAt > 0);
@@ -20,6 +23,9 @@ test('each game has its own save and clearing a run keeps scores, stars and the 
   assert.equal(readGameSave('soldier', storage), null);
   assert.equal(readGameSave('garden', storage).data.wave, 2);
   assert.equal(readGameSave('borrowed', storage).data.loop, 3);
+  assert.equal(readGameSave('moonbounce', storage).data.wave, 4);
+  assert.equal(readGameSave('popwake', storage).data.level, 3);
+  assert.equal(readGameSave('pondpost', storage).data.level, 4);
   assert.equal(storage.getItem('szBest'), '900');
   assert.equal(storage.getItem('games:garden:level3'), '{"stars":3,"time":140}');
 });

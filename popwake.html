@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#fff4df" />
+  <meta name="description" content="Draw a tiny domino trail. Lift to start a big jelly chain reaction. Eight playful one-finger puzzles, with no timer." />
+  <title>Popwake — Games</title>
+  <link rel="icon" href="assets/games-icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preload" href="assets/fonts/barlow-condensed-800.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="stylesheet" href="popwake.css?v1" />
+  <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+  <div class="game-app">
+    <header class="topbar">
+      <a class="home-button" href="./" aria-label="Back to all games">←<span>games.</span></a>
+      <a class="brand" href="./" aria-label="Popwake, back to all games"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M6 6l12 12M6 18 18 6"/></svg></span>popwake<span class="brand-dot">.</span></a>
+      <nav aria-label="Game options">
+        <button class="icon-button" id="soundButton" aria-label="Turn sound on" aria-pressed="false"></button>
+        <button class="icon-button" id="helpButton" aria-label="How to play">?</button>
+        <button class="icon-button" id="pauseButton" aria-label="Pause game" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14m8-14v14"/></svg></button>
+      </nav>
+    </header>
+    <main class="game-main">
+      <section class="hud" id="hud" aria-label="Puzzle status">
+        <button class="puzzle-button" id="levelButton" aria-label="Choose puzzle"><span class="eyebrow">LITTLE CHAIN, BIG POP</span><strong id="levelLabel">01 <small>/ 08</small><span aria-hidden="true">⌄</span></strong></button>
+        <div class="puzzle-info"><strong id="levelName">A little hello</strong><span id="goalLabel">Wake every sleepy jelly</span><div class="goal-track"><i id="goalFill"></i></div></div>
+        <div class="budget-info"><span class="eyebrow">DOMINOES LEFT</span><strong id="budgetValue">12</strong><small id="budgetDetail">MAKE A LITTLE MAGIC</small></div>
+      </section>
+      <section class="stage" id="gameStage" tabindex="0" aria-label="Jelly puzzle board. Drag from the blue starter and lift to pop. Keyboard: arrow keys draw, Space starts or pops the trail.">
+        <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+      </section>
+      <footer class="play-controls" id="controls">
+        <div class="control-copy"><strong id="controlTitle">DRAW FROM THE BLUE SPARK</strong><span id="controlText">Then lift your finger. See what happens.</span></div>
+        <div class="action-buttons"><button id="hintButton" class="tool-button"><span aria-hidden="true">✧</span> HINT</button><button id="retryButton" class="tool-button"><span aria-hidden="true">↺</span> REDRAW</button></div>
+      </footer>
+    </main>
+    <div class="save-note" id="saveStatus" role="status">AUTOSAVE ON THIS DEVICE</div>
+  </div>
+  <div class="modal-layer" id="modalLayer" hidden><section class="panel" id="gamePanel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" tabindex="-1"><div id="panelContent"></div></section></div>
+  <div class="loading" id="loading"><span aria-hidden="true">✳</span><strong>Waking up the little things…</strong></div>
+  <noscript><div class="loading"><strong>JavaScript is needed to play.</strong><a href="./">Back to games</a></div></noscript>
+  <script type="module" src="popwake-main.js?v1"></script>
+</body>
+</html>

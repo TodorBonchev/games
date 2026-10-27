@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A collection of standalone Three.js browser games: Soldier vs Zombies, Garden Guard, and Borrowed Tomorrow.",
+  "description": "A collection of standalone Three.js browser games, including Moonbounce, Popwake, and Pond Post.",
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
@@ -15,7 +15,10 @@
     "test:phone": "node tests/garden-browser.mjs --phone-only",
     "test:campaign": "node tests/garden-browser.mjs --campaign-only",
     "test:saves": "node tests/garden-browser.mjs --saves-only",
-    "test:borrowed": "node tests/borrowed-browser.mjs"
+    "test:borrowed": "node tests/borrowed-browser.mjs",
+    "test:moonbounce": "node tests/moonbounce-browser.mjs",
+    "test:popwake": "node tests/popwake-browser.mjs",
+    "test:pondpost": "node tests/pondpost-browser.mjs"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

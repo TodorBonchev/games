@@ -22,15 +22,19 @@ export async function checkPhones(browser, baseURL, { baseline = false } = {}) {
     const cdp = await context.newCDPSession(page);
     if (spec.insets) await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: spec.insets });
     await page.goto(`${baseURL}/`);
+    // The fourth card is below Chromium's lazy-load threshold on small phones.
+    // Visit it before decoding all previews, then return to the quick links.
+    await page.locator('.moonbounce-card').scrollIntoViewIfNeeded();
     await page.evaluate(async () => {
       await document.fonts.ready;
       await Promise.all([...document.querySelectorAll('.game-art img')].map(image => image.decode()));
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     });
+    await page.evaluate(() => scrollTo(0, 0));
     const previews = await page.locator('.game-art img').evaluateAll(images => images.map(image => ({ src: image.currentSrc, width: image.naturalWidth })));
     if (!baseline) {
       assert.ok(previews.every(image => image.src.endsWith('.webp')), `${label}: compressed previews load`);
-      assert.ok(await page.locator('.quick-play').isVisible(), `${label}: both games can be opened without scrolling`);
+      assert.ok(await page.locator('.quick-play').isVisible(), `${label}: all games can be opened without scrolling`);
       for (const link of await page.locator('.quick-play a').all()) {
         const bounds = await link.boundingBox();
         assert.ok(bounds.y + bounds.height <= spec.height - (spec.insets?.bottom || 0), `${label}: quick play stays above the phone's bottom inset`);
