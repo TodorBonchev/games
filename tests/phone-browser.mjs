@@ -22,21 +22,23 @@ export async function checkPhones(browser, baseURL, { baseline = false } = {}) {
     const cdp = await context.newCDPSession(page);
     if (spec.insets) await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: spec.insets });
     await page.goto(`${baseURL}/`);
-    // The fourth card is below Chromium's lazy-load threshold on small phones.
-    // Visit it before decoding all previews, then return to the quick links.
-    await page.locator('.moonbounce-card').scrollIntoViewIfNeeded();
+    // Visit every lazy-loaded preview before decoding, then return to the quick links.
+    for (const card of await page.locator('.game-card').all()) await card.scrollIntoViewIfNeeded();
     await page.evaluate(async () => {
       await document.fonts.ready;
       await Promise.all([...document.querySelectorAll('.game-art img')].map(image => image.decode()));
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     });
-    await page.evaluate(() => scrollTo(0, 0));
+    await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
     const previews = await page.locator('.game-art img').evaluateAll(images => images.map(image => ({ src: image.currentSrc, width: image.naturalWidth })));
     if (!baseline) {
       assert.ok(previews.every(image => image.src.endsWith('.webp')), `${label}: compressed previews load`);
       assert.ok(await page.locator('.quick-play').isVisible(), `${label}: all games can be opened without scrolling`);
+      assert.equal(await page.locator('.quick-play a').count(), 9);
       for (const link of await page.locator('.quick-play a').all()) {
         const bounds = await link.boundingBox();
+        assert.ok(bounds.width >= 44 && bounds.height >= 44, `${label}: every quick link has a 44px touch target`);
+        assert.ok(bounds.x >= (spec.insets?.left || 0) && bounds.x + bounds.width <= spec.width - (spec.insets?.right || 0) + 1, `${label}: quick links clear the notch`);
         assert.ok(bounds.y + bounds.height <= spec.height - (spec.insets?.bottom || 0), `${label}: quick play stays above the phone's bottom inset`);
       }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${label}: hub fits`);

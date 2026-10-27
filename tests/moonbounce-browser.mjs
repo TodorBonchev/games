@@ -193,7 +193,7 @@ try {
     });
     assert.ok(resources.calls <= 100 && resources.stable, `full arena uses a bounded and reused renderer (${resources.calls} calls)`); reports.push({ resources });
     await page.goto(`${baseURL}/`);
-    assert.equal(await page.locator('.game-card').count(), 6);
+    assert.equal(await page.locator('.game-card').count(), 9);
     assert.equal(await page.locator('.moonbounce-card [data-play-label]').textContent(), 'CONTINUE RUN');
     assert.equal(await page.locator('.borrowed-card [data-play-label]').textContent(), 'CONTINUE RUN');
     await page.locator('.moonbounce-card').click(); await ready(page);

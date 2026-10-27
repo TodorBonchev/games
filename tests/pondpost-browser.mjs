@@ -89,7 +89,7 @@ try {
     await page.locator('[data-action=resume]').click();
     await page.locator('.home-button').focus(); await page.keyboard.press('Enter');
     await page.waitForURL(url => url.pathname === new URL(`${baseURL}/`).pathname);
-    assert.equal(await page.locator('.game-card').count(), 6, 'Enter activates the focused Home link');
+    assert.equal(await page.locator('.game-card').count(), 9, 'Enter activates the focused Home link');
     await page.goto(`${baseURL}/pondpost.html?debug=1`); await ready(page);
     await page.locator('[data-action=start]').click(); await page.evaluate(() => window.__pondpost.setRealtime(false));
     await page.locator('#gameStage').focus(); await page.keyboard.press('Space'); await page.keyboard.press('ArrowLeft'); await page.keyboard.press('Space');
@@ -167,7 +167,7 @@ try {
       return { calls: view.renderer.info.render.calls, triangles: view.renderer.info.render.triangles, stable: memory === JSON.stringify(view.renderer.info.memory) };
     });
     assert.ok(resources.calls <= 100 && resources.stable, `a full scene reuses geometry (${resources.calls} calls)`); reports.push({ resources });
-    await page.goto(`${baseURL}/`); assert.equal(await page.locator('.game-card').count(), 6);
+    await page.goto(`${baseURL}/`); assert.equal(await page.locator('.game-card').count(), 9);
     await page.waitForFunction(() => document.querySelector('.pondpost-card [data-play-label]')?.textContent === 'CONTINUE RUN');
     assert.equal(await page.locator('.popwake-card [data-play-label]').textContent(), 'CONTINUE RUN');
     await page.locator('.pondpost-card').click(); await ready(page);

@@ -116,7 +116,7 @@ try {
     await page.goto(`${baseURL}/`);
     await page.evaluate(() => document.fonts.ready);
     assert.equal(await page.title(), 'Games — Pick a world. Jump in.');
-    assert.equal(await page.locator('.game-card').count(), 6);
+    assert.equal(await page.locator('.game-card').count(), 9);
     assert.equal(await page.locator('canvas').count(), 0, 'the hub does not boot a 3D engine');
     assert.ok(!runtimeRequests.some(path => path.includes('three.module') || path.includes('main.js')), 'game code is lazy by navigation');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'the hub fits the viewport');
@@ -164,7 +164,7 @@ try {
     }
     await page.locator('#pauseBtn').click();
     await page.locator('#menuDialog .dialog-back').click();
-    assert.equal(await page.locator('.game-card').count(), 6, 'all six games return to the collection');
+    assert.equal(await page.locator('.game-card').count(), 9, 'all nine games return to the collection');
     await context.close();
     console.log(`Hub, planting, pause, help and navigation: ${spec.name} passed.`);
   }
@@ -244,7 +244,7 @@ try {
   // Desktop play captures the mouse for looking; the pause shortcut releases it.
   await page.keyboard.press('p');
   await page.locator('#pausePanel .games-return').click();
-  assert.equal(await page.locator('.game-card').count(), 6, 'the existing shooter launches and returns to the hub');
+  assert.equal(await page.locator('.game-card').count(), 9, 'the existing shooter launches and returns to the hub');
   assert.deepEqual(errors, [], 'no browser errors, missing assets or external runtime dependencies');
   console.log('Soldier vs Zombies still deploys, plays and returns to the hub. All game browser checks passed.');
   }

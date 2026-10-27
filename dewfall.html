@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f3eb" />
+  <meta name="description" content="A little tilt. A whole garden in bloom. Roll shimmering dewdrops into thirsty flowers in six beautiful miniature gardens. Made for one thumb." />
+  <title>Dewdrop Drift — Games</title>
+  <link rel="icon" href="assets/games-icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preload" href="assets/fonts/barlow-condensed-800.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="stylesheet" href="dewfall.css?v1" />
+  <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+  <div class="game-app">
+    <header class="topbar">
+      <a class="home-button" href="./" aria-label="Back to all games">←<span>games.</span></a>
+      <a class="brand" href="./" aria-label="Dewdrop Drift, back to all games"><svg viewBox="0 0 24 28" aria-hidden="true"><path d="M12 2C9 9 3 13 3 18a9 9 0 0 0 18 0c0-5-6-9-9-16Z"/><path d="M7 18c0 3 2 5 5 5"/></svg>dewdrop<span>.</span></a>
+      <nav aria-label="Game options">
+        <button class="icon-button" id="soundButton" aria-label="Turn sound on" aria-pressed="false"></button>
+        <button class="icon-button" id="helpButton" aria-label="How to play">?</button>
+        <button class="icon-button" id="pauseButton" aria-label="Pause game" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14m8-14v14"/></svg></button>
+      </nav>
+    </header>
+    <main class="game-main">
+      <section class="hud" id="hud" aria-label="Garden status">
+        <button class="garden-button" id="levelButton" aria-label="Choose garden"><span class="eyebrow">LITTLE GARDEN</span><strong id="levelLabel">01 <small>/ 06</small><span aria-hidden="true">⌄</span></strong></button>
+        <div class="garden-info"><strong id="levelName">Morning dew</strong><span id="goalLabel">LET EVERY FLOWER BLOOM</span><div class="goal-track"><i id="goalFill"></i></div></div>
+        <div class="bloom-info"><span class="eyebrow">IN BLOOM</span><strong id="bloomValue">0 <small>/ 3</small></strong><small id="spillValue">0 SPILLS</small></div>
+      </section>
+      <section class="stage" id="gameStage" tabindex="0" aria-label="Tilt garden. Touch anywhere and drag in the direction you want the drops to roll. Lift to gently stop. Keyboard: arrows or WASD.">
+        <div class="tilt-gesture" id="tiltGesture" aria-hidden="true" hidden><span class="tilt-anchor"></span><span class="tilt-knob" id="tiltKnob"></span></div>
+        <div class="stage-caption" aria-hidden="true"><span>A LITTLE TILT.</span><strong>A WHOLE GARDEN.</strong></div>
+        <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+      </section>
+      <footer class="play-controls" id="controls">
+        <div class="tilt-symbol" aria-hidden="true">✥</div><div class="control-copy"><strong id="controlTitle">DRAG TO TILT</strong><span id="controlText">The drops roll where your thumb goes.</span></div>
+        <div class="calm-badge"><strong>TAKE YOUR TIME</strong><small>LIFT TO GENTLY STOP</small></div>
+      </footer>
+    </main>
+    <div class="save-note" id="saveStatus" role="status">AUTOSAVE ON THIS DEVICE</div>
+  </div>
+  <div class="modal-layer" id="modalLayer" hidden><section class="panel" id="gamePanel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" tabindex="-1"><div id="panelContent"></div></section></div>
+  <div class="loading" id="loading"><span class="loading-drop" aria-hidden="true">✧</span><strong>Gathering the morning dew…</strong></div>
+  <noscript><div class="loading"><strong>JavaScript is needed to play.</strong><a href="./">Back to games</a></div></noscript>
+  <script type="module" src="dewfall-main.js?v1"></script>
+</body>
+</html>

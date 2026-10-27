@@ -12,6 +12,9 @@ A collection of standalone Three.js browser games. The home page is a lightweigh
 | **Moonbounce** | [Launch Moonbounce](https://todorbonchev.github.io/games/moonbounce.html) | A one-thumb 3D arcade game: gather little moons, lift to send them bouncing, pick powers, and face the big grump. |
 | **Popwake** | [Launch Popwake](https://todorbonchev.github.io/games/popwake.html) | Draw a trail of jelly dominoes and start a chain reaction to wake every jelly in eight handmade puzzles. |
 | **Pond Post** | [Launch Pond Post](https://todorbonchev.github.io/games/pondpost.html) | Help a little frog deliver mail by leaping across floating lily pads, collecting stamps, and navigating five routes. |
+| **Prism Orchard** | [Launch Prism Orchard](https://todorbonchev.github.io/games/prism.html) | Turn crystal mirrors, split colored light, and combine beams to bloom eight night gardens. |
+| **Ribbon Reef** | [Launch Ribbon Reef](https://todorbonchev.github.io/games/ribbon.html) | Glide a little manta through five coral currents, chain perfect arches, and gather pearls with your ribbon wake. |
+| **Dewdrop Drift** | [Launch Dewdrop Drift](https://todorbonchev.github.io/games/dewfall.html) | Tilt six tiny gardens to roll water marbles around rocks, springs, and breezes into thirsty flowers. |
 
 ## Play locally
 
@@ -21,13 +24,13 @@ With Node.js installed, run:
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html`, `/garden.html`, `/borrowed.html`, `/moonbounce.html`, `/popwake.html`, and `/pondpost.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
+Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html`, `/garden.html`, `/borrowed.html`, `/moonbounce.html`, `/popwake.html`, `/pondpost.html`, `/prism.html`, `/ribbon.html`, and `/dewfall.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
 
 To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Both portrait and landscape have dedicated menus, camera framing, and thumb controls. Rotate during a run without losing progress; lift and place your thumbs again after rotating.
 
 ## Saved progress
 
-All six games automatically save their current progress to **localStorage** in this browser. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
+All nine games automatically save their current progress to **localStorage** in this browser. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
 
 Garden Guard restores the chosen level, plants and health, enemies, sun resources and drops, projectiles, seed cooldowns, used lawnmowers, wave progress, selected plant, and game speed. A completed garden can resume at its victory screen and continue to the next garden. Each level’s best stars and time stay separate from its current run.
 
@@ -41,7 +44,29 @@ Popwake restores the selected puzzle and its current board or chain reaction. Co
 
 Pond Post saves the route, current lily pad and checkpoint, collected stamps, score, and route records separately from the other games. An interrupted aim is cleared safely so a restored run cannot launch unexpectedly.
 
+Prism Orchard restores the puzzle, mirror orientations, turn count, and hint use. Its completion stars and unlocked puzzles are saved separately. Ribbon Reef restores the current, exact position and wake, hearts, collected pearls, and arch streak; completed currents and best scores remain after a swim ends. Dewdrop Drift restores every water marble, filled flower, and spill count, while preserving earned garden stars separately.
+
 Starting a fresh run replaces that game’s checkpoint. In the action games, defeat or **End run & return** clears the unfinished run; scores, island unlocks, preferences, and earned stars are kept. Each game has its own save slot. No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues.
+
+## Prism Orchard
+
+Guide colored light into every flower in eight night gardens. Tap a crystal to rotate its mirror; diamonds split the beam, and colored filters keep only their own color. Separate beams can meet in a flower: red and blue make pink. The early puzzles teach each idea, and the final gardens combine branching paths and multiple colors.
+
+There is no timer. Finish in the fewest turns for three stars, or use **Hint** to highlight a useful crystal; a hinted attempt can earn at most two stars. **Reset** begins a fresh attempt. On a keyboard, focus the board, use arrow keys to select crystals, and press Enter or Space to turn one. Completing each garden opens the next.
+
+## Ribbon Reef
+
+Guide a little manta through five coral currents. Drag one finger anywhere in the scene to move horizontally and vertically; lifting holds your course. Your whole trailing ribbon collects pearls. The current carries you forward, so look ahead and steer toward the next glowing arch. Keyboard arrows or WASD also steer.
+
+Passing through an arch's center builds a perfect streak. Close passes by coral earn extra flow points; missed arches and collisions cost a heart. Each swim takes about 47 seconds. Reach the end to open the next current. For three stars, pass at least 75% of the arches, earn five perfects, and collect six pearls. Retry a current to improve your record.
+
+## Dewdrop Drift
+
+Hold anywhere in the garden and slide your thumb to tilt it. Every water marble rolls together; guide each into a thirsty flower. Release to level the garden and slow the drops. Six gardens introduce rocks, spring leaves, and breezes. The rim keeps drops on the island, while puddles send a drop back to its starting point without undoing flowers already filled.
+
+There is no timer or lives counter. A gentle touch helps you guide the remaining drops as the garden blooms. Earn three stars with at most one spill, two with at most four, or one for finishing. Keyboard arrows or WASD also tilt the garden.
+
+All three games support portrait and landscape, safe-area insets, cancelled touches, pause, reduced motion, and WebGL context recovery. Touch rendering uses at most 420,000 pixels and 1.35× density with multisample antialiasing disabled. Paused games stop repainting until something changes; actual frame rate depends on the device.
 
 ## Pond Post
 
@@ -222,6 +247,10 @@ npm run test:borrowed
 npm run test:moonbounce
 npm run test:popwake
 npm run test:pondpost
+npm run test:prism
+npm run test:ribbon
+npm run test:dewfall
+npm run test:collection
 ```
 
 Use `CHROMIUM_PATH=/path/to/chromium npm run test:browser` to use an installed browser. Screenshots go into ignored `test-results/`. The browser check covers both islands, high/medium/low graphics, desktop and mobile layouts, simultaneous touch movement and firing, keyboard dialog navigation, saved preferences, real WebGL context loss/recovery, pause, and returning to the briefing. It needs permission to run Chromium and bind a localhost port. Visual quality, sound, and physical touch controls still benefit from hands-on playtesting.
@@ -261,3 +290,7 @@ Moonbounce uses `moonbounce.html`, `moonbounce.css`, `moonbounce-main.js` (input
 Popwake uses `popwake.html`, `popwake.css`, `popwake-main.js` (input, UI, sound, saves), `popwake-scene.js` (Three.js), and `popwake-game.js` (puzzles and fixed-clock chain reactions). `/popwake.html?debug=1` exposes `window.__popwake` for local inspection. Normal play does not expose this helper.
 
 Pond Post uses `pondpost.html`, `pondpost.css`, `pondpost-main.js` (input, UI, sound, saves), `pondpost-scene.js` (Three.js), and `pondpost-game.js` (fixed-clock flight and routes). `/pondpost.html?debug=1` exposes `window.__pondpost` for local inspection. Normal play does not expose this helper.
+
+Prism Orchard, Ribbon Reef, and Dewdrop Drift each use their own `{slug}.html`, `{slug}.css`, `{slug}-main.js`, `{slug}-scene.js`, and `{slug}-game.js`, with slugs `prism`, `ribbon`, and `dewfall`. Their `?debug=1` pages expose `window.__prism`, `window.__ribbon`, and `window.__dewfall` for local inspection. Normal play does not expose these helpers. The respective browser suites exercise legal completion, real touch controls, phone layouts, interruption and graphics recovery, and storage failures. Their hub previews are captured from the actual Three.js scenes.
+
+The collection browser suite checks the new games together: independent hub continuation, actual preview loading, 44px controls, notch clearance, and stable play areas while instructions change on small portrait and landscape phones.
