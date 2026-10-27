@@ -4,20 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#151c19" />
-    <meta name="description" content="Ten little worlds to get lost in. Play Soldier vs Zombies, Garden Guard, Borrowed Tomorrow, Moonbounce, Popwake, Pond Post, Prism Orchard, Ribbon Reef, Dewdrop Drift, and Lantern Vale, free in your browser." />
+    <meta name="description" content="Thirty little worlds to get lost in. Explore twenty new character-filled arcade games alongside ten original favorites, free in your browser." />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="assets/games-icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/games-icon-180.png" />
     <link rel="preload" href="assets/fonts/barlow-condensed-800.ttf" as="font" type="font/ttf" crossorigin />
-    <link rel="stylesheet" href="hub.css?v9" />
+    <link rel="stylesheet" href="hub.css?v10" />
     <title>Games — Pick a world. Jump in.</title>
   </head>
   <body>
-    <a class="skip-link" href="#collection">Skip to the games</a>
+    <a class="skip-link" href="#little-arcade">Skip to the games</a>
     <div class="site-shell">
       <header class="site-header">
         <a class="wordmark" href="./" aria-label="Games home"><svg viewBox="0 0 36 28" aria-hidden="true"><path d="M10 4h16c3 0 4 2 5 5l3 12c1 4-4 6-6 3l-4-5H12l-4 5c-2 3-7 1-6-3L5 9c1-3 2-5 5-5Z"/><path d="M8 11h8m-4-4v8m12-5h.1m4 4h.1"/></svg>games<span>.</span></a>
-        <a class="collection-link" href="#collection">THE COLLECTION <span aria-hidden="true">↙</span></a>
+        <a class="collection-link" href="#little-arcade">THE COLLECTION <span aria-hidden="true">↙</span></a>
         <span class="header-note"><i></i> READY WHEN YOU ARE</span>
       </header>
       <main>
@@ -25,13 +25,27 @@
           <div class="hero-copy">
             <p class="eyebrow"><span></span> GOOD TIMES, ZERO DOWNLOADS</p>
             <h1 id="hero-title">Pick a world.<br /><span>Jump in.</span></h1>
-            <p class="hero-description">A growing collection of little escapes.<br />Made to play. Right here in your browser.</p>
-            <nav class="quick-play" aria-label="Play a game"><a href="soldier.html" data-game-link="soldier">Soldier vs Zombies <span aria-hidden="true">↗</span></a><a href="garden.html" data-game-link="garden">Garden Guard <span aria-hidden="true">↗</span></a><a href="borrowed.html" data-game-link="borrowed">Borrowed Tomorrow <span aria-hidden="true">↗</span></a><a href="moonbounce.html" data-game-link="moonbounce">Moonbounce <span aria-hidden="true">↗</span></a><a href="popwake.html" data-game-link="popwake">Popwake <span aria-hidden="true">↗</span></a><a href="pondpost.html" data-game-link="pondpost">Pond Post <span aria-hidden="true">↗</span></a><a href="prism.html" data-game-link="prism" class="new-game-link">Prism Orchard <span aria-hidden="true">↗</span></a><a href="ribbon.html" data-game-link="ribbon" class="new-game-link">Ribbon Reef <span aria-hidden="true">↗</span></a><a href="dewfall.html" data-game-link="dewfall" class="new-game-link">Dewdrop Drift <span aria-hidden="true">↗</span></a><a href="lantern.html" data-game-link="lantern" class="new-game-link">Lantern Vale <span aria-hidden="true">↗</span></a></nav>
+            <p class="hero-description">Thirty little escapes. Twenty new heroes.<br />Made to play. Right here in your browser.</p>
+            <nav class="quick-play" aria-label="Play a game"><a href="soldier.html" data-game-link="soldier">Soldier vs Zombies <span aria-hidden="true">↗</span></a><a href="garden.html" data-game-link="garden">Garden Guard <span aria-hidden="true">↗</span></a><a href="borrowed.html" data-game-link="borrowed">Borrowed Tomorrow <span aria-hidden="true">↗</span></a><a href="moonbounce.html" data-game-link="moonbounce">Moonbounce <span aria-hidden="true">↗</span></a><a href="popwake.html" data-game-link="popwake">Popwake <span aria-hidden="true">↗</span></a><a href="pondpost.html" data-game-link="pondpost">Pond Post <span aria-hidden="true">↗</span></a><a href="prism.html" data-game-link="prism" class="new-game-link">Prism Orchard <span aria-hidden="true">↗</span></a><a href="ribbon.html" data-game-link="ribbon" class="new-game-link">Ribbon Reef <span aria-hidden="true">↗</span></a><a href="dewfall.html" data-game-link="dewfall" class="new-game-link">Dewdrop Drift <span aria-hidden="true">↗</span></a><a href="lantern.html" data-game-link="lantern" class="new-game-link">Lantern Vale <span aria-hidden="true">↗</span></a><a href="#little-arcade" class="arcade-quick-link">20 NEW GAMES <span aria-hidden="true">↙</span></a></nav>
           </div>
           <div class="hero-stamp" aria-hidden="true"><span>PRESS PLAY</span><svg viewBox="0 0 100 100"><path d="M28 18v64l53-32Z"/></svg><span>FIND YOUR FUN</span><i>✺</i></div>
         </section>
+        <section class="arcade-collection" id="little-arcade" aria-labelledby="arcade-title">
+          <div class="section-heading"><h2 id="arcade-title">THE LITTLE ARCADE <span>20 NEW</span></h2><p>TWENTY LITTLE HEROES. TWENTY DIFFERENT ADVENTURES.</p></div>
+          <div class="arcade-intro"><div><p class="arcade-kicker">A NEW COLLECTION OF LITTLE ESCAPES</p><h3>BIG FUN.<br /><span>LITTLE HEROES.</span></h3></div><p>Meet twenty one-of-a-kind characters in games made for quick adventures and big smiles. Find a favorite and jump right in.</p></div>
+          <div class="arcade-tools">
+            <label class="arcade-search" for="arcade-search"><span>FIND A GAME OR HERO</span><input id="arcade-search" type="search" autocomplete="off" placeholder="Search the arcade" /></label>
+            <div class="arcade-filters" role="group" aria-label="Filter arcade games">
+              <button type="button" data-arcade-filter="All" aria-pressed="true">ALL</button><button type="button" data-arcade-filter="Action" aria-pressed="false">ACTION</button><button type="button" data-arcade-filter="Puzzles" aria-pressed="false">PUZZLES</button><button type="button" data-arcade-filter="Creative" aria-pressed="false">CREATIVE</button>
+            </div>
+          </div>
+          <p class="arcade-count" id="arcade-count" aria-live="polite">20 GAMES · READY TO PLAY</p>
+          <div class="arcade-grid" id="arcade-grid" aria-busy="true"></div>
+          <p class="arcade-empty" id="arcade-empty" hidden>No games found. Try another search or filter.</p>
+          <noscript><p class="arcade-empty">JavaScript is needed to explore the Little Arcade.</p></noscript>
+        </section>
         <section class="collection" id="collection" aria-labelledby="collection-title">
-          <div class="section-heading"><h2 id="collection-title">THE COLLECTION <span>10</span></h2><p>ONE CLICK AWAY FROM SOMEWHERE ELSE.</p></div>
+          <div class="section-heading"><h2 id="collection-title">THE ORIGINAL WORLDS <span>10</span></h2><p>TEN MORE WAYS TO GET LOST.</p></div>
           <div class="game-grid">
             <a class="game-card soldier-card" href="soldier.html" data-game-link="soldier" aria-labelledby="soldier-title">
               <div class="game-art"><img src="assets/soldier-preview-960.webp" srcset="assets/soldier-preview-480.webp 480w, assets/soldier-preview-960.webp 960w" sizes="(max-width: 600px) calc(100vw - 44px), (max-width: 900px) calc((100vw - 82px) / 2), (max-width: 1100px) calc((100vw - 156px) / 2), (max-width: 1384px) calc((100vw - 184px) / 3), 400px" alt="A soldier exploring a lush Three.js island with palm trees and an approaching zombie horde" width="1280" height="720" decoding="async" fetchpriority="high" /><div class="art-shade"></div><span class="art-tag">01 / SURVIVAL</span><span class="art-play" aria-hidden="true">↗</span><div class="art-title" aria-hidden="true">PARADISE.<br />WITH A BODY COUNT.</div></div>
@@ -75,10 +89,11 @@
             </a>
           </div>
         </section>
-        <aside class="collection-note"><span class="note-symbol" aria-hidden="true">✺</span><div><strong>Small collection. Big plans.</strong><p>Ten games. Ten very different escapes.</p></div><span class="note-index" aria-hidden="true">NEXT UP: YOUR NEW FAVORITE.</span></aside>
+        <aside class="collection-note"><span class="note-symbol" aria-hidden="true">✺</span><div><strong>Small collection. Big plans.</strong><p>Thirty games. Thirty very different escapes.</p></div><span class="note-index" aria-hidden="true">NEXT UP: YOUR NEW FAVORITE.</span></aside>
       </main>
       <footer class="site-footer"><a class="footer-brand" href="./">games.</a><p>NO SIGN-UPS. NO INSTALLS. JUST PLAY.</p><span>BUILT WITH THREE.JS <span aria-hidden="true">↗</span></span></footer>
     </div>
     <script type="module" src="hub.js?v7"></script>
+    <script type="module" src="arcade/hub.js?v1"></script>
   </body>
 </html>

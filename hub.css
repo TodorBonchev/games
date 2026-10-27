@@ -700,3 +700,66 @@ h3>span {
 @media(max-width:600px) and (orientation:portrait) {
   .quick-play { margin-top:10px; }
 }
+
+/* Twenty small adventures, browsable without loading their 3D engines. */
+.arcade-collection { padding-bottom:70px; }
+.arcade-intro { display:flex; align-items:end; justify-content:space-between; gap:32px; padding:24px 0 32px; }
+.arcade-kicker,.arcade-count,.arcade-hero,.arcade-art-tag,.arcade-play,.arcade-search>span {
+  font-family:Consolas,'Liberation Mono',monospace; font-weight:500; letter-spacing:1.1px;
+}
+.arcade-kicker { color:var(--orange); font-size:9px; margin:0 0 13px; }
+.arcade-intro h3 { font:800 clamp(50px,6.8vw,90px)/.88 Barlow,Impact,sans-serif; letter-spacing:-.01em; margin:0; }
+.arcade-intro h3 span { display:inline; color:var(--orange); }
+.arcade-intro>p { color:var(--muted); font-size:14px; line-height:1.8; max-width:325px; margin:0 0 4px; }
+.arcade-tools { display:flex; align-items:end; gap:22px; padding:0 0 18px; }
+.arcade-search { flex:1; min-width:0; max-width:380px; display:flex; flex-direction:column; gap:8px; }
+.arcade-search>span { color:var(--muted); font-size:9px; }
+.arcade-search input { width:100%; min-width:0; height:48px; padding:0 15px; border:1px solid #a9bcaa50; border-radius:3px; background:#1b2922; color:var(--paper); font:16px Arial,Helvetica,sans-serif; }
+.arcade-search input::placeholder { color:#9caea1; }
+.arcade-filters { display:flex; flex-wrap:wrap; gap:7px; }
+.arcade-filters button { min-height:48px; padding:0 16px; border:1px solid #a9bcaa50; border-radius:3px; color:#c8d3c4; background:#1b2922; font:10px Consolas,'Liberation Mono',monospace; letter-spacing:.7px; cursor:pointer; }
+.arcade-filters button[aria-pressed="true"] { background:var(--orange); color:#1d2820; border-color:var(--orange); }
+.arcade-filters button:focus-visible,.arcade-search input:focus-visible { outline:3px solid var(--orange); outline-offset:3px; }
+.arcade-count { color:#a4b7a8; font-size:9px; margin:0 0 15px; }
+.arcade-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; }
+.arcade-card { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid #bed1ba38; border-radius:3px; background:#1d2821; transition:transform .2s,border-color .2s; }
+.arcade-card:hover { transform:translateY(-4px); border-color:var(--arcade-accent); }
+.arcade-card[hidden],.arcade-empty[hidden] { display:none!important; }
+.arcade-art { position:relative; overflow:hidden; aspect-ratio:1.6; background:var(--arcade-background); }
+.arcade-art img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .4s; }
+.arcade-card:hover .arcade-art img { transform:scale(1.04); }
+.arcade-art::after { content:''; position:absolute; inset:0; pointer-events:none; background:linear-gradient(180deg,#111d2a40,transparent 44%,#111d2a30); }
+.arcade-art-tag,.arcade-art-arrow { position:absolute; z-index:1; }
+.arcade-art-tag { top:13px; left:13px; background:var(--arcade-accent); color:#20302b; border-radius:2px; padding:7px 8px; font-size:8px; letter-spacing:.6px; }
+.arcade-art-arrow { top:12px; right:12px; display:grid; place-items:center; width:31px; height:31px; border:1px solid #fff9; border-radius:50%; font-size:16px; }
+.arcade-info { display:flex; flex:1; flex-direction:column; justify-content:space-between; padding:20px 20px 17px; }
+.arcade-hero { font-size:9px; color:var(--arcade-accent); line-height:1.5; margin:0 0 8px; }
+.arcade-title { font:800 clamp(24px,2.2vw,32px)/1.05 Barlow,Impact,sans-serif; text-transform:uppercase; margin:0; }
+.arcade-description { color:#b3c2b4; font-size:12px; line-height:1.6; margin:10px 0 13px; }
+.arcade-save-note { color:var(--arcade-accent); font:9px/1.4 Consolas,'Liberation Mono',monospace; margin:0 0 13px; }
+.arcade-play { display:flex; justify-content:space-between; align-items:center; gap:8px; padding-top:13px; border-top:1px solid var(--line); font-size:9px; }
+.arcade-play>span:last-child { color:var(--arcade-accent); font-size:20px; line-height:1; }
+.arcade-empty { color:#b3c2b4; padding:24px 0; font-size:14px; }
+@media(max-width:1100px) { .arcade-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:900px) { .arcade-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .arcade-tools { flex-wrap:wrap; } }
+@media(max-width:600px) {
+  .arcade-collection { padding-bottom:46px; }
+  .arcade-intro { display:block; padding:16px 0 23px; }
+  .arcade-intro h3 { font-size:clamp(46px,13vw,68px); }
+  .arcade-intro>p { font-size:12px; margin-top:15px; max-width:430px; }
+  .arcade-tools { display:block; padding-bottom:14px; }
+  .arcade-search { max-width:none; margin-bottom:12px; }
+  .arcade-filters { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+  .arcade-filters button { min-width:0; min-height:44px; padding:0 4px; font-size:9px; letter-spacing:.2px; }
+  .arcade-grid { gap:10px; }
+  .arcade-info { padding:14px 12px 12px; }
+  .arcade-title { font-size:25px; }
+  .arcade-hero { font-size:9px; letter-spacing:.3px; }
+  .arcade-description { font-size:11px; margin:8px 0 12px; }
+  .arcade-art-tag { top:8px; left:8px; padding:6px; font-size:9px; }
+  .arcade-art-arrow { top:7px; right:7px; width:26px; height:26px; font-size:14px; }
+}
+@media(max-width:600px), (max-width:1024px) and (max-height:520px) {
+  .quick-play a:last-child { grid-column:span 2; }
+  .quick-play .arcade-quick-link { color:#15231a; background:var(--orange); border-color:var(--orange); font-weight:700; }
+}

@@ -28,12 +28,12 @@ try {
     await (await context.newCDPSession(page)).send('Emulation.setSafeAreaInsetsOverride', { insets: spec.insets });
     await page.goto(base);
     await page.evaluate(() => document.fonts.ready);
-    assert.equal(await page.locator('.quick-play a').count(), 10);
+    assert.equal(await page.locator('.quick-play a').count(), 11);
     for (const link of await page.locator('.quick-play a').all()) {
       const r = await link.boundingBox();
       assert.ok(r.width >= 44 && r.height >= 44, 'quick links have 44px touch targets');
       assert.ok(r.x >= (spec.insets.left || 0) && r.x + r.width <= spec.width - (spec.insets.right || 0) + 1, 'quick links clear the notch');
-      assert.ok(r.y + r.height <= spec.height - (spec.insets.bottom || 0), 'all ten games are available above the fold');
+      assert.ok(r.y + r.height <= spec.height - (spec.insets.bottom || 0), 'all ten original games and the new arcade are available above the fold');
     }
     for (const slug of games) {
       await page.goto(`${base}/${slug}.html?debug=1`);

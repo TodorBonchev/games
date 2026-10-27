@@ -2,7 +2,7 @@
 
 [Play online](https://todorbonchev.github.io/games/)
 
-A collection of standalone Three.js browser games. The home page is a lightweight game picker; each game loads its own 3D scene only when opened. Everything needed to play is bundled locally.
+A collection of thirty Three.js browser games. The home page is a lightweight game picker; each game loads its own 3D scene only when opened. Everything needed to play is bundled locally.
 
 | Game | Play | What's included |
 | --- | --- | --- |
@@ -17,6 +17,33 @@ A collection of standalone Three.js browser games. The home page is a lightweigh
 | **Dewdrop Drift** | [Launch Dewdrop Drift](https://todorbonchev.github.io/games/dewfall.html) | Tilt six tiny gardens to roll water marbles around rocks, springs, and breezes into thirsty flowers. |
 | **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Explore a tiny island village, gather fireflies, light five lanterns, and uncover hidden memories. |
 
+## Little Arcade
+
+Twenty new small games each introduce a different character and challenge, from rhythm and gliding to puzzles and crafts. Filter by action, puzzles, or creative games, or search by title or hero on the home page. The games use touch or mouse; on a keyboard, move the on-screen cursor with the arrow keys and interact with Enter or Space. Pausing, switching away, or leaving the page stops play.
+
+| Game | Character | Challenge |
+| --- | --- | --- |
+| [Lane Lark](https://todorbonchev.github.io/games/arcade.html?game=lane-lark) | Pip the blue owl | Tap or slide between the three rails. Catch gold notes and avoid the pink thorns. Collect at least 14 notes before the last rail passes. |
+| [Orbit Guard](https://todorbonchev.github.io/games/arcade.html?game=orbit-guard) | Quill the star hedgehog | Drag around Quill to turn the turquoise shield. Catch the incoming stars before they reach the center. Save 13 of 16 stars. |
+| [Cloud Skimmer](https://todorbonchev.github.io/games/arcade.html?game=cloud-skimmer) | Hazel the flying squirrel | Hold anywhere to rise, then lift your finger to drift down. Glide through at least 8 of the 10 golden rings. You can miss two. |
+| [Ink Sling](https://todorbonchev.github.io/games/arcade.html?game=ink-sling) | Inky the bubble octopus | Touch a sea bloom, then lift to send a bubble toward it. Aim for all six drifting blooms; missed bubbles can be tried again. |
+| [Bubble Basket](https://todorbonchev.github.io/games/arcade.html?game=bubble-basket) | Coral the little crab | Slide left and right to catch bubbles in Coral’s basket. Gather 12 pearls and avoid the pink spiky urchins. |
+| [Moss Flip](https://todorbonchev.github.io/games/arcade.html?game=moss-flip) | Bramble the moss beetle | Tap anywhere to flip between the two moss rails. Avoid the coral thorns as the tunnel rolls by. Survive all 22 thorns. |
+| [Bell Bloom](https://todorbonchev.github.io/games/arcade.html?game=bell-bloom) | Mira the bell axolotl | Tap when the moving turquoise ring meets the gold circle. Make at least 10 of 14 bells bloom; too many early taps end the song. |
+| [Burrow Banquet](https://todorbonchev.github.io/games/arcade.html?game=burrow-banquet) | Tansy the aardvark | Tap a neighboring patch to walk. Push each golden root onto a glowing burrow. You can push one root at a time. |
+| [Moon Basket](https://todorbonchev.github.io/games/arcade.html?game=moon-basket) | Cleo the cat | Tap an open basket to cycle its jewel. Put each of the four colors once in every row and column. The star-marked clues stay in place. |
+| [Stack Strata](https://todorbonchev.github.io/games/arcade.html?game=stack-strata) | Bolo the beaver | Tap a log pile, then another pile to move its top log. A larger log cannot rest on a smaller one. Move the whole stack to the gold pad. |
+| [Jelly Lanterns](https://todorbonchev.github.io/games/arcade.html?game=jelly-lanterns) | Mona the jellyfish | Tap a lantern to change it and its four neighbors. Find the right combination to light every lantern. |
+| [Dream Duos](https://todorbonchev.github.io/games/arcade.html?game=dream-duos) | Fenn the fox | Tap two sleeping dream tiles to reveal them. Find every matching pair. The dreams grow more numerous each round. |
+| [Flock Shift](https://todorbonchev.github.io/games/arcade.html?game=flock-shift) | Kiko the pigeon | Tap a glowing ring to rotate its four neighboring stones. Restore the jewel mosaic to the small guide along the bottom. |
+| [Kelp Kitchen](https://todorbonchev.github.io/games/arcade.html?game=kelp-kitchen) | Mallow the snail | Tap a jar, then another to pour its top ingredient. You can pour onto the same color or into an empty jar. Sort each color into its own full jar. |
+| [Tidehook](https://todorbonchev.github.io/games/arcade.html?game=tidehook) | Nori the penguin | Hold to lower the hook. Slide to follow the fish, then lift when the hook reaches it. Catch eight fish before four misses. |
+| [Bellwood Beats](https://todorbonchev.github.io/games/arcade.html?game=bellwood-beats) | Bibi the koala | Tap to hear Bibi’s song. Watch the colored bells, then tap them back in the same order. Learn three songs. |
+| [Parcel Parade](https://todorbonchev.github.io/games/arcade.html?game=parcel-parade) | Dottie the stork | Drag each moving parcel to the depot with the same color. Deliver nine before four mistakes. |
+| [Wobble Bakery](https://todorbonchev.github.io/games/arcade.html?game=wobble-bakery) | Milo the mole | Drag the tray beneath the cake as gusts blow it around. Keep it safe for 30 seconds; three slips end the run. |
+| [Mothlight](https://todorbonchev.github.io/games/arcade.html?game=mothlight) | Vesper the bat | Drag Vesper close to the moth, then slowly lead it to the glowing flower. Guide all four home and avoid thorns. |
+| [Cloud Potter](https://todorbonchev.github.io/games/arcade.html?game=cloud-potter) | Saffron the raccoon | Swipe a clay band left to narrow it or right to widen it. Match the pale pattern for each of three little pots. |
+
 ## Play locally
 
 With Node.js installed, run:
@@ -25,13 +52,13 @@ With Node.js installed, run:
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html`, `/garden.html`, `/borrowed.html`, `/moonbounce.html`, `/popwake.html`, `/pondpost.html`, `/prism.html`, `/ribbon.html`, `/dewfall.html`, and `/lantern.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
+Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html`, `/garden.html`, `/borrowed.html`, `/moonbounce.html`, `/popwake.html`, `/pondpost.html`, `/prism.html`, `/ribbon.html`, `/dewfall.html`, `/lantern.html`, and `/arcade.html?game=lane-lark` (or any other Little Arcade game ID). No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
 
 To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Both portrait and landscape have dedicated menus, camera framing, and thumb controls. Rotate during a run without losing progress; lift and place your thumbs again after rotating.
 
 ## Saved progress
 
-All ten games automatically save their current progress to **localStorage** in this browser. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
+All thirty games automatically save their current progress to **localStorage** in this browser. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
 
 Garden Guard restores the chosen level, plants and health, enemies, sun resources and drops, projectiles, seed cooldowns, used lawnmowers, wave progress, selected plant, and game speed. A completed garden can resume at its victory screen and continue to the next garden. Each level’s best stars and time stay separate from its current run.
 
@@ -49,7 +76,7 @@ Prism Orchard restores the puzzle, mirror orientations, turn count, and hint use
 
 Lantern Vale saves your place in the valley, lit lanterns, gathered fireflies, and discovered memories independently from the other games.
 
-Starting a fresh run replaces that game’s checkpoint. In the action games, defeat or **End run & return** clears the unfinished run; scores, island unlocks, preferences, and earned stars are kept. Each game has its own save slot. No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues.
+Each Little Arcade game keeps its own checkpoint and win record, independent from the other 29 games. Starting a fresh run replaces that game’s checkpoint. In the action games, defeat or **End run & return** clears the unfinished run; scores, island unlocks, preferences, and earned stars are kept. Each game has its own save slot. No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues.
 
 ## Lantern Vale
 
@@ -271,6 +298,10 @@ npm run test:ribbon
 npm run test:dewfall
 npm run test:lantern
 npm run test:collection
+npm run test:arcade
+npm run test:arcade:action
+npm run test:arcade:puzzles
+npm run test:arcade:skill
 ```
 
 Use `CHROMIUM_PATH=/path/to/chromium npm run test:browser` to use an installed browser. Screenshots go into ignored `test-results/`. The browser check covers both islands, high/medium/low graphics, desktop and mobile layouts, simultaneous touch movement and firing, keyboard dialog navigation, saved preferences, real WebGL context loss/recovery, pause, and returning to the briefing. It needs permission to run Chromium and bind a localhost port. Visual quality, sound, and physical touch controls still benefit from hands-on playtesting.
@@ -316,3 +347,7 @@ Prism Orchard, Ribbon Reef, and Dewdrop Drift each use their own `{slug}.html`, 
 Lantern Vale uses `lantern.html`, `lantern.css`, `lantern-main.js`, `lantern-scene.js`, and `lantern-game.js`. `/lantern.html?debug=1` exposes `window.__lantern` for local inspection. Its browser suite walks the island through legal movement, checks all five lanterns and memories, and exercises touch, local saves, graphics recovery, and seven phone layouts. Normal play does not expose the helper.
 
 The collection browser suite checks the new games together: independent hub continuation, actual preview loading, 44px controls, notch clearance, and stable play areas while instructions change on small portrait and landscape phones.
+
+Little Arcade games are defined in `arcade/action-games.js`, `arcade/puzzle-games.js`, and `arcade/skill-games.js`, with their shared shell in `arcade/main.js`. Their separate browser-local checkpoints live under `games:save:arcade:<game-id>`. The home page uses the catalog to display and filter them, without loading a game scene until it is opened.
+
+The arcade browser suites test all twenty phone layouts, local checkpoints and complete real-touch play-throughs. Run `node scripts/capture-arcade-art.mjs` to refresh the character previews from the real 3D scenes.
