@@ -663,6 +663,12 @@ h3>span {
 .dewfall-card .game-description,.dewfall-card .game-tags { color:#cdd1e3; }
 .dewfall-card .art-tag { background:#e0efbc; border-color:#e0efbc; color:#334735; }
 .dewfall-card .art-shade { background:linear-gradient(180deg,#30334422,transparent 35%,#303344e0); }
+.lantern-card { background:#243c35; border-color:#d5b46b55; }
+.lantern-card .game-art { background:#405c4a; }
+.lantern-card .game-category,.lantern-card .play-link>span:last-child,.lantern-card .game-save-note { color:#ffda91; }
+.lantern-card .game-description,.lantern-card .game-tags { color:#d2dfcb; }
+.lantern-card .art-tag { background:#f4d38d; border-color:#f4d38d; color:#243b2f; }
+.lantern-card .art-shade { background:linear-gradient(180deg,#172e2722,transparent 35%,#172e27e0); }
 @media(max-width:1100px) {
   .game-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .game-card .art-title { font-size:clamp(26px,3.7vw,38px); }
@@ -686,4 +692,11 @@ h3>span {
   .hero .eyebrow>span { display:none; }
   .hero h1 { grid-column:1; grid-row:2; font-size:clamp(38px,6.8vw,58px); }
   .quick-play { grid-column:2; grid-row:1 / 3; margin:0; }
+}
+
+@media(max-width:600px), (max-width:1024px) and (max-height:520px) {
+  .quick-play a:last-child { grid-column:1 / -1; }
+}
+@media(max-width:600px) and (orientation:portrait) {
+  .quick-play { margin-top:10px; }
 }

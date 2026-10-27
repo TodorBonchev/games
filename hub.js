@@ -1,4 +1,4 @@
-import { readGameSave } from './save-store.js?v6';
+import { readGameSave } from './save-store.js?v7';
 
 const games = {
   soldier: { levels: 2 }, garden: { levels: 5 }, borrowed: { levels: 6 }, moonbounce: { waves: 5 },
@@ -7,6 +7,7 @@ const games = {
   prism: { levels: 8, label: 'ORCHARD', modes: ['playing', 'paused', 'won'] },
   ribbon: { levels: 5, label: 'CURRENT', modes: ['playing', 'paused', 'won'] },
   dewfall: { levels: 6, label: 'GARDEN', modes: ['playing', 'paused', 'won'] },
+  lantern: { levels: 1, label: 'VALLEY', modes: ['playing', 'paused', 'won', 'exploring'] },
 };
 
 function validCheckpoint(game, data, config) {

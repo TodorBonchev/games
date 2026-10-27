@@ -117,7 +117,7 @@ try {
     });
     assert.ok(resources.calls <= 100 && resources.stable, 'a full arena stays bounded and reuses its geometry'); reports.push({ resources });
     await page.goto(`${baseURL}/`);
-    assert.equal(await page.locator('.game-card').count(), 9);
+    assert.equal(await page.locator('.game-card').count(), 10);
     assert.equal(await page.locator('.borrowed-card [data-play-label]').textContent(), 'CONTINUE RUN');
     await page.locator('.borrowed-card').click(); await ready(page); assert.ok(await page.locator('[data-action=choose]').isVisible(), 'hub resumes the completed final chamber');
     await context.close();

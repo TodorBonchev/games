@@ -34,7 +34,7 @@ export async function checkPhones(browser, baseURL, { baseline = false } = {}) {
     if (!baseline) {
       assert.ok(previews.every(image => image.src.endsWith('.webp')), `${label}: compressed previews load`);
       assert.ok(await page.locator('.quick-play').isVisible(), `${label}: all games can be opened without scrolling`);
-      assert.equal(await page.locator('.quick-play a').count(), 9);
+      assert.equal(await page.locator('.quick-play a').count(), 10);
       for (const link of await page.locator('.quick-play a').all()) {
         const bounds = await link.boundingBox();
         assert.ok(bounds.width >= 44 && bounds.height >= 44, `${label}: every quick link has a 44px touch target`);

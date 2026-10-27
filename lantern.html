@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#183e46" />
+  <meta name="description" content="Explore a tiny lantern village, gather fireflies, and bring a beautiful island to life. A cozy 3D adventure made for one thumb." />
+  <title>Lantern Vale — Games</title>
+  <link rel="icon" href="assets/games-icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preload" href="assets/fonts/barlow-condensed-800.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="stylesheet" href="lantern.css?v1" />
+  <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+  <div class="game-app">
+    <header class="topbar">
+      <a class="home-button" href="./" aria-label="Back to all games">←<span>games.</span></a>
+      <a class="brand" href="./" aria-label="Lantern Vale, back to all games"><span class="brand-icon">✦</span><span class="full-name">LANTERN </span>VALE<span class="brand-dot">.</span></a>
+      <nav aria-label="Game options">
+        <button id="soundButton" class="icon-button" aria-label="Turn sound on" aria-pressed="false">♪</button>
+        <button id="helpButton" class="icon-button" aria-label="How to play">?</button>
+        <button id="pauseButton" class="icon-button" aria-label="Pause game" disabled>Ⅱ</button>
+      </nav>
+    </header>
+    <main>
+      <section class="hud" aria-label="Village progress">
+        <div class="chapter"><span class="eyebrow">A LITTLE ISLAND</span><strong id="levelLabel">01 <small>/ 01</small></strong></div>
+        <div class="objective"><span class="eyebrow" id="objectiveLabel">BRING THE VILLAGE TO LIFE</span><strong id="objectiveTitle">Follow the fireflies.</strong></div>
+        <div class="lantern-count"><span class="eyebrow">LANTERNS LIT</span><strong id="litValue">0 <small>/ 5</small></strong></div>
+      </section>
+      <section id="gameStage" class="stage" tabindex="0" aria-label="Lantern village. Drag anywhere to walk. Release to stop. Keyboard: arrows or WASD.">
+        <div class="stage-caption" aria-hidden="true"><span>WELCOME TO</span><strong>LANTERN VALE</strong></div>
+        <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+        <div class="pocket" aria-label="Your pocket"><span class="firefly-symbol" aria-hidden="true">✧</span><strong id="chargeValue">0</strong><span>FIREFLIES</span><i></i><span class="memory-symbol" aria-hidden="true">✦</span><strong id="memoryValue">0 / 5</strong></div>
+        <div class="lighting" id="lighting" hidden><strong id="lightingLabel">A LITTLE MORE LIGHT</strong><span><i id="lightingFill"></i></span></div>
+        <div class="joystick" id="joystick" aria-hidden="true" hidden><span></span><i id="joystickKnob"></i></div>
+      </section>
+      <footer class="controls">
+        <div class="walk-symbol" aria-hidden="true">↟</div><div class="control-copy"><strong id="controlTitle">A LITTLE WALK. A LITTLE WONDER.</strong><span id="controlText">Drag to walk. Follow the golden glow.</span></div>
+        <button id="mapButton" aria-label="Open village map">MAP <span aria-hidden="true">⌖</span></button>
+      </footer>
+    </main>
+    <div class="save-note" id="saveStatus" role="status">PROGRESS STAYS ON THIS DEVICE</div>
+  </div>
+  <div class="modal-layer" id="modalLayer" hidden><section class="panel" id="gamePanel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" tabindex="-1"><div id="panelContent"></div></section></div>
+  <div class="loading" id="loading"><span class="loading-star" aria-hidden="true">✦</span><strong>Preparing your little escape…</strong><span id="loadingDetail">Gathering the village and its fireflies.</span></div>
+  <noscript><div class="loading"><strong>JavaScript is needed to explore.</strong><a href="./">← Back to games</a></div></noscript>
+  <script type="module" src="lantern-main.js?v1"></script>
+</body>
+</html>

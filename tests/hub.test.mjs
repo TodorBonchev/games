@@ -7,6 +7,7 @@ import { writeGameSave, removeGameSave } from '../save-store.js';
 import { createPrism } from '../prism-game.js';
 import { createRibbon } from '../ribbon-game.js';
 import { createDewfall } from '../dewfall-game.js';
+import { createLantern } from '../lantern-game.js';
 
 async function hub() {
   const dom = new JSDOM(await readFile(new URL('../index.html', import.meta.url), 'utf8'), {
@@ -19,19 +20,21 @@ async function hub() {
   return { dom, run: () => module.evaluate(), refresh: () => dom.window.dispatchEvent(new dom.window.Event('storage')) };
 }
 
-test('the collection continues actual checkpoints from all three new game engines independently', async () => {
+test('the collection continues actual checkpoints from the latest game engines independently', async () => {
   const { dom, run, refresh } = await hub(), { document, localStorage } = dom.window;
   try {
-    const prism = createPrism(), ribbon = createRibbon(), dewfall = createDewfall();
+    const world = JSON.parse(await readFile(new URL('../assets/lantern-world.json', import.meta.url), 'utf8'));
+    const prism = createPrism(), ribbon = createRibbon(), dewfall = createDewfall(), lantern = createLantern({ world });
     prism.start(2); prism.rotate(0);
     ribbon.start(3); ribbon.steer(1, .3); ribbon.advance(.5);
     dewfall.start(4); dewfall.advance(.5, { x: .2, z: -.3 });
-    for (const [slug, game] of [['prism', prism], ['ribbon', ribbon], ['dewfall', dewfall]]) {
+    lantern.start(); lantern.advance(.5, { x: 0, z: -1 });
+    for (const [slug, game] of [['prism', prism], ['ribbon', ribbon], ['dewfall', dewfall], ['lantern', lantern]]) {
       assert.ok(writeGameSave(slug, game.snapshot(), localStorage));
     }
     await run();
-    assert.equal(document.querySelectorAll('.game-card').length, 9);
-    for (const [slug, level] of [['prism', 2], ['ribbon', 3], ['dewfall', 4]]) {
+    assert.equal(document.querySelectorAll('.game-card').length, 10);
+    for (const [slug, level] of [['prism', 2], ['ribbon', 3], ['dewfall', 4], ['lantern', 1]]) {
       const card = document.querySelector(`.${slug}-card`), url = new URL(card.href);
       assert.equal(card.querySelector('[data-play-label]').textContent, 'CONTINUE RUN');
       assert.equal(url.pathname, `/games/${slug}.html`);
@@ -45,6 +48,7 @@ test('the collection continues actual checkpoints from all three new game engine
     assert.equal(new URL(document.querySelector('.prism-card').href).search, '');
     assert.equal(document.querySelector('.ribbon-card [data-play-label]').textContent, 'CONTINUE RUN');
     assert.equal(document.querySelector('.dewfall-card [data-play-label]').textContent, 'CONTINUE RUN');
+    assert.equal(document.querySelector('.lantern-card [data-play-label]').textContent, 'CONTINUE RUN');
   } finally { dom.window.close(); }
 });
 
@@ -52,12 +56,34 @@ test('invalid new-game checkpoints do not break the collection or advertise cont
   const { dom, run, refresh } = await hub(), { document, localStorage } = dom.window;
   try {
     await run();
-    for (const slug of ['prism', 'ribbon', 'dewfall']) {
+    for (const slug of ['prism', 'ribbon', 'dewfall', 'lantern']) {
       for (const data of [{ schema: 2, level: 1, mode: 'playing' }, { schema: 1, level: 999, mode: 'playing' }, { schema: 1, level: 1, mode: 'broken' }]) {
         writeGameSave(slug, data, localStorage); refresh();
         assert.equal(document.querySelector(`.${slug}-card [data-play-label]`).textContent, 'PLAY GAME');
         assert.equal(document.querySelector(`.${slug}-card .game-save-note`).hidden, true);
       }
     }
+  } finally { dom.window.close(); }
+});
+
+test('Lantern Vale has a separate continuation slot and accepts each resumable mode', async () => {
+  const { dom, run, refresh } = await hub(), { document, localStorage } = dom.window;
+  try {
+    const world = JSON.parse(await readFile(new URL('../assets/lantern-world.json', import.meta.url), 'utf8'));
+    assert.equal(world.beacons.length, 5);
+    await run();
+    for (const mode of ['playing', 'paused', 'won', 'exploring']) {
+      writeGameSave('lantern', { schema: 1, level: 1, mode, player: world.spawn }, localStorage); refresh();
+      const card = document.querySelector('.lantern-card'), url = new URL(card.href);
+      assert.equal(card.querySelector('[data-play-label]').textContent, 'CONTINUE RUN');
+      assert.equal(card.querySelector('.game-save-note').textContent, 'SAVED · VALLEY 1 / 1');
+      assert.equal(url.pathname, '/games/lantern.html');
+      assert.equal(url.searchParams.get('level'), '1');
+      assert.equal(url.searchParams.get('continue'), '1');
+      assert.equal(document.querySelector('.quick-play [data-game-link="lantern"]').href, card.href);
+    }
+    removeGameSave('lantern', localStorage); refresh();
+    assert.equal(document.querySelector('.lantern-card [data-play-label]').textContent, 'PLAY GAME');
+    assert.equal(new URL(document.querySelector('.lantern-card').href).search, '');
   } finally { dom.window.close(); }
 });

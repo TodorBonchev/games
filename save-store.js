@@ -1,6 +1,6 @@
 // Each game owns a versioned slot. Existing scores, preferences and stars are
 // separate keys and are never cleared when a run is restarted or finishes.
-export const SAVE_KEYS = Object.freeze({ soldier: 'games:save:soldier', garden: 'games:save:garden', borrowed: 'games:save:borrowed', moonbounce: 'games:save:moonbounce', popwake: 'games:save:popwake', pondpost: 'games:save:pondpost', prism: 'games:save:prism', ribbon: 'games:save:ribbon', dewfall: 'games:save:dewfall' });
+export const SAVE_KEYS = Object.freeze({ soldier: 'games:save:soldier', garden: 'games:save:garden', borrowed: 'games:save:borrowed', moonbounce: 'games:save:moonbounce', popwake: 'games:save:popwake', pondpost: 'games:save:pondpost', prism: 'games:save:prism', ribbon: 'games:save:ribbon', dewfall: 'games:save:dewfall', lantern: 'games:save:lantern' });
 const MAX_SAVE_BYTES = 250000;
 
 export function readGameSave(game, storage) {

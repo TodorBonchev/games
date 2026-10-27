@@ -15,6 +15,7 @@ A collection of standalone Three.js browser games. The home page is a lightweigh
 | **Prism Orchard** | [Launch Prism Orchard](https://todorbonchev.github.io/games/prism.html) | Turn crystal mirrors, split colored light, and combine beams to bloom eight night gardens. |
 | **Ribbon Reef** | [Launch Ribbon Reef](https://todorbonchev.github.io/games/ribbon.html) | Glide a little manta through five coral currents, chain perfect arches, and gather pearls with your ribbon wake. |
 | **Dewdrop Drift** | [Launch Dewdrop Drift](https://todorbonchev.github.io/games/dewfall.html) | Tilt six tiny gardens to roll water marbles around rocks, springs, and breezes into thirsty flowers. |
+| **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Explore a tiny island village, gather fireflies, light five lanterns, and uncover hidden memories. |
 
 ## Play locally
 
@@ -24,13 +25,13 @@ With Node.js installed, run:
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html`, `/garden.html`, `/borrowed.html`, `/moonbounce.html`, `/popwake.html`, `/pondpost.html`, `/prism.html`, `/ribbon.html`, and `/dewfall.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
+Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html`, `/garden.html`, `/borrowed.html`, `/moonbounce.html`, `/popwake.html`, `/pondpost.html`, `/prism.html`, `/ribbon.html`, `/dewfall.html`, and `/lantern.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
 
 To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Both portrait and landscape have dedicated menus, camera framing, and thumb controls. Rotate during a run without losing progress; lift and place your thumbs again after rotating.
 
 ## Saved progress
 
-All nine games automatically save their current progress to **localStorage** in this browser. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
+All ten games automatically save their current progress to **localStorage** in this browser. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
 
 Garden Guard restores the chosen level, plants and health, enemies, sun resources and drops, projectiles, seed cooldowns, used lawnmowers, wave progress, selected plant, and game speed. A completed garden can resume at its victory screen and continue to the next garden. Each level’s best stars and time stay separate from its current run.
 
@@ -46,7 +47,25 @@ Pond Post saves the route, current lily pad and checkpoint, collected stamps, sc
 
 Prism Orchard restores the puzzle, mirror orientations, turn count, and hint use. Its completion stars and unlocked puzzles are saved separately. Ribbon Reef restores the current, exact position and wake, hearts, collected pearls, and arch streak; completed currents and best scores remain after a swim ends. Dewdrop Drift restores every water marble, filled flower, and spill count, while preserving earned garden stars separately.
 
+Lantern Vale saves your place in the valley, lit lanterns, gathered fireflies, and discovered memories independently from the other games.
+
 Starting a fresh run replaces that game’s checkpoint. In the action games, defeat or **End run & return** clears the unfinished run; scores, island unlocks, preferences, and earned stars are kept. Each game has its own save slot. No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues.
+
+## Lantern Vale
+
+Explore a handmade island village at your own pace. Gather fireflies, then linger beside each of the five lanterns to light it. Look for five hidden memories along the way: three memories earn two stars, and all five earn three. There are no lives or timers, and you can keep exploring after lighting the village.
+
+On a phone, drag anywhere in the scene to walk and lift to stop. Arrow keys or WASD also move the keeper; P or Esc pauses. The map shows the lanterns and bridges. Progress is saved on the device.
+
+The world is authored in Blender at `blender/lantern-vale.blend` and exported as `assets/lantern-vale.glb`; `assets/lantern-world.json` describes the playable world. These assets are bundled locally. The editable scene keeps its objects separate; the 1.7 MB web model merges static geometry by material. The generation script was tested with Blender 4.5 LTS.
+
+To regenerate the editable Blender file and exported model with Blender installed, run:
+
+```sh
+blender --background --factory-startup --python scripts/build-lantern-world.py
+```
+
+Append `-- --render` to also create a native camera render at `test-results/lantern/blender-world.png`.
 
 ## Prism Orchard
 
@@ -250,6 +269,7 @@ npm run test:pondpost
 npm run test:prism
 npm run test:ribbon
 npm run test:dewfall
+npm run test:lantern
 npm run test:collection
 ```
 
@@ -292,5 +312,7 @@ Popwake uses `popwake.html`, `popwake.css`, `popwake-main.js` (input, UI, sound,
 Pond Post uses `pondpost.html`, `pondpost.css`, `pondpost-main.js` (input, UI, sound, saves), `pondpost-scene.js` (Three.js), and `pondpost-game.js` (fixed-clock flight and routes). `/pondpost.html?debug=1` exposes `window.__pondpost` for local inspection. Normal play does not expose this helper.
 
 Prism Orchard, Ribbon Reef, and Dewdrop Drift each use their own `{slug}.html`, `{slug}.css`, `{slug}-main.js`, `{slug}-scene.js`, and `{slug}-game.js`, with slugs `prism`, `ribbon`, and `dewfall`. Their `?debug=1` pages expose `window.__prism`, `window.__ribbon`, and `window.__dewfall` for local inspection. Normal play does not expose these helpers. The respective browser suites exercise legal completion, real touch controls, phone layouts, interruption and graphics recovery, and storage failures. Their hub previews are captured from the actual Three.js scenes.
+
+Lantern Vale uses `lantern.html`, `lantern.css`, `lantern-main.js`, `lantern-scene.js`, and `lantern-game.js`. `/lantern.html?debug=1` exposes `window.__lantern` for local inspection. Its browser suite walks the island through legal movement, checks all five lanterns and memories, and exercises touch, local saves, graphics recovery, and seven phone layouts. Normal play does not expose the helper.
 
 The collection browser suite checks the new games together: independent hub continuation, actual preview loading, 44px controls, notch clearance, and stable play areas while instructions change on small portrait and landscape phones.

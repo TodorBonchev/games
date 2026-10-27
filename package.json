@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Nine standalone Three.js browser games with touch controls and local saves.",
+  "description": "Ten standalone Three.js browser games with touch controls and local saves.",
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
@@ -22,6 +22,7 @@
     "test:prism": "node tests/prism-browser.mjs",
     "test:ribbon": "node tests/ribbon-browser.mjs",
     "test:dewfall": "node tests/dewfall-browser.mjs",
+    "test:lantern": "node tests/lantern-browser.mjs",
     "test:collection": "node tests/collection-browser.mjs"
   },
   "engines": {
