@@ -11,7 +11,7 @@ A collection of **six Three.js browser games**, made for phones and computers. W
 | **Garden Guard** | [Launch garden defense](https://todorbonchev.github.io/games/garden.html) | Five garden defense levels with five lanes, three plant types, runners, armored zombies, and up to five waves. |
 | **Borrowed Tomorrow** | [Launch the time sail](https://todorbonchev.github.io/games/borrowed.html) | Six clockworld chambers where your two recorded past selves steer a triangular weapon. Flow and Rift difficulties, clockblooms, crosswinds, armor, and a final boss. |
 | **Prism Orchard** | [Launch Prism Orchard](https://todorbonchev.github.io/games/prism.html) | Turn crystal mirrors, split colored light, and combine beams to bloom eight night gardens. |
-| **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Explore a tiny island village, gather fireflies, light five lanterns, and uncover hidden memories. |
+| **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Explore a floating island village among parallax stars, gather fireflies, light five lanterns, and uncover hidden memories. |
 
 ## Wonderwake
 
@@ -74,7 +74,7 @@ No account or cookies are needed. Saves belong to this browser and device; clear
 
 ## Lantern Vale
 
-Explore a handmade island village at your own pace. Gather fireflies, then linger beside each of the five lanterns to light it. Look for five hidden memories along the way: three memories earn two stars, and all five earn three. There are no lives or timers, and you can keep exploring after lighting the village.
+Explore a handmade island village drifting through open space at your own pace. Three layers of stars move at different depths as you walk, with a soft nebula behind them and gentle flight motion. Reduced-motion mode keeps the space backdrop still. Gather fireflies, then linger beside each of the five lanterns to light it. Look for five hidden memories along the way: three memories earn two stars, and all five earn three. There are no lives or timers, and you can keep exploring after lighting the village.
 
 On a phone, drag anywhere in the scene to walk and lift to stop. Arrow keys or WASD also move the keeper; P or Esc pauses. The map shows the lanterns and bridges. Progress is saved on the device.
 
@@ -291,6 +291,7 @@ npm run test:prism
 npm run test:ribbon
 npm run test:dewfall
 npm run test:lantern
+npm run test:lantern:space
 npm run test:collection
 npm run test:voyage
 npm run test:voyage:legacy
@@ -340,7 +341,7 @@ Pond Post uses `pondpost.html`, `pondpost.css`, `pondpost-main.js` (input, UI, s
 
 Prism Orchard, Ribbon Reef, and Dewdrop Drift each use their own `{slug}.html`, `{slug}.css`, `{slug}-main.js`, `{slug}-scene.js`, and `{slug}-game.js`, with slugs `prism`, `ribbon`, and `dewfall`. Their `?debug=1` pages expose `window.__prism`, `window.__ribbon`, and `window.__dewfall` for local inspection. Normal play does not expose these helpers. The respective browser suites exercise legal completion, real touch controls, phone layouts, interruption and graphics recovery, and storage failures. Their hub previews are captured from the actual Three.js scenes.
 
-Lantern Vale uses `lantern.html`, `lantern.css`, `lantern-main.js`, `lantern-scene.js`, and `lantern-game.js`. `/lantern.html?debug=1` exposes `window.__lantern` for local inspection. Its browser suite walks the island through legal movement, checks all five lanterns and memories, and exercises touch, local saves, graphics recovery, and seven phone layouts. Normal play does not expose the helper.
+Lantern Vale uses `lantern.html`, `lantern.css`, `lantern-main.js`, `lantern-scene.js`, `lantern-space.js`, and `lantern-game.js`. `/lantern.html?debug=1` exposes `window.__lantern` for local inspection. Its browser suite walks the island through legal movement, checks all five lanterns and memories, and exercises touch, local saves, graphics recovery, and seven phone layouts. Normal play does not expose the helper.
 
 The collection browser suite checks all six homepage choices, independent standalone and adventure continuation, actual preview loading, 44px phone controls, and notch clearance in small portrait and landscape layouts. `test:voyage` checks the connected campaign shell; `test:voyage:legacy` checks the five adapted mission engines. Pure campaign tests verify island unlocks from distinct friends, festival and full-crew milestones, checkpoint recovery, and storage isolation.
 

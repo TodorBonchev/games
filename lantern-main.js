@@ -1,5 +1,5 @@
 import { createLantern, parseLanternSave } from './lantern-game.js';
-import { createLanternScene } from './lantern-scene.js';
+import { createLanternScene } from './lantern-scene.js?v2';
 import { readGameSave, writeGameSave } from './save-store.js?v7';
 
 const $ = id => document.getElementById(id);
@@ -85,7 +85,7 @@ function hidePanel() {
 }
 function showIntro() {
   const saved = savedRun();
-  showPanel('intro', `<div class="intro-layout"><div><span class="eyebrow">A SMALL WORLD WITH A WARM HEART</span><h1 id="panelTitle">LANTERN<br><span>VALE.</span></h1><p class="lede">A village at the edge of evening.<br>A little light in your hands.</p><div class="intro-steps"><div><span>01</span><strong>TAKE A LITTLE WALK</strong><small>Drag anywhere to guide your keeper.</small></div><div><span>02</span><strong>BRING BACK THE GLOW</strong><small>Gather fireflies. Light the five lanterns.</small></div></div></div><div>${saved ? button('continue', 'CONTINUE MY JOURNEY →', true) + button('start', 'BEGIN A FRESH JOURNEY') : button('start', 'STEP INTO THE VALE →', true)}${button('help', 'HOW TO PLAY')}<a class="action text-button" href="./">← ALL GAMES</a><p class="fine">ONE THUMB · FIVE LANTERNS · NO RUSH${profile.completed ? `<br>${profile.stars} / 3 STARS · ${profile.memories} / 5 MEMORIES FOUND` : ''}</p></div></div>`);
+  showPanel('intro', `<div class="intro-layout"><div><span class="eyebrow">A SMALL WORLD WITH A WARM HEART</span><h1 id="panelTitle">LANTERN<br><span>VALE.</span></h1><p class="lede">A village adrift among the stars.<br>A little light in your hands.</p><div class="intro-steps"><div><span>01</span><strong>TAKE A LITTLE WALK</strong><small>Drag anywhere to guide your keeper.</small></div><div><span>02</span><strong>BRING BACK THE GLOW</strong><small>Gather fireflies. Light the five lanterns.</small></div></div></div><div>${saved ? button('continue', 'CONTINUE MY JOURNEY →', true) + button('start', 'BEGIN A FRESH JOURNEY') : button('start', 'STEP INTO THE VALE →', true)}${button('help', 'HOW TO PLAY')}<a class="action text-button" href="./">← ALL GAMES</a><p class="fine">ONE THUMB · FIVE LANTERNS · NO RUSH${profile.completed ? `<br>${profile.stars} / 3 STARS · ${profile.memories} / 5 MEMORIES FOUND` : ''}</p></div></div>`);
 }
 function showHelp() {
   panelReturn = playing() || state.mode === 'paused' ? 'pause' : panelKind || 'intro';

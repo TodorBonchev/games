@@ -49,7 +49,7 @@ try {
     });
     assert.equal(previews.length, 6); assert.ok(previews.every(image => image.width > 0));
     assert.ok(previews[0].source.endsWith('/assets/wonderwake-preview.svg'));
-    assert.ok(previews.slice(1).every(image => /-preview-(480|960)\.webp$/.test(image.source)));
+    assert.ok(previews.slice(1).every(image => /-preview-(480|960)\.webp$/.test(new URL(image.source).pathname)));
     assert.equal(await page.locator('canvas').count(), 0, 'homepage loads no 3D renderer');
     await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
     await page.screenshot({ path: `test-results/collection/six-games-${spec.width}.png`, fullPage: true });

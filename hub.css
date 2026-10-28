@@ -75,12 +75,12 @@ h3>span { display:none; }
 .prism-card .game-description,.prism-card .game-tags { color:#c9c3df; }
 .prism-card .art-tag { background:#d5c3ff; border-color:#d5c3ff; color:#302443; }
 .prism-card .art-shade { background:linear-gradient(180deg,#211a3d22,transparent 35%,#211a3de0); }
-.lantern-card { background:#243c35; border-color:#d5b46b55; }
-.lantern-card .game-art { background:#405c4a; }
+.lantern-card { background:#20253d; border-color:#d5b46b55; }
+.lantern-card .game-art { background:#10152e; }
 .lantern-card .game-category,.lantern-card .play-link>span:last-child,.lantern-card .game-save-note { color:#ffda91; }
 .lantern-card .game-description,.lantern-card .game-tags { color:#d2dfcb; }
 .lantern-card .art-tag { background:#f4d38d; border-color:#f4d38d; color:#243b2f; }
-.lantern-card .art-shade { background:linear-gradient(180deg,#172e2722,transparent 35%,#172e27e0); }
+.lantern-card .art-shade { background:linear-gradient(180deg,#11152c22,transparent 35%,#141a36e0); }
 .collection-note { display:flex; align-items:center; gap:19px; padding:37px 0 45px; }
 .note-symbol { font-size:43px; color:var(--orange); line-height:1; }
 .collection-note strong { font-size:14px; font-weight:500; }

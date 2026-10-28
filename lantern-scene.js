@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { createLanternSpace } from './lantern-space.js';
 
 // The village is authored in Blender. Only the keeper's movement, light,
-// water, and collectible effects are animated here.
+// water, and collectible effects are animated here. The island sails through
+// a layered starfield; the walkable world stays in its own local coordinates.
 export async function createLanternScene(container, world, { resized, lost, restored, progress } = {}) {
   const touch = matchMedia('(pointer: coarse)').matches;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -16,15 +18,14 @@ export async function createLanternScene(container, world, { resized, lost, rest
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
-  renderer.setClearColor('#c3cedf');
+  renderer.setClearColor('#090e23');
   renderer.domElement.setAttribute('aria-hidden', 'true');
   container.prepend(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#c3cedf');
-  scene.fog = new THREE.Fog('#c3cedf', 65, 155);
-  const camera = new THREE.PerspectiveCamera(43, 1, .15, 200);
-  const sky = new THREE.HemisphereLight('#fff0db', '#607b9d', 1.95);
+  scene.background = new THREE.Color('#090e23');
+  const camera = new THREE.PerspectiveCamera(43, 1, .15, 600);
+  const sky = new THREE.HemisphereLight('#e5e4ff', '#68618d', 1.8);
   scene.add(sky);
   const sun = new THREE.DirectionalLight('#ffd8b4', 2.45);
   sun.position.set(-20, 30, 18);
@@ -37,8 +38,8 @@ export async function createLanternScene(container, world, { resized, lost, rest
   sun.shadow.bias = -.0004;
   sun.shadow.normalBias = .035;
   scene.add(sun);
-  const rimLight = new THREE.DirectionalLight('#b5d4ff', .9);
-  rimLight.position.set(12, 15, -20);
+  const rimLight = new THREE.DirectionalLight('#acbaff', 1.3);
+  rimLight.position.set(12, 8, -20);
   scene.add(rimLight);
 
   const geometries = new Set(), materials = new Set(), textures = new Set();
@@ -115,32 +116,21 @@ export async function createLanternScene(container, world, { resized, lost, rest
     counts.set(mesh, index + 1);
   }
 
-  // A quiet sea and scattered clouds frame the island without extra lights or
-  // post-processing. The main terrain, houses, trees and river remain the GLB.
-  const sea = new THREE.Mesh(registerGeometry(new THREE.PlaneGeometry(240, 240)),
-    registerMaterial(new THREE.MeshStandardMaterial({ color: '#799fbd', roughness: .82, metalness: .08 })));
-  sea.rotation.x = -Math.PI / 2;
-  sea.position.y = -4.1;
-  scene.add(sea);
-  const cloudMaterial = basic('#e1e6ee', { transparent: true, opacity: .61, depthWrite: false });
-  const clouds = makeInstances(sphere, cloudMaterial, 35);
-  counts.set(clouds, 0);
-  for (let i = 0; i < 7; i++) {
-    const angle = i * 2.399963, radius = 25 + (i % 3) * 7;
-    for (let j = 0; j < 5; j++) put(clouds,
-      Math.cos(angle) * radius + j * 1.4, -1.8 - i % 3 * .3,
-      Math.sin(angle) * radius, 2.6 - Math.abs(j - 2) * .3, .7, 1.4);
-  }
-  clouds.count = counts.get(clouds);
-  clouds.instanceMatrix.needsUpdate = true;
-  counts.clear();
+  // With no sea, horizon, or cloud floor, the authored rock strata and
+  // cascading river remain suspended in open space. Stars use four batched
+  // background draws rather than extra world lights or a post-process pass.
+  const space = createLanternSpace({ THREE, scene, camera, reducedMotion: reduced.matches });
 
   let asset;
   try {
     asset = await new GLTFLoader().loadAsync(new URL('./assets/lantern-vale.glb', import.meta.url).href,
       event => { if (event.lengthComputable && event.total > 0) progress?.(event.loaded / event.total); });
   } catch (error) {
-    renderer.dispose();
+    space.dispose();
+    geometries.forEach(geometry => geometry.dispose());
+    materials.forEach(material => material.dispose());
+    textures.forEach(texture => texture.dispose());
+    renderer.dispose(); renderer.forceContextLoss();
     renderer.domElement.remove();
     throw error;
   }
@@ -231,15 +221,19 @@ export async function createLanternScene(container, world, { resized, lost, rest
     cameraMode = state.mode;
     const aspect = width / height;
     const player = state.player || world.spawn;
-    // Near the coast, keep a little more land in view without moving the
-    // keeper far from the middle of the phone screen.
+    // Leave enough space around the coast to see the island flying. The
+    // keeper stays near the center; a small camera sway suggests buoyancy
+    // without moving collision geometry or invalidating the cached shadows.
     desiredFocus.set(overview ? 0 : player.x * .88, overview ? -.9 : .75, overview ? -.5 : player.z * .88);
-    const span = overview ? Math.max(34, 42 / aspect) : aspect < 1 ? 22 : 16.8;
+    const flightTime = animationTime(state);
+    if (!reduced.matches) desiredFocus.y += Math.sin(flightTime * .42) * .13;
+    const span = overview ? Math.max(35, 43 / aspect) : Math.max(24, 30 / aspect);
     const distance = span / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * .5)));
     const elapsed = lastTime === null ? 1 : Math.min(.1, Math.max(0, time - lastTime));
     const blend = reduced.matches || !initializedCamera ? 1 : 1 - Math.exp(-elapsed * 6);
     focus.lerp(desiredFocus, blend);
     cameraDestination.copy(focus).addScaledVector(overview ? overviewDirection : cameraDirection, distance);
+    if (!reduced.matches) cameraDestination.x += Math.sin(flightTime * .23) * .18;
     camera.position.lerp(cameraDestination, blend);
     camera.lookAt(focus);
     camera.updateMatrixWorld();
@@ -252,6 +246,7 @@ export async function createLanternScene(container, world, { resized, lost, rest
     if (contextLost) return;
     lastState = state;
     updateCamera(state, time);
+    space.update({ time: animationTime(state), cameraPosition: camera.position, focus, reducedMotion: reduced.matches });
     const t = animationTime(state), moving = state.player?.moving && !reduced.matches;
     const player = state.player || world.spawn;
     const lit = new Set(state.lit || []), collected = new Set(state.collected || []), secrets = new Set(state.secrets || []);
@@ -382,7 +377,7 @@ export async function createLanternScene(container, world, { resized, lost, rest
   observer.observe(container);
   resize();
   return {
-    render, resize, project, movement, renderer, camera, scene,
+    render, resize, project, movement, renderer, camera, scene, space,
     get state() { return lastState; },
     get assetStats() {
       let meshes = 0, vertices = 0;
@@ -393,10 +388,11 @@ export async function createLanternScene(container, world, { resized, lost, rest
       observer.disconnect();
       renderer.domElement.removeEventListener('webglcontextlost', onLost);
       renderer.domElement.removeEventListener('webglcontextrestored', onRestored);
+      space.dispose();
       geometries.forEach(geometry => geometry.dispose());
       materials.forEach(material => material.dispose());
       textures.forEach(texture => texture.dispose());
-      renderer.dispose(); renderer.domElement.remove();
+      renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove();
     },
   };
 }
