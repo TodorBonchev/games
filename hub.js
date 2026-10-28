@@ -4,11 +4,11 @@ import { readProgress } from './voyage/progress.js';
 const games = {
   soldier: { levels: 2 }, garden: { levels: 5 }, borrowed: { levels: 6 },
   prism: { levels: 8, label: 'ORCHARD', modes: ['playing', 'paused', 'won'] },
-  lantern: { levels: 1, label: 'VALLEY', modes: ['playing', 'paused', 'won', 'exploring'] },
+  lantern: { levels: 1, label: 'FLIGHT', modes: ['playing', 'paused', 'won', 'exploring'] },
 };
 
 function validCheckpoint(game, data, config) {
-  if (data?.schema !== 1) return false;
+  if (data?.schema !== 1 && !(game === 'lantern' && data?.schema === 2)) return false;
   if (!Number.isInteger(data.level) || data.level < 1 || data.level > config.levels) return false;
   if (config.modes) return config.modes.includes(data.mode);
   if (game === 'borrowed') return Number.isInteger(data.loop) && data.loop >= 1 && data.loop <= 9 && ['playing', 'paused', 'between', 'won'].includes(data.mode);

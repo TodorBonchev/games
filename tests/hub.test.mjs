@@ -82,7 +82,7 @@ test('invalid checkpoints do not advertise continuation or break the collection'
   try {
     await run();
     for (const slug of ['prism', 'lantern', 'garden', 'borrowed', 'soldier']) {
-      for (const data of [{ schema: 2, level: 1, mode: 'playing' }, { schema: 1, level: 999, mode: 'playing' }, { schema: 1, level: 1, mode: 'broken' }]) {
+      for (const data of [{ schema: 999, level: 1, mode: 'playing' }, { schema: 1, level: 999, mode: 'playing' }, { schema: 1, level: 1, mode: 'broken' }]) {
         writeGameSave(slug, data, localStorage); refresh();
         assert.equal(document.querySelector(`.${slug}-card [data-play-label]`).textContent, 'PLAY GAME');
         assert.equal(document.querySelector(`.${slug}-card .game-save-note`).hidden, true);
@@ -100,11 +100,11 @@ test('Lantern Vale retains its separate continuation slot in each resumable mode
   try {
     const world = JSON.parse(await readFile(new URL('../assets/lantern-world.json', import.meta.url), 'utf8'));
     await run();
-    for (const mode of ['playing', 'paused', 'won', 'exploring']) {
-      writeGameSave('lantern', { schema: 1, level: 1, mode, player: world.spawn }, localStorage); refresh();
+    for (const schema of [1, 2]) for (const mode of ['playing', 'paused', 'won', 'exploring']) {
+      writeGameSave('lantern', { schema, level: 1, mode, player: world.spawn }, localStorage); refresh();
       const card = document.querySelector('.lantern-card'), url = new URL(card.href);
       assert.equal(card.querySelector('[data-play-label]').textContent, 'CONTINUE RUN');
-      assert.equal(card.querySelector('.game-save-note').textContent, 'SAVED · VALLEY 1 / 1');
+      assert.equal(card.querySelector('.game-save-note').textContent, 'SAVED · FLIGHT 1 / 1');
       assert.equal(url.searchParams.get('level'), '1');
       assert.equal(url.searchParams.get('continue'), '1');
     }

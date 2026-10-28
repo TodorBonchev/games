@@ -11,7 +11,7 @@ A collection of **six Three.js browser games**, made for phones and computers. W
 | **Garden Guard** | [Launch garden defense](https://todorbonchev.github.io/games/garden.html) | Five garden defense levels with five lanes, three plant types, runners, armored zombies, and up to five waves. |
 | **Borrowed Tomorrow** | [Launch the time sail](https://todorbonchev.github.io/games/borrowed.html) | Six clockworld chambers where your two recorded past selves steer a triangular weapon. Flow and Rift difficulties, clockblooms, crosswinds, armor, and a final boss. |
 | **Prism Orchard** | [Launch Prism Orchard](https://todorbonchev.github.io/games/prism.html) | Turn crystal mirrors, split colored light, and combine beams to bloom eight night gardens. |
-| **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Explore a floating island village among parallax stars, gather fireflies, light five lanterns, and uncover hidden memories. |
+| **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Pilot a spaceship around a floating island, gather fireflies, light five lanterns, and discover memories above and below the cliffs. |
 
 ## Wonderwake
 
@@ -68,15 +68,17 @@ Borrowed Tomorrow restores the chamber, difficulty, exact loop clock, player and
 
 Wonderwake keeps its island progress, recruited friends, and current mission together in a separate campaign save. The first time you visit a challenge, it offers a compatible unfinished checkpoint from that former game when one exists. The original save remains untouched. Returning to the map or switching away preserves your place; replaying a mission never removes an earned friend.
 
-Prism Orchard restores the puzzle, mirror orientations, turn count, and hint use. Its completion stars and unlocked puzzles are saved separately. Lantern Vale saves your place in the valley, lit lanterns, gathered fireflies, and discovered memories independently from the other games.
+Prism Orchard restores the puzzle, mirror orientations, turn count, and hint use. Its completion stars and unlocked puzzles are saved separately. Lantern Vale saves your ship’s position, altitude, heading and momentum, lit lanterns, gathered fireflies, and discovered memories independently from the other games. Existing walking saves migrate to flight while keeping discoveries and lantern progress.
 
 No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues. Existing standalone and Little Arcade saves are retained so reorganizing the collection does not erase earlier progress. Old direct URLs remain available as archival entries, while the homepage presents only the six current games.
 
 ## Lantern Vale
 
-Explore a handmade island village drifting through open space at your own pace. Three layers of stars move at different depths as you walk, with a soft nebula behind them and gentle flight motion. Reduced-motion mode keeps the space backdrop still. Gather fireflies, then linger beside each of the five lanterns to light it. Look for five hidden memories along the way: three memories earn two stars, and all five earn three. There are no lives or timers, and you can keep exploring after lighting the village.
+Fly your own little spaceship around a handmade island village floating through open space. A camera follows behind the ivory-and-teal ship, revealing rooftops, coastal cliffs, and the underside of the island. Three layers of parallax stars and a soft nebula surround the world. Reduced-motion mode removes decorative banking, bobbing and backdrop movement.
 
-On a phone, drag anywhere in the scene to walk and lift to stop. Arrow keys or WASD also move the keeper; P or Esc pauses. The map shows the lanterns and bridges. Progress is saved on the device.
+Gather airborne fireflies, then hover in the sky rings above five landmarks to light their lanterns. Five memories reward exploration around the coast and beneath the island: three memories earn two stars, and all five earn three. There are no lives or timers, and you can keep flying after lighting the village. A compass shows the next target, distance and altitude direction; the flight map includes your ship and all discoveries.
+
+On a phone, hold anywhere in the scene to fly forward. Drag left/right to turn and up/down to climb/descend; release to hover. Hold the separate Boost button with another thumb to fly faster. On a keyboard, W/S or up/down fly forward/backward, A/D or left/right turn, Q/E descend/climb, and Shift boosts. P or Esc pauses. Collision protection keeps the ship outside the island and buildings. Progress saves on the device, including existing journeys from the walking version.
 
 The world is authored in Blender at `blender/lantern-vale.blend` and exported as `assets/lantern-vale.glb`; `assets/lantern-world.json` describes the playable world. These assets are bundled locally. The editable scene keeps its objects separate; the 1.7 MB web model merges static geometry by material. The generation script was tested with Blender 4.5 LTS.
 
@@ -341,7 +343,7 @@ Pond Post uses `pondpost.html`, `pondpost.css`, `pondpost-main.js` (input, UI, s
 
 Prism Orchard, Ribbon Reef, and Dewdrop Drift each use their own `{slug}.html`, `{slug}.css`, `{slug}-main.js`, `{slug}-scene.js`, and `{slug}-game.js`, with slugs `prism`, `ribbon`, and `dewfall`. Their `?debug=1` pages expose `window.__prism`, `window.__ribbon`, and `window.__dewfall` for local inspection. Normal play does not expose these helpers. The respective browser suites exercise legal completion, real touch controls, phone layouts, interruption and graphics recovery, and storage failures. Their hub previews are captured from the actual Three.js scenes.
 
-Lantern Vale uses `lantern.html`, `lantern.css`, `lantern-main.js`, `lantern-scene.js`, `lantern-space.js`, and `lantern-game.js`. `/lantern.html?debug=1` exposes `window.__lantern` for local inspection. Its browser suite walks the island through legal movement, checks all five lanterns and memories, and exercises touch, local saves, graphics recovery, and seven phone layouts. Normal play does not expose the helper.
+Lantern Vale uses `lantern.html`, `lantern.css`, `lantern-main.js`, `lantern-scene.js`, `lantern-ship.js`, `lantern-space.js`, and `lantern-game.js`. `/lantern.html?debug=1` exposes `window.__lantern` for local inspection. Its browser suites fly a legal route through all five lanterns and memories, including below the island, and exercise chase-camera framing, multi-touch steering and boost, old-save migration, exact flight continuation, graphics recovery, and seven phone layouts. Normal play does not expose the helper.
 
 The collection browser suite checks all six homepage choices, independent standalone and adventure continuation, actual preview loading, 44px phone controls, and notch clearance in small portrait and landscape layouts. `test:voyage` checks the connected campaign shell; `test:voyage:legacy` checks the five adapted mission engines. Pure campaign tests verify island unlocks from distinct friends, festival and full-crew milestones, checkpoint recovery, and storage isolation.
 

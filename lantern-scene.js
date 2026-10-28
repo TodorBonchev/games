@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createLanternSpace } from './lantern-space.js';
+import { createLanternShip } from './lantern-ship.js';
+import { flightTargets, flightSpawn, isFlightClear } from './lantern-game.js?v3';
 
-// The village is authored in Blender. Only the keeper's movement, light,
-// water, and collectible effects are animated here. The island sails through
-// a layered starfield; the walkable world stays in its own local coordinates.
+// The island is authored in Blender; the scout, flight markers, and starfield
+// animate around it without changing the environment's baked geometry.
 export async function createLanternScene(container, world, { resized, lost, restored, progress } = {}) {
   const touch = matchMedia('(pointer: coarse)').matches;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -24,7 +25,8 @@ export async function createLanternScene(container, world, { resized, lost, rest
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#090e23');
-  const camera = new THREE.PerspectiveCamera(43, 1, .15, 600);
+  const camera = new THREE.PerspectiveCamera(58, 1, .12, 600);
+  const targets = flightTargets(world);
   const sky = new THREE.HemisphereLight('#e5e4ff', '#68618d', 1.8);
   scene.add(sky);
   const sun = new THREE.DirectionalLight('#ffd8b4', 2.45);
@@ -73,7 +75,7 @@ export async function createLanternScene(container, world, { resized, lost, rest
     blending: THREE.AdditiveBlending, toneMapped: false,
   });
   const crystalMaterial = registerMaterial(new THREE.MeshStandardMaterial({
-    color: '#bdeaff', emissive: '#608dce', emissiveIntensity: .6,
+    color: '#d3b5ff', emissive: '#8b5ec9', emissiveIntensity: .6,
     metalness: .25, roughness: .25,
   }));
   const makeInstances = (geometry, material, count) => {
@@ -93,6 +95,8 @@ export async function createLanternScene(container, world, { resized, lost, rest
   const lanternGlows = makeInstances(plane, glowMaterial, world.beacons.length);
   const lanternCores = makeInstances(sphere, gold, world.beacons.length);
   const lanternPools = makeInstances(plane, groundGlowMaterial, world.beacons.length);
+  const scanRings = makeInstances(ringGeometry, paleGold, world.beacons.length);
+  const scanBeams = makeInstances(sphere, basic('#7fe5eb', { transparent: true, opacity: .28, depthWrite: false, toneMapped: false }), world.beacons.length);
   const foamMaterial = basic('#e4f8ef', { transparent: true, opacity: .6, depthWrite: false });
   const foam = makeInstances(sphere, foamMaterial, 42);
   const transform = new THREE.Object3D();
@@ -100,7 +104,7 @@ export async function createLanternScene(container, world, { resized, lost, rest
   const facingCamera = new THREE.Quaternion();
   const counts = new Map();
   const dynamicMeshes = [moteCores, moteGlows, trailCores, memoryCrystals, memoryRings,
-    effectCores, lanternGlows, lanternCores, lanternPools, foam];
+    effectCores, lanternGlows, lanternCores, lanternPools, scanRings, scanBeams, foam];
 
   function put(mesh, x, y, z, sx, sy = sx, sz = sx, color = null, rotation = null) {
     const index = counts.get(mesh) || 0;
@@ -152,89 +156,72 @@ export async function createLanternScene(container, world, { resized, lost, rest
     }
   });
 
-  const keeper = new THREE.Group();
-  keeper.name = 'KeeperMotion';
-  keeper.scale.setScalar(1.18);
   const authoredAvatar = village.getObjectByName('Avatar');
-  if (authoredAvatar) {
-    authoredAvatar.removeFromParent();
-    authoredAvatar.position.set(0, 0, 0);
-    keeper.add(authoredAvatar);
-  } else {
-    // Authoring fallback only for the keeper; the village always comes from Blender.
-    const coat = registerMaterial(new THREE.MeshStandardMaterial({ color: '#df976c', roughness: .75 }));
-    const skin = registerMaterial(new THREE.MeshStandardMaterial({ color: '#f6d3aa', roughness: .8 }));
-    const body = new THREE.Mesh(registerGeometry(new THREE.CapsuleGeometry(.25, .35, 3, 8)), coat);
-    body.position.y = .57;
-    keeper.add(body);
-    const head = new THREE.Mesh(sphere, skin);
-    head.scale.setScalar(.22); head.position.y = 1.1; keeper.add(head);
-    const hat = new THREE.Mesh(registerGeometry(new THREE.ConeGeometry(.37, .34, 8)), coat);
-    hat.position.y = 1.35; keeper.add(hat);
-  }
-  scene.add(keeper);
-  const legL = keeper.getObjectByName('AvatarLegL'), legR = keeper.getObjectByName('AvatarLegR');
-  const legs = [legL, legR].filter(Boolean).map((object, index) => ({ object, base: object.quaternion.clone(), sign: index ? -1 : 1 }));
+  authoredAvatar?.removeFromParent();
+  const scout = createLanternShip({ THREE, registerGeometry, registerMaterial, glowTexture });
+  const ship = scout.ship; scene.add(ship);
   const windmill = village.getObjectByName('WindmillRotor');
   const rotorBase = windmill?.quaternion.clone();
   const rotorTurn = new THREE.Quaternion();
-  const spinAxis = new THREE.Vector3(0, 0, 1), legAxis = new THREE.Vector3(1, 0, 0);
-
-  const keeperShadow = new THREE.Mesh(plane, basic('#273c51', {
-    map: glowTexture, transparent: true, opacity: .48, depthWrite: false,
-  }));
-  keeperShadow.rotation.x = -Math.PI / 2;
-  keeperShadow.scale.set(1.3, 1.05, 1);
-  scene.add(keeperShadow);
-  const keeperRing = new THREE.Mesh(ringGeometry, basic('#ffe8a8', {
-    transparent: true, opacity: .74, depthWrite: false, toneMapped: false,
-  }));
-  keeperRing.rotation.x = -Math.PI / 2;
-  keeperRing.scale.setScalar(.44);
-  scene.add(keeperRing);
-  const compass = new THREE.Group();
-  const compassCenter = new THREE.Mesh(sphere, paleGold);
-  compassCenter.scale.set(.10, .10, .16); compass.add(compassCenter);
-  const wings = [];
-  for (const sign of [-1, 1]) {
-    const wing = new THREE.Mesh(sphere, basic('#caffef', { transparent: true, opacity: .8, toneMapped: false }));
-    wing.position.x = sign * .14; wing.scale.set(.19, .025, .10);
-    wings.push({ wing, sign }); compass.add(wing);
-  }
-  scene.add(compass);
+  const spinAxis = new THREE.Vector3(0, 0, 1);
 
   let width = 0, height = 0, initializedCamera = false, lastTime = null;
   let lastState = null, contextLost = false, cameraMode = null;
   const focus = new THREE.Vector3();
   const desiredFocus = new THREE.Vector3();
-  const cameraDirection = new THREE.Vector3(.47, .79, .59).normalize();
   const overviewDirection = new THREE.Vector3(.5, .48, .7).normalize();
   const viewRight = new THREE.Vector3(), viewForward = new THREE.Vector3();
-  const cameraDestination = new THREE.Vector3();
+  const cameraDestination = new THREE.Vector3(), shipPosition = new THREE.Vector3();
+  const cameraRay = new THREE.Vector3(), probe = new THREE.Vector3();
+  const forward = new THREE.Vector3();
   const animationTime = state => reduced.matches ? 0 : (state.ticks || 0) / 60;
+
+  // Pull a chase camera forward if scenery lies between it and the ship.
+  // This also prevents smoothing across the rock when circling underneath.
+  function keepCameraClear(position, player) {
+    shipPosition.set(player.x, player.y, player.z);
+    cameraRay.copy(position).sub(shipPosition);
+    const distance = cameraRay.length();
+    if (distance < .001) return;
+    cameraRay.divideScalar(distance);
+    let safe = 0;
+    for (let d = .25; d <= distance + .249; d += .25) {
+      const step = Math.min(d, distance);
+      probe.copy(shipPosition).addScaledVector(cameraRay, step);
+      // Camera clearance is independent of the pilot's outer flight fence.
+      if (!isFlightClear(world, probe.x, probe.y, probe.z, .16)) break;
+      safe = step;
+    }
+    if (safe < distance) position.copy(shipPosition).addScaledVector(cameraRay, Math.max(.18, safe - .1));
+  }
 
   function updateCamera(state, time) {
     const overview = state.mode === 'ready' || state.mode === 'won';
-    // Results are rendered once, so their composed view must not depend on a
-    // camera animation that would otherwise stop behind the dialog.
-    if (overview && cameraMode !== state.mode) initializedCamera = false;
-    cameraMode = state.mode;
+    if (cameraMode !== overview) initializedCamera = false;
+    cameraMode = overview;
     const aspect = width / height;
-    const player = state.player || world.spawn;
-    // Leave enough space around the coast to see the island flying. The
-    // keeper stays near the center; a small camera sway suggests buoyancy
-    // without moving collision geometry or invalidating the cached shadows.
-    desiredFocus.set(overview ? 0 : player.x * .88, overview ? -.9 : .75, overview ? -.5 : player.z * .88);
-    const flightTime = animationTime(state);
-    if (!reduced.matches) desiredFocus.y += Math.sin(flightTime * .42) * .13;
-    const span = overview ? Math.max(35, 43 / aspect) : Math.max(24, 30 / aspect);
-    const distance = span / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * .5)));
+    const player = state.player || flightSpawn(world);
     const elapsed = lastTime === null ? 1 : Math.min(.1, Math.max(0, time - lastTime));
-    const blend = reduced.matches || !initializedCamera ? 1 : 1 - Math.exp(-elapsed * 6);
+    const blend = reduced.matches || !initializedCamera ? 1 : 1 - Math.exp(-elapsed * 12);
+    if (overview) {
+      desiredFocus.set(0, -.6, 0);
+      const span = Math.max(36, 39 / aspect);
+      const distance = span / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * .5)));
+      cameraDestination.copy(desiredFocus).addScaledVector(overviewDirection, distance);
+    } else {
+      forward.set(Math.sin(player.heading), 0, Math.cos(player.heading));
+      // Keep the engine bells in the lower third, with the destination ahead.
+      // Widen portrait framing by moving back, rather than shrinking the craft.
+      const distance = aspect < .85 ? 8.8 : 7.4;
+      const underIsland = player.y < -5;
+      const height = underIsland ? -1.6 : 2.8;
+      desiredFocus.set(player.x, player.y + (underIsland ? 2.5 : .45), player.z).addScaledVector(forward, 6.2);
+      cameraDestination.set(player.x, player.y + height, player.z).addScaledVector(forward, -distance);
+      keepCameraClear(cameraDestination, player);
+    }
     focus.lerp(desiredFocus, blend);
-    cameraDestination.copy(focus).addScaledVector(overview ? overviewDirection : cameraDirection, distance);
-    if (!reduced.matches) cameraDestination.x += Math.sin(flightTime * .23) * .18;
     camera.position.lerp(cameraDestination, blend);
+    if (!overview) keepCameraClear(camera.position, player);
     camera.lookAt(focus);
     camera.updateMatrixWorld();
     camera.getWorldQuaternion(facingCamera);
@@ -247,20 +234,13 @@ export async function createLanternScene(container, world, { resized, lost, rest
     lastState = state;
     updateCamera(state, time);
     space.update({ time: animationTime(state), cameraPosition: camera.position, focus, reducedMotion: reduced.matches });
-    const t = animationTime(state), moving = state.player?.moving && !reduced.matches;
-    const player = state.player || world.spawn;
+    const t = animationTime(state);
+    const player = state.player || flightSpawn(world);
     const lit = new Set(state.lit || []), collected = new Set(state.collected || []), secrets = new Set(state.secrets || []);
     sky.intensity = 1.8 + lit.size * .045;
     sun.intensity = 2.25 + lit.size * .04;
     for (const material of windowMaterials) material.emissiveIntensity = .25 + lit.size * .15;
-    keeper.position.set(player.x, world.groundY + (moving ? Math.abs(Math.sin(t * 11)) * .035 : 0), player.z);
-    keeper.rotation.y = player.heading || 0;
-    for (const leg of legs) {
-      rotorTurn.setFromAxisAngle(legAxis, moving ? Math.sin(t * 11) * .4 * leg.sign : 0);
-      leg.object.quaternion.copy(leg.base).multiply(rotorTurn);
-    }
-    keeperShadow.position.set(player.x, world.groundY + .015, player.z);
-    keeperRing.position.set(player.x, world.groundY + .09, player.z);
+    scout.update(player, t, reduced.matches);
     if (windmill) {
       rotorTurn.setFromAxisAngle(spinAxis, reduced.matches ? 0 : t * .3);
       windmill.quaternion.copy(rotorBase).multiply(rotorTurn);
@@ -269,51 +249,52 @@ export async function createLanternScene(container, world, { resized, lost, rest
     counts.clear();
     for (let i = 0; i < world.motes.length; i++) {
       if (collected.has(i)) continue;
-      const [x, z] = world.motes[i];
+      const { x, y, z } = targets.motes[i];
       const bob = Math.sin(t * 2.1 + i * 1.7) * .1;
-      put(moteCores, x, world.groundY + .72 + bob, z, .09);
-      put(moteGlows, x, world.groundY + .72 + bob, z, .9, .9, 1, null, 'billboard');
+      put(moteCores, x, y + bob, z, .13);
+      put(moteGlows, x, y + bob, z, .9, .9, 1, null, 'billboard');
       for (let n = 0; n < 2; n++) {
         const a = t * 1.5 + i + n * Math.PI;
-        put(moteCores, x + Math.cos(a) * .18, world.groundY + .67 + bob + n * .1, z + Math.sin(a) * .15, .025);
+        put(moteCores, x + Math.cos(a) * .18, y - .05 + bob + n * .1, z + Math.sin(a) * .15, .025);
       }
     }
     world.beacons.forEach((beacon, i) => {
       const isLit = lit.has(i);
+      const target = targets.beacons[i];
       const charging = state.channel?.beacon === i ? state.channel.progress : 0;
       const strength = isLit ? 1 : charging * .7;
       put(lanternCores, beacon.x, world.groundY + 2, beacon.z, isLit ? .18 : .085, undefined, undefined, isLit ? beacon.color : '#736b6b');
+      if (!isLit) {
+        const pulse = reduced.matches ? 1 : 1 + Math.sin(t * 1.8 + i) * .045;
+        put(scanRings, target.x, target.y, target.z, 1.35 * pulse, 1.35 * pulse, 1.35 * pulse, state.charge >= beacon.cost ? '#9cfff0' : '#e6c99b', 'billboard');
+        put(scanBeams, target.x, (target.y + world.groundY + 2) / 2, target.z, .025, (target.y - world.groundY - 2) / 2, .025);
+      }
       if (strength > 0) {
         const pulse = reduced.matches ? 1 : 1 + Math.sin(t * 2.5 + i) * .06;
         put(lanternGlows, beacon.x, world.groundY + 2, beacon.z, 2.6 * strength * pulse, 2.6 * strength * pulse, 1, beacon.color, 'billboard');
         put(lanternPools, beacon.x, world.groundY + .025, beacon.z, 6 * strength, 6 * strength, 1, beacon.color, [-Math.PI / 2, 0, 0]);
       }
     });
-    world.secrets.forEach((secret, i) => {
+    targets.secrets.forEach((secret, i) => {
       if (secrets.has(i)) return;
       const bob = Math.sin(t * 1.8 + i * 2) * .07;
-      put(memoryCrystals, secret.x, world.groundY + .72 + bob, secret.z, .22, .32, .22, null, [0, t * .7 + i, .25]);
-      put(memoryRings, secret.x, world.groundY + .43, secret.z, .43, .43, .43, null, [-Math.PI / 2, 0, 0]);
+      put(memoryCrystals, secret.x, secret.y + bob, secret.z, .35, .5, .35, null, [0, t * .7 + i, .25]);
+      put(memoryRings, secret.x, secret.y, secret.z, .86, .86, .86, '#dcc5ff', 'billboard');
     });
 
     const guide = state.guide;
-    compass.visible = !!guide && !['ready', 'won'].includes(state.mode);
-    if (compass.visible) {
-      const dx = guide.x - player.x, dz = guide.z - player.z;
-      const length = Math.hypot(dx, dz), amount = Math.min(2, length * .65);
-      const nx = length > .001 ? dx / length : 0, nz = length > .001 ? dz / length : 1;
-      compass.position.set(player.x + nx * amount, world.groundY + 1.15 + Math.sin(t * 3) * .08, player.z + nz * amount);
-      compass.rotation.y = Math.atan2(nx, nz);
-      for (const { wing, sign } of wings) wing.rotation.z = reduced.matches ? sign * .2 : Math.sin(t * 18) * .7 * sign;
-      for (let i = 0; i < 6; i++) {
-        const f = (i + 1) / 7, d = amount * f;
-        put(trailCores, player.x + nx * d, world.groundY + .14 + Math.sin(t * 3 + i) * .035, player.z + nz * d, .025 + f * .018);
+    if (guide && !['ready', 'won'].includes(state.mode)) {
+      const dx = guide.x - player.x, dy = guide.y - player.y, dz = guide.z - player.z;
+      const length = Math.hypot(dx, dy, dz), amount = Math.min(6, length);
+      if (length > 1) for (let i = 0; i < 9; i++) {
+        const f = (i + 1) / 10, ratio = amount * f / length;
+        put(trailCores, player.x + dx * ratio, player.y + dy * ratio, player.z + dz * ratio, .035 + f * .025);
       }
     }
     const carried = Math.min(8, state.charge || 0);
     for (let i = 0; i < carried; i++) {
       const angle = t * 1.4 + i * Math.PI * 2 / Math.max(1, carried);
-      put(moteCores, player.x + Math.cos(angle) * .55, world.groundY + .9 + Math.sin(angle * 2) * .12, player.z + Math.sin(angle) * .55, .04);
+      put(moteCores, player.x + Math.cos(angle) * .55, player.y + .45 + Math.sin(angle * 2) * .12, player.z + Math.sin(angle) * .55, .04);
     }
     if (!reduced.matches) for (const effect of state.effects || []) {
       const progress = effect.age / effect.duration;
@@ -322,7 +303,7 @@ export async function createLanternScene(container, world, { resized, lost, rest
         const angle = i * Math.PI * 2 / count + effect.id;
         const spread = progress * (effect.type === 'light' ? 2.7 : 1.1);
         put(effectCores, effect.x + Math.cos(angle) * spread,
-          world.groundY + .4 + Math.sin(progress * Math.PI) * (effect.type === 'light' ? 2.5 : 1.1),
+          (effect.y ?? 6.8) + Math.sin(progress * Math.PI) * (effect.type === 'light' ? 2.5 : 1.1),
           effect.z + Math.sin(angle) * spread, .05 * (1 - progress));
       }
     }
@@ -377,12 +358,12 @@ export async function createLanternScene(container, world, { resized, lost, rest
   observer.observe(container);
   resize();
   return {
-    render, resize, project, movement, renderer, camera, scene, space,
+    render, resize, project, movement, renderer, camera, scene, space, ship,
     get state() { return lastState; },
     get assetStats() {
       let meshes = 0, vertices = 0;
       village.traverse(object => { if (object.isMesh) { meshes++; vertices += object.geometry.attributes.position.count; } });
-      return { meshes, vertices, authoredAvatar: !!authoredAvatar };
+      return { meshes, vertices, authoredAvatar: !!authoredAvatar, spaceship: true };
     },
     dispose() {
       observer.disconnect();

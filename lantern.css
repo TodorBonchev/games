@@ -98,7 +98,7 @@ main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .result-stats { display: flex; justify-content: space-around; gap: 12px; margin: 18px 0; padding: 14px 0; border-block: 1px solid #d7d8c9; }
 .result-stats strong { display: block; font: 800 32px Barlow, sans-serif; color: #5b7272; text-align: center; }
 .result-stats span { display: block; margin-top: 5px; font-size: 8px; letter-spacing: .1em; color: #7c8b82; }
-.village-map { width: 100%; height: min(34vh, 280px); display: block; border-radius: 18px; background: #d6e8e2; margin: 14px 0; }
+.village-map { width: 100%; height: min(34vh, 280px); display: block; border-radius: 18px; background: #202b47; margin: 14px 0; }
 .map-legend { display: flex; justify-content: center; gap: 17px; font-size: 10px; color: #73837b; }
 .loading { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 18px; padding: 30px; text-align: center; background: #11172d; color: #fff4d7; }
 .loading-star { font-size: 44px; color: #e4bd76; }
@@ -162,3 +162,32 @@ main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   .panel .fine { margin: 8px 0; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+
+/* Flight instruments sit outside the ship's sightline. */
+.flight-nav { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 9px 15px; border: 1px solid #b7e8ef55; border-radius: 40px; background: #111b33ce; color: #d7f4f3; pointer-events: none; }
+.flight-nav>span { display: block; font-size: 25px; line-height: 1; color: #ffdc94; }
+.flight-nav div { display: grid; gap: 4px; }
+.flight-nav strong { font-size: 9px; letter-spacing: .12em; }
+.flight-nav div span { font-size: 8px; color: #a9bcd8; white-space: nowrap; }
+.flight-nav b { font: 800 21px Barlow, sans-serif; white-space: nowrap; }
+.boost-button { position: absolute; right: 20px; bottom: 19px; width: 76px; height: 76px; padding: 7px; border-radius: 50%; border: 1px solid #a1eff3aa; background: #152d48e3; box-shadow: inset 0 0 20px #5db8cf18, 0 3px 18px #06102355; color: #d6ffff; touch-action: none; user-select: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.boost-button>span { transform: rotate(-90deg); font: 24px/17px Barlow, sans-serif; color: #ffdb93; }
+.boost-button strong { font-size: 10px; letter-spacing: .1em; }
+.boost-button small { font-size: 7px; letter-spacing: .13em; color: #b2c9df; }
+.boost-button.engaged { background: #30748b; border-color: #e0ffff; box-shadow: 0 0 24px #69daec66; }
+.toast { top: 76px; }
+.lighting { bottom: 105px; }
+@media (max-width: 600px) {
+  .boost-button { right: 13px; bottom: 13px; width: 70px; height: 70px; }
+  .flight-nav { top: 12px; padding: 8px 13px; }
+  .lighting { bottom: 95px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .flight-nav { left: 16px; top: 10px; transform: none; padding: 6px 12px; gap: 10px; }
+  .flight-nav b { font-size: 19px; }
+  .boost-button { right: 16px; bottom: 10px; width: 64px; height: 64px; }
+  .lighting { bottom: 10px; width: 210px; padding: 8px 12px; }
+  .toast { top: 10px; left: auto; right: 12px; transform: none; max-width: 55%; }
+}
+
+.brand .full-name { margin-right: .18em; }

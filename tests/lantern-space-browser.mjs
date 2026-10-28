@@ -43,12 +43,12 @@ try {
     await page.locator('[data-action=start]').tap(); await page.evaluate(() => __lantern.setRealtime(false));
     const info = await page.evaluate(() => {
       const view = __lantern.view;
-      return { world: !!view.scene.getObjectByName('LanternValeBlenderWorld'), authored: view.assetStats.authoredAvatar,
+      return { world: !!view.scene.getObjectByName('LanternValeBlenderWorld'), spaceship: !!view.ship && view.assetStats.spaceship,
         layers: view.space.layers.map(layer => ({ name: layer.name, depth: layer.userData.depth, count: layer.geometry.attributes.position.count })),
         pixels: view.renderer.domElement.width * view.renderer.domElement.height, calls: view.renderer.info.render.calls,
         background: view.scene.background?.getHexString(), antialias: view.renderer.getContext().getContextAttributes().antialias };
     });
-    assert.ok(info.world && info.authored, 'the actual Blender island and keeper are retained');
+    assert.ok(info.world && info.spaceship, 'the actual Blender island is explored in a spacecraft');
     assert.equal(info.layers.length, 3); assert.equal(new Set(info.layers.map(layer => layer.depth)).size, 3);
     assert.ok(info.layers.reduce((sum, layer) => sum + layer.count, 0) >= 300, 'a populated three-depth sky');
     assert.ok(info.pixels <= 421000 && info.calls <= 150 && !info.antialias, 'phone rendering remains bounded');
@@ -67,11 +67,11 @@ try {
     const shifts = parallax.before.map((item, i) => ({ depth: item.depth, shift: difference(parallax.after[i], item) })).sort((a, b) => b.depth - a.depth);
     assert.ok(shifts[0].shift > .001, 'camera translation moves the far stars');
     assert.ok(shifts[1].shift > shifts[0].shift * 1.15 && shifts[2].shift > shifts[1].shift * 1.15, `near stars cross the view faster: ${JSON.stringify(shifts)}`);
-    for (let i = 0; i < 3; i++) assert.ok(difference(parallax.still[i], parallax.sailed[i]) > .001, 'the island keeps sailing while its keeper stands still');
+    for (let i = 0; i < 3; i++) assert.ok(difference(parallax.still[i], parallax.sailed[i]) > .001, 'the island keeps sailing while the spacecraft hovers');
 
-    // Actual touch movement still controls the real keeper, and carries the
+    // Actual touch movement controls the spacecraft, and carries the
     // camera through the layered sky without altering any progression data.
-    const r = await page.locator('#gameStage').boundingBox(), anchor = { x: r.x + r.width / 2, y: r.y + r.height * .6 };
+    const r = await page.locator('#gameStage').boundingBox(), anchor = { x: r.x + r.width * .3, y: r.y + r.height * .6 };
     const before = await page.evaluate(() => ({ ...__lantern.game.state.player }));
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...anchor, id: 1 }] });
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: anchor.x + 40, y: anchor.y, id: 1 }] });
@@ -93,6 +93,21 @@ try {
       return before === JSON.stringify(view.renderer.info.memory);
     });
     assert.ok(stable, 'parallax frames reuse their GPU resources');
+    const boundaryCameras = await page.evaluate(() => {
+      const { view, game } = __lantern;
+      const locations = [{ x: 0, y: 32, z: 26, heading: Math.PI }, { x: 60, y: 9, z: 0, heading: -Math.PI / 2 },
+        { x: 4, y: -8, z: 3, heading: 0 }, { x: 0, y: -16, z: 0, heading: 0 }];
+      const results = locations.map((position, index) => {
+        const display = { ...game.state, player: { ...game.state.player, ...position, speed: 0, verticalSpeed: 0, bank: 0 } };
+        for (let i = 0; i < 40; i++) view.render(display, 100 + index * 2 + i / 30);
+        const { camera } = view, dx = camera.position.x - position.x, dy = camera.position.y - position.y, dz = camera.position.z - position.z;
+        return { position, distance: Math.hypot(dx, dy, dz), behind: dx * Math.sin(position.heading) + dz * Math.cos(position.heading), visible: view.project(position.x, position.z, position.y).visible };
+      });
+      for (let i = 0; i < 40; i++) view.render(game.state, 120 + i / 30);
+      return results;
+    });
+    for (const sample of boundaryCameras) assert.ok(sample.distance > 6 && sample.behind < -1 && sample.visible,
+      `the chase camera keeps its arm at the flight fence and beneath the island: ${JSON.stringify(sample)}`);
     await page.screenshot({ path: `test-results/lantern-space/playing-${spec.width}x${spec.height}.png` });
     reports.push({ phone: `${spec.width}x${spec.height}`, ...info, parallaxShifts: shifts });
     await context.close();
