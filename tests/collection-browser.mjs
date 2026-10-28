@@ -5,11 +5,12 @@ import { mkdir } from 'node:fs/promises';
 
 const base = process.env.GAMES_TEST_URL || 'http://127.0.0.1:5198';
 let server, browser;
-const errors = [], games = ['prism', 'ribbon', 'dewfall'];
+const errors = [], games = ['wonderwake', 'soldier', 'garden', 'borrowed', 'prism', 'lantern'];
 const specs = [
   { width: 320, height: 568, insets: { top: 47, bottom: 34 } },
   { width: 390, height: 844, insets: { top: 47, bottom: 34 } },
   { width: 568, height: 320, insets: { left: 47, right: 47, bottom: 21 } },
+  { width: 1440, height: 1000, insets: {}, desktop: true },
 ];
 function watch(page) {
   page.on('pageerror', error => errors.push(error.message));
@@ -23,88 +24,65 @@ try {
   browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', args: ['--no-sandbox'] });
   await mkdir('test-results/collection', { recursive: true });
   for (const spec of specs) {
-    const context = await browser.newContext({ viewport: { width: spec.width, height: spec.height }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+    const context = await browser.newContext({ viewport: { width: spec.width, height: spec.height }, isMobile: !spec.desktop, hasTouch: !spec.desktop, deviceScaleFactor: 2 });
     const page = await context.newPage(); watch(page);
     await (await context.newCDPSession(page)).send('Emulation.setSafeAreaInsetsOverride', { insets: spec.insets });
     await page.goto(base);
     await page.evaluate(() => document.fonts.ready);
-    assert.equal(await page.locator('.quick-play a').count(), 11);
-    for (const link of await page.locator('.quick-play a').all()) {
+    assert.deepEqual(await page.locator('.game-card').evaluateAll(cards => cards.map(card => card.dataset.gameLink)), games);
+    assert.equal(await page.locator('.quick-play a').count(), 6);
+    assert.equal(await page.locator('.arcade-card').count(), 0);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'homepage has no horizontal overflow');
+    if (!spec.desktop) for (const link of await page.locator('.quick-play a').all()) {
       const r = await link.boundingBox();
       assert.ok(r.width >= 44 && r.height >= 44, 'quick links have 44px touch targets');
       assert.ok(r.x >= (spec.insets.left || 0) && r.x + r.width <= spec.width - (spec.insets.right || 0) + 1, 'quick links clear the notch');
-      assert.ok(r.y + r.height <= spec.height - (spec.insets.bottom || 0), 'all ten original games and the new arcade are available above the fold');
+      assert.ok(r.y + r.height <= spec.height - (spec.insets.bottom || 0), 'all six games are available above the fold');
     }
-    for (const slug of games) {
-      await page.goto(`${base}/${slug}.html?debug=1`);
-      await page.waitForFunction(() => document.body.dataset.ready === 'true');
-      await page.evaluate(() => document.fonts.ready);
-      await page.locator('button[data-action="start"]').tap();
-      await page.evaluate(slug => window[`__${slug}`].setRealtime(false), slug);
-      const targets = await page.locator('button, a').evaluateAll(nodes => nodes.filter(node => node.getClientRects().length && !node.closest('[hidden]')).map(node => {
-        const r = node.getBoundingClientRect(); return { text: node.textContent.trim(), x: r.x, y: r.y, width: r.width, height: r.height };
-      }));
-      for (const target of targets) {
-        assert.ok(target.width >= 43.5 && target.height >= 43.5, `${slug} ${spec.width}: small target ${JSON.stringify(target)}`);
-        assert.ok(target.x >= (spec.insets.left || 0) && target.x + target.width <= spec.width - (spec.insets.right || 0) + 1, `${slug}: control overlaps notch`);
-        assert.ok(target.y >= (spec.insets.top || 0) - 1 && target.y + target.height <= spec.height - (spec.insets.bottom || 0) + 1, `${slug}: control outside usable screen`);
-      }
-      const stage = await page.locator('#gameStage').boundingBox();
-      // Status changes during an ongoing gesture must not resize the canvas and cancel it.
-      await page.evaluate(slug => {
-        const api = window[`__${slug}`];
-        if (slug === 'ribbon') api.game.state.combo = 12;
-        if (slug === 'dewfall') api.game.beginTilt();
-        if (slug === 'prism') api.game.hint();
-        api.refresh();
-      }, slug);
-      assert.deepEqual(await page.locator('#gameStage').boundingBox(), stage, `${slug}: changing instructions must keep the stage stable`);
-      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight), `${slug}: viewport overflow`);
-      await page.screenshot({ path: `test-results/collection/${slug}-${spec.width}.png` });
+    for (const card of await page.locator('.game-card').all()) {
+      await card.scrollIntoViewIfNeeded();
+      assert.ok(await card.locator('h3').evaluate(node => node.scrollWidth <= node.clientWidth + 1), 'game titles fit');
     }
+    const previews = await page.locator('.game-art img').evaluateAll(async images => {
+      await Promise.all(images.map(image => image.decode()));
+      return images.map(image => ({ width: image.naturalWidth, source: image.currentSrc }));
+    });
+    assert.equal(previews.length, 6); assert.ok(previews.every(image => image.width > 0));
+    assert.ok(previews[0].source.endsWith('/assets/wonderwake-preview.svg'));
+    assert.ok(previews.slice(1).every(image => /-preview-(480|960)\.webp$/.test(image.source)));
+    assert.equal(await page.locator('canvas').count(), 0, 'homepage loads no 3D renderer');
+    await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+    await page.screenshot({ path: `test-results/collection/six-games-${spec.width}.png`, fullPage: true });
     await context.close();
   }
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await context.newPage(); watch(page);
   await page.goto(base);
   await page.evaluate(async () => {
-    const [{ createLantern }, { writeGameSave }, world] = await Promise.all([
-      import('./lantern-game.js'), import('./save-store.js?v7'), fetch('./assets/lantern-world.json').then(response => response.json()),
+    const [{ createPrism }, { createLantern }, { writeGameSave }, { freshProgress, writeProgress }, world] = await Promise.all([
+      import('./prism-game.js'), import('./lantern-game.js'), import('./save-store.js?v7'), import('./voyage/progress.js'), fetch('./assets/lantern-world.json').then(response => response.json()),
     ]);
-    const game = createLantern({ world }); game.start(); game.advance(.5, { x: 0, z: -1 });
-    if (!writeGameSave('lantern', game.snapshot())) throw new Error('Could not save the valley');
+    const prism = createPrism(); prism.start(2); prism.rotate(0);
+    const lantern = createLantern({ world }); lantern.start(); lantern.advance(.5, { x: 0, z: -1 });
+    if (!writeGameSave('prism', prism.snapshot()) || !writeGameSave('lantern', lantern.snapshot())) throw new Error('Could not save standalone games');
+    const voyage = freshProgress(); voyage.completed = ['dewfall', 'dream-duos', 'burrow-banquet']; voyage.chapter = 1;
+    if (!writeProgress(voyage)) throw new Error('Could not save the voyage');
+    dispatchEvent(new Event('storage'));
   });
-  for (const slug of games) {
-    await page.goto(`${base}/${slug}.html?debug=1`);
-    await page.waitForFunction(() => document.body.dataset.ready === 'true');
-    await page.evaluate(slug => {
-      const api = window[`__${slug}`]; api.setRealtime(false); api.start(2);
-      if (slug === 'prism') api.game.rotate(0);
-      if (slug === 'ribbon') { api.game.steer(1, .2); api.advance(.5); }
-      if (slug === 'dewfall') api.advance(.5, { x: .1, z: -.3 });
-      api.save();
-    }, slug);
-  }
-  for (const slug of games) {
+  assert.equal(await page.locator('.wonderwake-card [data-play-label]').textContent(), 'CONTINUE THE VOYAGE');
+  assert.match(await page.locator('.wonderwake-card .game-save-note').textContent(), /3 \/ 25 FRIENDS/);
+  for (const slug of ['prism', 'lantern']) {
     await page.goto(base);
-    assert.equal(await page.locator('.game-card').count(), 10);
     assert.equal(await page.locator(`.${slug}-card [data-play-label]`).textContent(), 'CONTINUE RUN');
-    assert.equal(await page.locator('.lantern-card [data-play-label]').textContent(), 'CONTINUE RUN');
-    assert.match(await page.locator('.lantern-card .game-save-note').textContent(), /VALLEY 1 \/ 1/);
-    assert.match(await page.locator('.quick-play [data-game-link="lantern"]').getAttribute('href'), /lantern\.html\?level=1&continue=1$/);
     await page.locator(`.quick-play [data-game-link="${slug}"]`).tap();
     await page.waitForFunction(() => document.body.dataset.ready === 'true');
     assert.ok(page.url().includes('continue=1'));
-    assert.match(await page.locator('#levelLabel').textContent(), /02/);
     for (const dialog of await page.locator('[role="dialog"]').all()) assert.equal(await dialog.isVisible(), false, `${slug}: the hub resumes play directly`);
-    assert.equal(await page.evaluate(slug => `__${slug}` in window), false, 'normal navigation does not expose debug controls');
+    assert.equal(await page.evaluate(slug => `__${slug}` in window, slug), false, 'normal navigation does not expose debug controls');
   }
   await page.goto(base);
-  for (const card of await page.locator('.game-card').all()) await card.scrollIntoViewIfNeeded();
-  const previews = await page.locator('.game-art img').evaluateAll(async images => { await Promise.all(images.map(image => image.decode())); return images.map(image => ({ width: image.naturalWidth, source: image.currentSrc })); });
-  // naturalWidth is density-corrected when srcset uses width descriptors.
-  assert.equal(previews.length, 10); assert.ok(previews.every(image => image.width > 0 && /-preview-(480|960)\.webp$/.test(image.source)));
+  assert.match(await page.locator('.wonderwake-card .game-save-note').textContent(), /3 \/ 25 FRIENDS/);
   await context.close();
   assert.deepEqual(errors, []);
-  console.log('Collection: ten previews, independent Continue links, and all new games on small/notched phones passed.');
+  console.log('Collection: six game choices, all previews, independent Continue links, and phone/desktop layouts passed.');
 } finally { await browser?.close(); if (server) server.kill(); }

@@ -193,10 +193,11 @@ try {
     });
     assert.ok(resources.calls <= 100 && resources.stable, `full arena uses a bounded and reused renderer (${resources.calls} calls)`); reports.push({ resources });
     await page.goto(`${baseURL}/`);
-    assert.equal(await page.locator('.game-card').count(), 10);
-    assert.equal(await page.locator('.moonbounce-card [data-play-label]').textContent(), 'CONTINUE RUN');
+    assert.equal(await page.locator('.game-card').count(), 6);
+    assert.equal(await page.locator('.moonbounce-card').count(), 0, 'Moonbounce is now part of Wonderwake');
     assert.equal(await page.locator('.borrowed-card [data-play-label]').textContent(), 'CONTINUE RUN');
-    await page.locator('.moonbounce-card').click(); await ready(page);
+    // The original engine remains testable without presenting a seventh homepage game.
+    await page.goto(`${baseURL}/moonbounce.html?continue=1`); await ready(page);
     assert.ok((await page.locator('#panelTitle').textContent()).includes('moon party'));
     assert.equal(await page.evaluate(() => window.__moonbounce?.profile?.victories ?? JSON.parse(localStorage.getItem('games:moonbounce:progress')).victories), 1, 'reopening a win does not count it twice');
     assert.equal(await page.evaluate(() => localStorage.getItem('games:save:borrowed')), otherSave);
@@ -277,10 +278,10 @@ try {
       assert.equal(await page.evaluate(() => window.__moonbounce.game.state.wave), 2, `${label}: choosing a power starts the next wave`);
       if (spec.width === 320 || spec.width === 844) {
         await page.locator('.home-button').tap();
-        await page.waitForFunction(() => document.querySelector('.moonbounce-card [data-play-label]')?.textContent === 'CONTINUE RUN');
-        assert.equal(await page.locator('.moonbounce-card [data-play-label]').textContent(), 'CONTINUE RUN');
-        await page.locator('.quick-play [data-game-link=moonbounce]').tap(); await ready(page);
-        assert.equal(new URL(page.url()).searchParams.get('continue'), '1', `${label}: the phone hub continues the saved run`);
+        assert.equal(await page.locator('.game-card').count(), 6);
+        assert.equal(await page.locator('.wonderwake-card').count(), 1);
+        await page.goto(`${baseURL}/moonbounce.html?continue=1`); await ready(page);
+        assert.equal(new URL(page.url()).searchParams.get('continue'), '1', `${label}: the preserved engine continues its saved run`);
         assert.ok(await page.locator('#modalLayer').isHidden());
         assert.ok((await page.locator('#waveLabel').textContent()).includes('WAVE 2'));
       }

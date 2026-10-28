@@ -24,7 +24,7 @@ export function createRibbon({level=1}={}) {
   function start(id=route.id) {reset(id);state.mode='playing';emit('start');return state;}
   function steer(x,y) {if(state.mode!=='playing'||!Number.isFinite(x)||!Number.isFinite(y))return false;state.targetX=clamp(x,-4.2,4.2);state.targetY=clamp(y,-2.35,2.35);return true;}
   function step() {
-    state.ticks++; const old=state.distance; state.distance=Math.min(route.length,old+SPEED*STEP);
+    state.ticks++; const old=state.distance; state.distance=Math.min(route.length,old+SPEED*STEP); if(route.length-state.distance<1e-7)state.distance=route.length;
     const current=route.current*Math.sin(state.ticks*STEP*.8); state.x=clamp(state.x+(state.targetX-state.x)*.095+current*STEP,-4.2,4.2); state.y=clamp(state.y+(state.targetY-state.y)*.095,-2.35,2.35);
     tailClock+=SPEED*STEP; if(tailClock>=.45){tailClock-=.45;tail.unshift({x:state.x,y:state.y,distance:state.distance});tail.pop();}
     for(const gate of route.gates) if(old<gate.distance&&state.distance>=gate.distance){const dx=Math.abs(state.x-gate.x),dy=Math.abs(state.y-gate.y);if(dx<=gate.width&&dy<=gate.height){state.passed++;const perfect=dx<.62&&dy<.6;if(perfect){state.perfects++;state.combo++;state.bestCombo=Math.max(state.bestCombo,state.combo);state.score+=120+Math.min(8,state.combo)*25;emit('perfect',{combo:state.combo});fx('perfect',gate.x,gate.y,gate.distance);}else {state.combo=0;state.score+=80;emit('gate');fx('gate',gate.x,gate.y,gate.distance);}}else{state.combo=0;state.health--;emit('miss');fx('miss',state.x,state.y,state.distance);}}

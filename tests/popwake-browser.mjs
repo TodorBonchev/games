@@ -103,7 +103,7 @@ try {
     await page.locator('[data-action=resume]').click();
     await page.locator('.home-button').focus(); await page.keyboard.press('Enter');
     await page.waitForURL(url => url.pathname === new URL(`${baseURL}/`).pathname);
-    assert.equal(await page.locator('.game-card').count(), 10, 'Enter activates the focused Home link');
+    assert.equal(await page.locator('.game-card').count(), 6, 'Enter activates the focused Home link');
     await page.goto(`${baseURL}/popwake.html?debug=1`); await ready(page);
     await page.locator('[data-action=start]').click();
     await page.evaluate(() => window.__popwake.setRealtime(false)); await page.locator('#gameStage').focus();
@@ -181,10 +181,9 @@ try {
     });
     assert.ok(resources.calls <= 100 && resources.stable, `a full board reuses its geometry (${resources.calls} calls)`); reports.push({ resources });
     await page.goto(`${baseURL}/`);
-    assert.equal(await page.locator('.game-card').count(), 10);
-    await page.waitForFunction(() => document.querySelector('.popwake-card [data-play-label]')?.textContent === 'CONTINUE RUN');
-    assert.equal(await page.locator('.moonbounce-card [data-play-label]').textContent(), 'CONTINUE RUN');
-    await page.locator('.popwake-card').click(); await ready(page);
+    assert.equal(await page.locator('.game-card').count(), 6);
+    assert.equal(await page.locator('.popwake-card, .moonbounce-card').count(), 0, 'both engines are part of Wonderwake');
+    await page.goto(`${baseURL}/popwake.html?continue=1`); await ready(page);
     assert.ok((await page.locator('#panelTitle').textContent()).includes('happy little world'));
     assert.equal(await page.evaluate(() => localStorage.getItem('games:save:moonbounce')), otherSave);
     await context.close();
@@ -309,9 +308,10 @@ try {
       await page.locator('[data-action=next]').tap();
       assert.equal(await page.evaluate(() => window.__popwake.game.state.level), 2);
       await page.locator('.home-button').tap();
-      await page.waitForFunction(() => document.querySelector('.popwake-card [data-play-label]')?.textContent === 'CONTINUE RUN');
-      await page.locator('.quick-play [data-game-link=popwake]').tap(); await ready(page);
-      assert.equal(new URL(page.url()).searchParams.get('continue'), '1', `${label}: phone hub continues the puzzle`);
+      assert.equal(await page.locator('.game-card').count(), 6);
+      assert.equal(await page.locator('.wonderwake-card').count(), 1);
+      await page.goto(`${baseURL}/popwake.html?continue=1`); await ready(page);
+      assert.equal(new URL(page.url()).searchParams.get('continue'), '1', `${label}: preserved engine continues its puzzle`);
       assert.ok(await page.locator('#modalLayer').isHidden());
       assert.ok((await page.locator('#levelLabel').textContent()).includes('02'));
       reports.push({ phone: label, ...stats }); await phone.close();

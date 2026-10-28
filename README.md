@@ -2,47 +2,47 @@
 
 [Play online](https://todorbonchev.github.io/games/)
 
-A collection of thirty Three.js browser games. The home page is a lightweight game picker; each game loads its own 3D scene only when opened. Everything needed to play is bundled locally.
+A collection of **six Three.js browser games**, made for phones and computers. Wonderwake combines 25 former games into a single adventure with one campaign, five islands, and a growing crew. The other five games keep their own worlds and progress. Everything needed to play is bundled locally.
 
 | Game | Play | What's included |
 | --- | --- | --- |
-| **Soldier vs Zombies** | [Launch the shooter](https://todorbonchev.github.io/games/soldier.html) | The existing two-island survival campaign, jetpack, Frozen Orb, weapons, upgrades, and endless mode. |
+| **Wonderwake** | [Set sail](https://todorbonchev.github.io/games/wonderwake.html) | Bring five islands back to life through 25 different challenges. Recruit little heroes, light the beacons, and prepare a shared festival. |
+| **Soldier vs Zombies** | [Launch the shooter](https://todorbonchev.github.io/games/soldier.html) | A two-island survival campaign, jetpack, Frozen Orb, weapons, upgrades, and endless mode. |
 | **Garden Guard** | [Launch garden defense](https://todorbonchev.github.io/games/garden.html) | Five garden defense levels with five lanes, three plant types, runners, armored zombies, and up to five waves. |
 | **Borrowed Tomorrow** | [Launch the time sail](https://todorbonchev.github.io/games/borrowed.html) | Six clockworld chambers where your two recorded past selves steer a triangular weapon. Flow and Rift difficulties, clockblooms, crosswinds, armor, and a final boss. |
-| **Moonbounce** | [Launch Moonbounce](https://todorbonchev.github.io/games/moonbounce.html) | A one-thumb 3D arcade game: gather little moons, lift to send them bouncing, pick powers, and face the big grump. |
-| **Popwake** | [Launch Popwake](https://todorbonchev.github.io/games/popwake.html) | Draw a trail of jelly dominoes and start a chain reaction to wake every jelly in eight handmade puzzles. |
-| **Pond Post** | [Launch Pond Post](https://todorbonchev.github.io/games/pondpost.html) | Help a little frog deliver mail by leaping across floating lily pads, collecting stamps, and navigating five routes. |
 | **Prism Orchard** | [Launch Prism Orchard](https://todorbonchev.github.io/games/prism.html) | Turn crystal mirrors, split colored light, and combine beams to bloom eight night gardens. |
-| **Ribbon Reef** | [Launch Ribbon Reef](https://todorbonchev.github.io/games/ribbon.html) | Glide a little manta through five coral currents, chain perfect arches, and gather pearls with your ribbon wake. |
-| **Dewdrop Drift** | [Launch Dewdrop Drift](https://todorbonchev.github.io/games/dewfall.html) | Tilt six tiny gardens to roll water marbles around rocks, springs, and breezes into thirsty flowers. |
 | **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Explore a tiny island village, gather fireflies, light five lanterns, and uncover hidden memories. |
 
-## Little Arcade
+## Wonderwake
 
-Twenty new small games each introduce a different character and challenge, from rhythm and gliding to puzzles and crafts. Filter by action, puzzles, or creative games, or search by title or hero on the home page. The games use touch or mouse; on a keyboard, move the on-screen cursor with the arrow keys and interact with Enter or Space. Pausing, switching away, or leaving the page stops play.
+A sleepy archipelago is preparing for a festival, and everyone has something to contribute. Sail between five islands, help their residents, and watch your crew and the island celebrations grow. Each island has five challenges: help **any three** to light its beacon and continue. You can return for the remaining friends at any time. Recruiting all 25 completes the full crew.
+
+Each mission introduces just its own controls. Action, puzzle, and creative challenges alternate within one adventure; they share a map, progress, and a goal. Each puzzle needs one board; creative challenges keep their short sequences, such as three songs or three pots. The five longer former games become single-level, single-route, or single-wave missions. Revisit a friend to try a harder board or level where available; the friend stays recruited.
+
+The adventure includes Moonbounce, Popwake, Pond Post, Ribbon Reef, Dewdrop Drift, and these 20 character challenges:
 
 | Game | Character | Challenge |
 | --- | --- | --- |
-| [Lane Lark](https://todorbonchev.github.io/games/arcade.html?game=lane-lark) | Pip the blue owl | Tap or slide between the three rails. Catch gold notes and avoid the pink thorns. Collect at least 14 notes before the last rail passes. |
-| [Orbit Guard](https://todorbonchev.github.io/games/arcade.html?game=orbit-guard) | Quill the star hedgehog | Drag around Quill to turn the turquoise shield. Catch the incoming stars before they reach the center. Save 13 of 16 stars. |
-| [Cloud Skimmer](https://todorbonchev.github.io/games/arcade.html?game=cloud-skimmer) | Hazel the flying squirrel | Hold anywhere to rise, then lift your finger to drift down. Glide through at least 8 of the 10 golden rings. You can miss two. |
-| [Ink Sling](https://todorbonchev.github.io/games/arcade.html?game=ink-sling) | Inky the bubble octopus | Touch a sea bloom, then lift to send a bubble toward it. Aim for all six drifting blooms; missed bubbles can be tried again. |
-| [Bubble Basket](https://todorbonchev.github.io/games/arcade.html?game=bubble-basket) | Coral the little crab | Slide left and right to catch bubbles in Coral’s basket. Gather 12 pearls and avoid the pink spiky urchins. |
-| [Moss Flip](https://todorbonchev.github.io/games/arcade.html?game=moss-flip) | Bramble the moss beetle | Tap anywhere to flip between the two moss rails. Avoid the coral thorns as the tunnel rolls by. Survive all 22 thorns. |
-| [Bell Bloom](https://todorbonchev.github.io/games/arcade.html?game=bell-bloom) | Mira the bell axolotl | Tap when the moving turquoise ring meets the gold circle. Make at least 10 of 14 bells bloom; too many early taps end the song. |
-| [Burrow Banquet](https://todorbonchev.github.io/games/arcade.html?game=burrow-banquet) | Tansy the aardvark | Tap a neighboring patch to walk. Push each golden root onto a glowing burrow. You can push one root at a time. |
-| [Moon Basket](https://todorbonchev.github.io/games/arcade.html?game=moon-basket) | Cleo the cat | Tap an open basket to cycle its jewel. Put each of the four colors once in every row and column. The star-marked clues stay in place. |
-| [Stack Strata](https://todorbonchev.github.io/games/arcade.html?game=stack-strata) | Bolo the beaver | Tap a log pile, then another pile to move its top log. A larger log cannot rest on a smaller one. Move the whole stack to the gold pad. |
-| [Jelly Lanterns](https://todorbonchev.github.io/games/arcade.html?game=jelly-lanterns) | Mona the jellyfish | Tap a lantern to change it and its four neighbors. Find the right combination to light every lantern. |
-| [Dream Duos](https://todorbonchev.github.io/games/arcade.html?game=dream-duos) | Fenn the fox | Tap two sleeping dream tiles to reveal them. Find every matching pair. The dreams grow more numerous each round. |
-| [Flock Shift](https://todorbonchev.github.io/games/arcade.html?game=flock-shift) | Kiko the pigeon | Tap a glowing ring to rotate its four neighboring stones. Restore the jewel mosaic to the small guide along the bottom. |
-| [Kelp Kitchen](https://todorbonchev.github.io/games/arcade.html?game=kelp-kitchen) | Mallow the snail | Tap a jar, then another to pour its top ingredient. You can pour onto the same color or into an empty jar. Sort each color into its own full jar. |
-| [Tidehook](https://todorbonchev.github.io/games/arcade.html?game=tidehook) | Nori the penguin | Hold to lower the hook. Slide to follow the fish, then lift when the hook reaches it. Catch eight fish before four misses. |
-| [Bellwood Beats](https://todorbonchev.github.io/games/arcade.html?game=bellwood-beats) | Bibi the koala | Tap to hear Bibi’s song. Watch the colored bells, then tap them back in the same order. Learn three songs. |
-| [Parcel Parade](https://todorbonchev.github.io/games/arcade.html?game=parcel-parade) | Dottie the stork | Drag each moving parcel to the depot with the same color. Deliver nine before four mistakes. |
-| [Wobble Bakery](https://todorbonchev.github.io/games/arcade.html?game=wobble-bakery) | Milo the mole | Drag the tray beneath the cake as gusts blow it around. Keep it safe for 30 seconds; three slips end the run. |
-| [Mothlight](https://todorbonchev.github.io/games/arcade.html?game=mothlight) | Vesper the bat | Drag Vesper close to the moth, then slowly lead it to the glowing flower. Guide all four home and avoid thorns. |
-| [Cloud Potter](https://todorbonchev.github.io/games/arcade.html?game=cloud-potter) | Saffron the raccoon | Swipe a clay band left to narrow it or right to widen it. Match the pale pattern for each of three little pots. |
+| Lane Lark | Pip the blue owl | Tap or slide between the three rails. Catch gold notes and avoid the pink thorns. Collect at least 14 notes before the last rail passes. |
+| Orbit Guard | Quill the star hedgehog | Drag around Quill to turn the turquoise shield. Catch the incoming stars before they reach the center. Save 13 of 16 stars. |
+| Cloud Skimmer | Hazel the flying squirrel | Hold anywhere to rise, then lift your finger to drift down. Glide through at least 8 of the 10 golden rings. You can miss two. |
+| Ink Sling | Inky the bubble octopus | Touch a sea bloom, then lift to send a bubble toward it. Aim for all six drifting blooms; missed bubbles can be tried again. |
+| Bubble Basket | Coral the little crab | Slide left and right to catch bubbles in Coral’s basket. Gather 12 pearls and avoid the pink spiky urchins. |
+| Moss Flip | Bramble the moss beetle | Tap anywhere to flip between the two moss rails. Avoid the coral thorns as the tunnel rolls by. Survive all 22 thorns. |
+| Bell Bloom | Mira the bell axolotl | Tap when the moving turquoise ring meets the gold circle. Make at least 10 of 14 bells bloom; too many early taps end the song. |
+| Burrow Banquet | Tansy the aardvark | Tap a neighboring patch to walk. Push each golden root onto a glowing burrow. You can push one root at a time. |
+| Moon Basket | Cleo the cat | Tap an open basket to cycle its jewel. Put each of the four colors once in every row and column. The star-marked clues stay in place. |
+| Stack Strata | Bolo the beaver | Tap a log pile, then another pile to move its top log. A larger log cannot rest on a smaller one. Move the whole stack to the gold pad. |
+| Jelly Lanterns | Mona the jellyfish | Tap a lantern to change it and its four neighbors. Find the right combination to light every lantern. |
+| Dream Duos | Fenn the fox | Tap two sleeping dream tiles to reveal them. Find every matching pair. The dreams grow more numerous each round. |
+| Flock Shift | Kiko the pigeon | Tap a glowing ring to rotate its four neighboring stones. Restore the jewel mosaic to the small guide along the bottom. |
+| Kelp Kitchen | Mallow the snail | Tap a jar, then another to pour its top ingredient. You can pour onto the same color or into an empty jar. Sort each color into its own full jar. |
+| Tidehook | Nori the penguin | Hold to lower the hook. Slide to follow the fish, then lift when the hook reaches it. Catch eight fish before four misses. |
+| Bellwood Beats | Bibi the koala | Tap to hear Bibi’s song. Watch the colored bells, then tap them back in the same order. Learn three songs. |
+| Parcel Parade | Dottie the stork | Drag each moving parcel to the depot with the same color. Deliver nine before four mistakes. |
+| Wobble Bakery | Milo the mole | Drag the tray beneath the cake as gusts blow it around. Keep it safe for 30 seconds; three slips end the run. |
+| Mothlight | Vesper the bat | Drag Vesper close to the moth, then slowly lead it to the glowing flower. Guide all four home and avoid thorns. |
+| Cloud Potter | Saffron the raccoon | Swipe a clay band left to narrow it or right to widen it. Match the pale pattern for each of three little pots. |
 
 ## Play locally
 
@@ -52,13 +52,13 @@ With Node.js installed, run:
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173** to choose a game. Direct entries are `/soldier.html`, `/garden.html`, `/borrowed.html`, `/moonbounce.html`, `/popwake.html`, `/pondpost.html`, `/prism.html`, `/ribbon.html`, `/dewfall.html`, `/lantern.html`, and `/arcade.html?game=lane-lark` (or any other Little Arcade game ID). No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
+Open **http://127.0.0.1:5173** to choose a game. The six entries are `/wonderwake.html`, `/soldier.html`, `/garden.html`, `/borrowed.html`, `/prism.html`, and `/lantern.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
 
 To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Both portrait and landscape have dedicated menus, camera framing, and thumb controls. Rotate during a run without losing progress; lift and place your thumbs again after rotating.
 
 ## Saved progress
 
-All thirty games automatically save their current progress to **localStorage** in this browser. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
+All six games automatically save their current progress to **localStorage** in this browser. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
 
 Garden Guard restores the chosen level, plants and health, enemies, sun resources and drops, projectiles, seed cooldowns, used lawnmowers, wave progress, selected plant, and game speed. A completed garden can resume at its victory screen and continue to the next garden. Each level’s best stars and time stay separate from its current run.
 
@@ -66,17 +66,11 @@ Soldier vs Zombies restores the island, wave and remaining enemies, health, scor
 
 Borrowed Tomorrow restores the chamber, difficulty, exact loop clock, player and enemies, incoming shots, health, beats, bloom repairs, boss health, cooldowns, random sequence, and both recorded routes, including borrow teleports. You can also resume between loops or from a completed chamber. Chamber stars, best scores, fewest loops, sound, and difficulty preference are stored separately from the run.
 
-Moonbounce restores the wave, health, enemies, orbiting and loose moons, flying moons and shots, score, combo, chosen powers, and random sequence. An unchosen power selection and the final victory screen can also be resumed. The best score and sound preference are saved separately from the current run.
+Wonderwake keeps its island progress, recruited friends, and current mission together in a separate campaign save. The first time you visit a challenge, it offers a compatible unfinished checkpoint from that former game when one exists. The original save remains untouched. Returning to the map or switching away preserves your place; replaying a mission never removes an earned friend.
 
-Popwake restores the selected puzzle and its current board or chain reaction. Completing a puzzle saves its best stars and unlocks the next one. An interrupted drawing is discarded safely, so you can draw a fresh trail after resuming. Puzzle progress is stored separately from the other games.
+Prism Orchard restores the puzzle, mirror orientations, turn count, and hint use. Its completion stars and unlocked puzzles are saved separately. Lantern Vale saves your place in the valley, lit lanterns, gathered fireflies, and discovered memories independently from the other games.
 
-Pond Post saves the route, current lily pad and checkpoint, collected stamps, score, and route records separately from the other games. An interrupted aim is cleared safely so a restored run cannot launch unexpectedly.
-
-Prism Orchard restores the puzzle, mirror orientations, turn count, and hint use. Its completion stars and unlocked puzzles are saved separately. Ribbon Reef restores the current, exact position and wake, hearts, collected pearls, and arch streak; completed currents and best scores remain after a swim ends. Dewdrop Drift restores every water marble, filled flower, and spill count, while preserving earned garden stars separately.
-
-Lantern Vale saves your place in the valley, lit lanterns, gathered fireflies, and discovered memories independently from the other games.
-
-Each Little Arcade game keeps its own checkpoint and win record, independent from the other 29 games. Starting a fresh run replaces that game’s checkpoint. In the action games, defeat or **End run & return** clears the unfinished run; scores, island unlocks, preferences, and earned stars are kept. Each game has its own save slot. No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues.
+No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues. Existing standalone and Little Arcade saves are retained so reorganizing the collection does not erase earlier progress. Old direct URLs remain available as archival entries, while the homepage presents only the six current games.
 
 ## Lantern Vale
 
@@ -100,13 +94,13 @@ Guide colored light into every flower in eight night gardens. Tap a crystal to r
 
 There is no timer. Finish in the fewest turns for three stars, or use **Hint** to highlight a useful crystal; a hinted attempt can earn at most two stars. **Reset** begins a fresh attempt. On a keyboard, focus the board, use arrow keys to select crystals, and press Enter or Space to turn one. Completing each garden opens the next.
 
-## Ribbon Reef
+## Wonderwake mission engine: Ribbon Reef
 
 Guide a little manta through five coral currents. Drag one finger anywhere in the scene to move horizontally and vertically; lifting holds your course. Your whole trailing ribbon collects pearls. The current carries you forward, so look ahead and steer toward the next glowing arch. Keyboard arrows or WASD also steer.
 
 Passing through an arch's center builds a perfect streak. Close passes by coral earn extra flow points; missed arches and collisions cost a heart. Each swim takes about 47 seconds. Reach the end to open the next current. For three stars, pass at least 75% of the arches, earn five perfects, and collect six pearls. Retry a current to improve your record.
 
-## Dewdrop Drift
+## Wonderwake mission engine: Dewdrop Drift
 
 Hold anywhere in the garden and slide your thumb to tilt it. Every water marble rolls together; guide each into a thirsty flower. Release to level the garden and slow the drops. Six gardens introduce rocks, spring leaves, and breezes. The rim keeps drops on the island, while puddles send a drop back to its starting point without undoing flowers already filled.
 
@@ -114,7 +108,7 @@ There is no timer or lives counter. A gentle touch helps you guide the remaining
 
 All three games support portrait and landscape, safe-area insets, cancelled touches, pause, reduced motion, and WebGL context recovery. Touch rendering uses at most 420,000 pixels and 1.35× density with multisample antialiasing disabled. Paused games stop repainting until something changes; actual frame rate depends on the device.
 
-## Pond Post
+## Wonderwake mission engine: Pond Post
 
 Help a little frog carry the post across five forest ponds. Hold and pull back to aim, watch the predicted arc, then release to leap onto the next lily pad. Collect stamps along the way and reach the mailbox to finish the route. Some pads move and the wind changes, so each jump is a small timing puzzle.
 
@@ -129,7 +123,7 @@ For three stars, collect at least half the stamps, make two perfect landings, an
 
 The scene supports interrupted touches, rotation, background pausing, reduced motion, and WebGL recovery. On touch devices it caps the framebuffer at 420,000 pixels and 1.35× density, disables multisample antialiasing, and targets 30 frames per second. Actual performance depends on the device.
 
-## Popwake
+## Wonderwake mission engine: Popwake
 
 Draw a connected trail of jelly dominoes from the glowing starter, then lift your finger to set off a chain reaction. Your goal is to wake every sleeping jelly in eight handcrafted puzzles. Trails can revisit a square to branch, so a single pop can travel in more than one direction. Each puzzle has a limited trail budget; only new squares use it.
 
@@ -146,7 +140,7 @@ There is no timer or lives counter. Redraw as often as you like, or use a hint w
 
 The board supports interrupted touches, resizing, reduced motion, background pausing, and WebGL recovery. On touch devices the renderer limits its framebuffer to 420,000 pixels and 1.35× density, avoids multisample antialiasing, and targets 15 frames per second while idle and 30 while drawing or reacting. Reduced motion stops idle rendering while keeping chain reactions visible. Models and effects use reusable Three.js instance batches; actual performance depends on the device.
 
-## Moonbounce
+## Wonderwake mission engine: Moonbounce
 
 A little star gathers moons into an orbit. **Touch and drag anywhere in the play area to move; lift your finger to launch every moon in the orbit.** They seek nearby space creatures and bounce between targets or off the rail. Creatures leave more moons to gather, and nearby pops can set off a chain. Collect the returning moons and send them out again. On a computer, drag and release with the mouse, or use WASD / arrow keys to move and Space to launch. The LAUNCH button also works with touch or a keyboard.
 
@@ -298,6 +292,8 @@ npm run test:ribbon
 npm run test:dewfall
 npm run test:lantern
 npm run test:collection
+npm run test:voyage
+npm run test:voyage:legacy
 npm run test:arcade
 npm run test:arcade:action
 npm run test:arcade:puzzles
@@ -346,8 +342,8 @@ Prism Orchard, Ribbon Reef, and Dewdrop Drift each use their own `{slug}.html`, 
 
 Lantern Vale uses `lantern.html`, `lantern.css`, `lantern-main.js`, `lantern-scene.js`, and `lantern-game.js`. `/lantern.html?debug=1` exposes `window.__lantern` for local inspection. Its browser suite walks the island through legal movement, checks all five lanterns and memories, and exercises touch, local saves, graphics recovery, and seven phone layouts. Normal play does not expose the helper.
 
-The collection browser suite checks the new games together: independent hub continuation, actual preview loading, 44px controls, notch clearance, and stable play areas while instructions change on small portrait and landscape phones.
+The collection browser suite checks all six homepage choices, independent standalone and adventure continuation, actual preview loading, 44px phone controls, and notch clearance in small portrait and landscape layouts. `test:voyage` checks the connected campaign shell; `test:voyage:legacy` checks the five adapted mission engines. Pure campaign tests verify island unlocks from distinct friends, festival and full-crew milestones, checkpoint recovery, and storage isolation.
 
-Little Arcade games are defined in `arcade/action-games.js`, `arcade/puzzle-games.js`, and `arcade/skill-games.js`, with their shared shell in `arcade/main.js`. Their separate browser-local checkpoints live under `games:save:arcade:<game-id>`. The home page uses the catalog to display and filter them, without loading a game scene until it is opened.
+The 20 character mission engines are defined in `arcade/action-games.js`, `arcade/puzzle-games.js`, and `arcade/skill-games.js`. Wonderwake combines them with five original engines through the `voyage/` modules. Its campaign data lives under `games:wonderwake:v1`. The previous `games:save:arcade:<game-id>` checkpoints are preserved; the six-card home page reads campaign progress without loading any 3D engine.
 
 The arcade browser suites test all twenty phone layouts, local checkpoints and complete real-touch play-throughs. Run `node scripts/capture-arcade-art.mjs` to refresh the character previews from the real 3D scenes.

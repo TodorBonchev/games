@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" fill="none">
+ <defs>
+  <linearGradient id="sea" x2=".4" y2="1"><stop stop-color="#256d78"/><stop offset="1" stop-color="#123f52"/></linearGradient>
+  <radialGradient id="glow"><stop stop-color="#ffdda1" stop-opacity=".65"/><stop offset="1" stop-color="#ffdda1" stop-opacity="0"/></radialGradient>
+  <linearGradient id="rock" x2="0" y2="1"><stop stop-color="#528b80"/><stop offset="1" stop-color="#315b61"/></linearGradient>
+  <linearGradient id="sail" x2="1" y2="1"><stop stop-color="#fff5d3"/><stop offset="1" stop-color="#ecc89d"/></linearGradient>
+  <g id="island">
+   <ellipse cy="26" rx="101" ry="37" fill="#0e3c4b" opacity=".5"/>
+   <path d="M-93-3Q-100 20-69 37L-23 55 38 48 83 23 93-3Z" fill="url(#rock)"/>
+   <ellipse rx="94" ry="39" fill="#a2c9a1"/><ellipse cy="-6" rx="84" ry="31" fill="#7db494"/>
+   <path d="M-45 15Q-9-30 45 6" stroke="#d9d6a8" stroke-width="10" stroke-linecap="round"/>
+   <path d="M-83-6l12 21M55 28l-9 14M-19 32l6 18" stroke="#7da696" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <g id="tree"><path d="M0-20V8" stroke="#706b58" stroke-width="7"/><path d="M0-91-29-34H-20l-19 29h78L20-34h9Z" fill="#497e70"/><path d="M0-91v86h39L20-34h9Z" fill="#38665f"/><path d="M-12-49 0-76" stroke="#85ad83" stroke-width="5" stroke-linecap="round"/></g>
+  <g id="beacon"><circle cy="-55" r="65" fill="url(#glow)"/><path d="M-13-2l6-47H7L13-2" fill="#f0dbc0"/><ellipse rx="18" ry="6" fill="#ddc7a9"/><path d="M-12-52v-20h24v20Z" fill="#ffe59c"/><path d="M-18-74 0-90 18-74Z" fill="#e69882"/><path d="M-15-50h30" stroke="#8a7d67" stroke-width="5" stroke-linecap="round"/><path d="M0-67v9" stroke="#fff8d2" stroke-width="5" stroke-linecap="round"/></g>
+  <g id="house"><path d="M-24-31h48V3h-48Z" fill="#f2d0a0"/><path d="M-32-31 0-58 32-31Z" fill="#de8b7c"/><path d="M-2-56 32-31H1Z" fill="#b86e70"/><path d="M-4-15h12V3H-4Z" fill="#657e79"/><path d="M-17-22h8v10h-8Z" fill="#fff1ac"/></g>
+  <g id="flower"><path d="M0 0v-13" stroke="#4b8273" stroke-width="3"/><path d="M0-19c-9-14-17 1-7 6-8 10 10 18 10 6 14 8 20-7 7-11 0-12-10-12-10-1" fill="#f0bd9b"/><circle cy="-13" r="4" fill="#ffe7a3"/></g>
+  <g id="spark"><path d="M0-7 2-2 7 0 2 2 0 7-2 2-7 0-2-2Z" fill="#fff0ba"/></g>
+ </defs>
+ <path fill="url(#sea)" d="M0 0h960v600H0z"/>
+ <g stroke="#78b4b0" stroke-width="2" stroke-linecap="round" opacity=".3">
+  <path d="M45 236h32m-10 8h53m622 51h32m-5 8h53M340 90h41m-16 8h58M55 480h52m511-20h35m-10 8h53M507 384h26m-5 8h33M850 60h31M250 190h20M890 360h32M140 60h35M550 82h31M86 325h38M823 524h45"/>
+ </g>
+ <path d="M154 163C230 85 353 106 437 190S683 74 783 170C869 266 806 353 744 399S426 453 279 348 283 209 437 190" stroke="#deebc3" stroke-opacity=".65" stroke-width="3" stroke-dasharray="3 13" stroke-linecap="round"/>
+ <g transform="translate(157 162) scale(.75)"><use href="#island"/><use href="#tree" transform="translate(-44 -14) scale(.7)"/><use href="#house" transform="translate(22 -12)"/><use href="#beacon" transform="translate(57 1) scale(.65)"/><use href="#flower" transform="translate(-19 15) scale(.7)"/></g>
+ <g transform="translate(777 172) scale(.82)"><use href="#island"/><use href="#tree" transform="translate(47 -10) scale(.9)"/><use href="#tree" transform="translate(66 1) scale(.55)"/><use href="#house" transform="translate(-37 -12) scale(.8)"/><use href="#beacon" transform="translate(8 -9)"/></g>
+ <g transform="translate(471 212) scale(1.2)"><use href="#island"/><use href="#house" transform="translate(-41 -7) scale(1.15)"/><use href="#tree" transform="translate(48 -10) scale(.95)"/><use href="#tree" transform="translate(64 8) scale(.65)"/><use href="#beacon" transform="translate(8 -15) scale(1.12)"/><use href="#flower" transform="translate(-5 17) scale(.7)"/><use href="#flower" transform="translate(47 18) scale(.6)"/><path d="M-63-20Q-5-1 43-22" stroke="#fbdda8" stroke-width="2"/><g fill="#ffe59c"><circle cx="-45" cy="-15" r="4"/><circle cx="-20" cy="-12" r="4"/><circle cx="7" cy="-13" r="4"/><circle cx="30" cy="-18" r="4"/></g></g>
+ <g transform="translate(255 377) scale(.95)"><use href="#island"/><use href="#beacon" transform="translate(-47 -6) scale(.9)"/><use href="#tree" transform="translate(45 -11) scale(.72)"/><use href="#flower" transform="translate(10 17) scale(.9)"/><use href="#flower" transform="translate(62 9) scale(.8)"/></g>
+ <g transform="translate(756 403)"><use href="#island"/><use href="#house" transform="translate(33 -12)"/><use href="#beacon" transform="translate(-26 -10) scale(.9)"/><use href="#tree" transform="translate(-66 3) scale(.6)"/><use href="#flower" transform="translate(8 19) scale(.8)"/></g>
+ <g transform="translate(468 365) rotate(-8)">
+  <ellipse cy="29" rx="87" ry="19" fill="#9ed8c9" opacity=".22"/>
+  <path d="M-65 14C-36 49 43 47 72 10Z" fill="#cd9476"/><path d="M-65 14Q7 22 72 10" stroke="#f0c4a0" stroke-width="7" stroke-linecap="round"/>
+  <path d="M8 12V-102" stroke="#dbba8a" stroke-width="5" stroke-linecap="round"/>
+  <path d="M3-96Q-10-58-45-20L3-17Z" fill="url(#sail)"/><path d="M13-88Q50-61 61-23L13-20Z" fill="#e5aa8c"/>
+  <path d="M19-70Q37-55 44-34L19-32Z" fill="#edc3a0"/>
+  <path d="M8-105 39-93 8-86Z" fill="#a1e7c8"/>
+  <g transform="translate(-30 4)"><path d="M-16-23-21-47-5-39 9-39 22-47 18-21" fill="#e9966a"/><ellipse cy="-21" rx="21" ry="24" fill="#eea671"/><path d="M-17-22Q0 0 17-22L10-6H-10Z" fill="#ffe4ba"/><g fill="#2a4750"><circle cx="-8" cy="-25" r="3"/><circle cx="8" cy="-25" r="3"/><path d="M-3-18h6l-3 4Z"/></g></g>
+  <g transform="translate(37 2)"><path d="M-18-21Q-28-50-14-53L0-43 13-53Q29-50 20-18Z" fill="#64acb4"/><ellipse cy="-22" rx="23" ry="24" fill="#83c9cb"/><ellipse cx="-9" cy="-26" rx="9" ry="11" fill="#e8f0d1"/><ellipse cx="9" cy="-26" rx="9" ry="11" fill="#e8f0d1"/><g fill="#294e5b"><circle cx="-8" cy="-26" r="3"/><circle cx="8" cy="-26" r="3"/></g><path d="M-4-18h8l-4 6Z" fill="#f3c180"/><path d="M-23-17-13-7M23-17 13-7" stroke="#5d9faa" stroke-width="7" stroke-linecap="round"/></g>
+ </g>
+ <g transform="translate(603 349)"><ellipse cy="29" rx="28" ry="8" fill="#abd3da" opacity=".25"/><path d="M-14 9v16m13-16v21M12 9v15" stroke="#dca4bd" stroke-width="6" stroke-linecap="round"/><path d="M-25 10c0-40 50-40 50 0Q0 20-25 10" fill="#dfaac2"/><path d="M-16-4q8-18 24-8" stroke="#f7d8d7" stroke-width="5" stroke-linecap="round"/><circle cx="-8" cy="6" r="2.5" fill="#5b5a75"/><circle cx="8" cy="6" r="2.5" fill="#5b5a75"/></g>
+ <g opacity=".8"><use href="#spark" x="592" y="159"/><use href="#spark" x="376" y="302"/><use href="#spark" x="665" y="256"/><use href="#spark" x="301" y="112"/><use href="#spark" x="86" y="391"/><use href="#spark" x="878" y="241"/><use href="#spark" x="680" y="96"/></g>
+ <g fill="#dfebc1" opacity=".7"><circle cx="528" cy="91" r="2"/><circle cx="282" cy="277" r="2"/><circle cx="639" cy="203" r="2.5"/><circle cx="353" cy="429" r="2"/><circle cx="849" cy="322" r="2"/><circle cx="126" cy="266" r="2"/></g>
+</svg>

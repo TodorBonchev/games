@@ -85,7 +85,7 @@ try {
     return Object.fromEntries(['soldier', 'garden', 'borrowed', 'moonbounce', 'popwake', 'pondpost', 'prism', 'ribbon', 'dewfall'].map(slug => [slug, localStorage.getItem(`games:save:${slug}`)]));
   });
   await page.goto(`${baseURL}/`);
-  assert.equal(await page.locator('.game-card').count(), 10);
+  assert.equal(await page.locator('.game-card').count(), 6);
   assert.equal(await page.locator('.lantern-card [data-play-label]').textContent(), 'CONTINUE RUN');
   await page.locator('.lantern-card').click(); await ready(page);
   assert.ok(await page.locator('[data-action=explore]').isVisible(), 'hub continues the completed valley');

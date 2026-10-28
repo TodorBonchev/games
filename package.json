@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Thirty Three.js browser games with unique characters, touch controls and local saves.",
+  "description": "Six Three.js browser games, including Wonderwake: a connected 25-challenge island adventure.",
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
@@ -27,7 +27,10 @@
     "test:arcade": "node tests/arcade-browser.mjs",
     "test:arcade:action": "node tests/arcade-action-browser.mjs",
     "test:arcade:puzzles": "node tests/arcade-puzzle-browser.mjs",
-    "test:arcade:skill": "node tests/arcade-skill-browser.mjs"
+    "test:arcade:skill": "node tests/arcade-skill-browser.mjs",
+    "test:voyage": "node tests/voyage-browser.mjs",
+    "test:voyage:legacy": "node tests/voyage-legacy-browser.mjs",
+    "test:voyage:wins": "node tests/voyage-arcade-wins-browser.mjs"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

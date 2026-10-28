@@ -88,12 +88,13 @@ function sceneKit(THREE, root, background, accent, animal) {
 
 function createController(ctx, meta, rules) {
   const view = sceneKit(ctx.THREE, ctx.root, meta.background, meta.accent, meta.animal);
-  const state = { schema: 1, game: meta.id, mode: 'playing', level: 1, moves: 0 };
-  rules.reset(state, 0);
+  const startLevel = ctx.singleRound ? Math.max(1, Math.min(rules.rounds, Math.trunc(ctx.level || 1))) : 1;
+  const state = { schema: 1, game: meta.id, mode: 'playing', level: startLevel, moves: 0 };
+  rules.reset(state, startLevel - 1);
   let dirty = true, touch = null, elapsed = 0;
   const mark = () => { dirty = true; };
   const complete = () => {
-    if (state.level < rules.rounds) { state.level++; rules.reset(state, state.level - 1); }
+    if (!ctx.singleRound && state.level < rules.rounds) { state.level++; rules.reset(state, state.level - 1); }
     else state.mode = 'won';
     mark();
   };

@@ -32,9 +32,10 @@ export async function checkPhones(browser, baseURL, { baseline = false } = {}) {
     await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
     const previews = await page.locator('.game-art img').evaluateAll(images => images.map(image => ({ src: image.currentSrc, width: image.naturalWidth })));
     if (!baseline) {
-      assert.ok(previews.every(image => image.src.endsWith('.webp')), `${label}: compressed previews load`);
+      assert.equal(previews.length, 6);
+      assert.ok(previews.every(image => image.width > 0 && /\.(webp|svg)$/.test(image.src)), `${label}: compact previews load`);
       assert.ok(await page.locator('.quick-play').isVisible(), `${label}: all games can be opened without scrolling`);
-      assert.equal(await page.locator('.quick-play a').count(), 11);
+      assert.equal(await page.locator('.quick-play a').count(), 6);
       for (const link of await page.locator('.quick-play a').all()) {
         const bounds = await link.boundingBox();
         assert.ok(bounds.width >= 44 && bounds.height >= 44, `${label}: every quick link has a 44px touch target`);
