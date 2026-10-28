@@ -31,7 +31,8 @@
     "test:voyage": "node tests/voyage-browser.mjs",
     "test:voyage:legacy": "node tests/voyage-legacy-browser.mjs",
     "test:voyage:wins": "node tests/voyage-arcade-wins-browser.mjs",
-    "test:lantern:space": "node tests/lantern-space-browser.mjs"
+    "test:lantern:space": "node tests/lantern-space-browser.mjs",
+    "test:lantern:expedition": "node tests/lantern-expedition-browser.mjs"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

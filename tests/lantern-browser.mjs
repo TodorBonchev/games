@@ -11,7 +11,7 @@ const server = process.env.GAMES_TEST_URL ? null : spawn(process.execPath, ['scr
 const errors = [], external = [], reports = [];
 let browser;
 function monitor(page, label = '') {
-  page.on('pageerror', error => errors.push(`${label}${error.message}`));
+  page.on('pageerror', error => errors.push(`${label}${error.stack || error.message}`));
   page.on('console', message => { if (message.type() === 'error') errors.push(`${label}${message.text()}`); });
   page.on('response', response => { if (response.status() >= 400) errors.push(`${label}${response.status()} ${response.url()}`); });
   page.on('request', request => { if (/^https?:/.test(request.url()) && !request.url().startsWith(baseURL)) external.push(request.url()); });
@@ -160,6 +160,29 @@ try {
     assert.deepEqual(await p.evaluate(() => ({ mode: window.__lantern.game.state.mode, snapshot: window.__lantern.game.snapshot() })), before, `${scenario}: context recovery preserves progress`);
     await ctx.close();
   }
+  {
+    const ctx = await browser.newContext(), p = await ctx.newPage(); monitor(p, 'cold shader context loss: ');
+    await p.addInitScript(raw => {
+      localStorage.setItem('games:save:lantern', raw);
+      // Keep shader programs cold until the test deliberately requests a frame.
+      window.requestAnimationFrame = () => 0;
+    }, wonSave);
+    await p.goto(`${baseURL}/lantern.html?debug=1&continue=1`);
+    await p.waitForFunction(() => document.body.dataset.ready === 'true', null, { polling: 10, timeout: 60000 });
+    await p.evaluate(() => {
+      const extension = __lantern.view.renderer.getContext().getExtension('WEBGL_lose_context');
+      window.__restoreColdPicture = () => extension.restoreContext();
+      extension.loseContext();
+      // The GL context is lost now, but its DOM event has not arrived yet.
+      __lantern.view.render(__lantern.game.state, 1);
+    });
+    await p.waitForFunction(() => document.getElementById('gamePanel').dataset.kind === 'restoring', null, { polling: 10 });
+    await p.waitForTimeout(250); await p.evaluate(() => window.__restoreColdPicture());
+    await p.waitForFunction(() => document.getElementById('gamePanel').dataset.kind !== 'restoring', null, { polling: 10 });
+    await p.evaluate(() => __lantern.view.render(__lantern.game.state, 2));
+    assert.ok(await p.locator('[data-action=explore]').isVisible(), 'context loss before shader compilation safely restores the won screen');
+    await ctx.close();
+  }
   const phones = [
     { width: 320, height: 568, dpr: 2, insets: { top: 47, bottom: 34 } }, { width: 360, height: 640, dpr: 2 },
     { width: 390, height: 844, dpr: 3, insets: { top: 47, bottom: 34 } }, { width: 430, height: 932, dpr: 3 },
@@ -268,7 +291,7 @@ try {
     await p.goto(`${baseURL}/lantern.html?debug=1`); await ready(p); await p.evaluate(() => __lantern.setRealtime(false));
     await p.locator('[data-action=continue]').click();
     const migrated = await p.evaluate(() => { __lantern.save(); return JSON.parse(localStorage.getItem('games:save:lantern')).data; });
-    assert.equal(migrated.schema, 2); assert.deepEqual(migrated.lit, old.lit); assert.deepEqual(migrated.secrets, old.secrets); assert.deepEqual(migrated.collected, old.collected);
+    assert.equal(migrated.schema, 3); assert.deepEqual(migrated.lit, old.lit); assert.deepEqual(migrated.secrets, old.secrets); assert.deepEqual(migrated.collected, old.collected);
     assert.ok(Number.isFinite(migrated.player.y) && migrated.player.y > 1, 'an earlier walking save resumes safely in a spacecraft');
     await ctx.close();
   }

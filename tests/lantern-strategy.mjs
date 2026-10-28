@@ -26,6 +26,18 @@ export function flyTo(game, rawTarget, reach = .45) {
   const target = { ...rawTarget, y: rawTarget.y ?? FLIGHT.targetY };
   if (!isFlyable(game.world, target.x, target.y, target.z)) throw Error(`Unflyable target ${JSON.stringify(target)}`);
   let player = game.state.player;
+  const cruiseY = Math.max(9, ...(game.world.satellites || []).flatMap(island => [island.topY + 2, ...(island.colliders || []).map(collider => collider.maxY + 2)]));
+  const inside = (point, island) => ((point.x - island.center.x) / (island.rx + 2)) ** 2 + ((point.z - island.center.z) / (island.rz + 2)) ** 2 < 1;
+  const belowIsland = (game.world.satellites || []).find(island => inside(player, island) && player.y <= island.bottomY - FLIGHT.margin);
+  if (belowIsland) flyDirect(game, { x: belowIsland.center.x, y: player.y, z: belowIsland.center.z + belowIsland.rz + 6 });
+  const targetBelowIsland = (game.world.satellites || []).find(island => inside(target, island) && target.y <= island.bottomY - FLIGHT.margin);
+  if (targetBelowIsland) {
+    const coast = { x: targetBelowIsland.center.x, z: targetBelowIsland.center.z + targetBelowIsland.rz + 6 };
+    flyDirect(game, { ...game.state.player, y: cruiseY });
+    flyDirect(game, { ...coast, y: cruiseY });
+    flyDirect(game, { ...coast, y: target.y });
+    flyDirect(game, target, reach); return;
+  }
   // Travel over the roofs. For a discovery below the island, first descend
   // outside the coast, then sweep under the rock rather than crossing it.
   if (player.y < 6.6 && !clearFlight(game.world, player, { ...player, y: 9 })) {
@@ -41,8 +53,8 @@ export function flyTo(game, rawTarget, reach = .45) {
   }
   player = game.state.player;
   if (!clearFlight(game.world, player, target) || player.y < 6.6 || target.y < 6.6) {
-    flyDirect(game, { ...player, y: 9 });
-    flyDirect(game, { ...target, y: 9 });
+    flyDirect(game, { ...player, y: cruiseY });
+    flyDirect(game, { ...target, y: cruiseY });
   }
   flyDirect(game, target, reach);
 }

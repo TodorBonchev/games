@@ -424,6 +424,9 @@ for i in range(6):
     x = -9.55 + i * .34
     mesh('Welcome pennant', [(x, 2.23, 8.61), (x + .23, 2.23, 8.61), (x + .11, 1.9, 8.61)], [(0, 1, 2)], 'Flag' if i % 2 else 'FlowerGold')
 
+# Nearby island worlds share the editable Blender source and one batched export.
+exec(compile((ROOT / 'scripts/build-lantern-satellites.py').read_text(), str(ROOT / 'scripts/build-lantern-satellites.py'), 'exec'))
+
 # Reusable Blender-built keeper, with independently animatable limbs.
 active_collection = character_collection
 avatar = bpy.data.objects.new('Avatar', None)
@@ -488,10 +491,19 @@ if '--render' in sys.argv:
     (ROOT / 'test-results/lantern').mkdir(parents=True, exist_ok=True)
     scene.render.filepath = str(ROOT / 'test-results/lantern/blender-world.png')
     bpy.ops.render.render(write_still=True)
+    for satellite_camera in satellite_cameras:
+        scene.camera = satellite_camera
+        scene.render.filepath = str(ROOT / 'test-results/lantern' / (satellite_camera.name.split()[0].lower() + '-blender.png'))
+        bpy.ops.render.render(write_still=True)
+    scene.camera = camera
 
 # The editable scene above remains unjoined. The GLB below is merged by material.
 # This is a modest download and only a few dozen draw calls on a phone.
-static = [obj for obj in world_collection.objects if obj.type == 'MESH' and obj != rotor]
+dynamic_objects = {rotor}
+for root in satellite_dynamic:
+    dynamic_objects.add(root)
+    dynamic_objects.update(root.children_recursive)
+static = [obj for obj in world_collection.all_objects if obj.type == 'MESH' and obj not in dynamic_objects]
 bpy.ops.object.select_all(action='DESELECT')
 for obj in static:
     obj.select_set(True)
@@ -505,16 +517,16 @@ bpy.ops.object.mode_set(mode='EDIT')
 bpy.ops.mesh.select_all(action='SELECT')
 bpy.ops.mesh.separate(type='MATERIAL')
 bpy.ops.object.mode_set(mode='OBJECT')
-for obj in world_collection.objects:
-    if obj.type == 'MESH' and obj != rotor:
+for obj in world_collection.all_objects:
+    if obj.type == 'MESH' and obj not in dynamic_objects:
         key = obj.data.materials[0].name if obj.data.materials else 'World'
         obj.name = 'Static_' + key
 avatar.location = (0, 0, 0)
 bpy.ops.object.select_all(action='DESELECT')
 for collection in [world_collection, character_collection]:
-    for obj in collection.objects:
+    for obj in collection.all_objects:
         obj.select_set(True)
 path = ROOT / 'assets/lantern-vale.glb'
 bpy.ops.export_scene.gltf(filepath=str(path), export_format='GLB', use_selection=True, export_yup=True, export_apply=True, export_animations=False, export_cameras=False, export_lights=False, export_extras=False, export_materials='EXPORT', export_normals=True, export_texcoords=False)
-triangles = sum(len(obj.data.polygons) for obj in world_collection.objects if obj.type == 'MESH')
-print('LANTERN_EXPORT', json.dumps({'glb_bytes': path.stat().st_size, 'world_polygons': triangles, 'blend_bytes': (ROOT / 'blender/lantern-vale.blend').stat().st_size, 'rotor': 'WindmillRotor', 'avatar': 'Avatar'}))
+triangles = sum(len(obj.data.polygons) for obj in world_collection.all_objects if obj.type == 'MESH')
+print('LANTERN_EXPORT', json.dumps({'glb_bytes': path.stat().st_size, 'world_polygons': triangles, 'blend_bytes': (ROOT / 'blender/lantern-vale.blend').stat().st_size, 'rotor': 'WindmillRotor', 'avatar': 'Avatar', 'satellites': [item['id'] for item in WORLD['satellites']]}))

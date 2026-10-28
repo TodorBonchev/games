@@ -100,7 +100,7 @@ test('Lantern Vale retains its separate continuation slot in each resumable mode
   try {
     const world = JSON.parse(await readFile(new URL('../assets/lantern-world.json', import.meta.url), 'utf8'));
     await run();
-    for (const schema of [1, 2]) for (const mode of ['playing', 'paused', 'won', 'exploring']) {
+    for (const schema of [1, 2, 3]) for (const mode of ['playing', 'paused', 'won', 'exploring']) {
       writeGameSave('lantern', { schema, level: 1, mode, player: world.spawn }, localStorage); refresh();
       const card = document.querySelector('.lantern-card'), url = new URL(card.href);
       assert.equal(card.querySelector('[data-play-label]').textContent, 'CONTINUE RUN');

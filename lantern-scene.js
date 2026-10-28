@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createLanternSpace } from './lantern-space.js';
 import { createLanternShip } from './lantern-ship.js';
-import { flightTargets, flightSpawn, isFlightClear } from './lantern-game.js?v3';
+import { createExpeditionScene } from './lantern-expedition-scene.js';
+import { flightTargets, flightSpawn, isFlightClear } from './lantern-game.js?v4';
 
 // The island is authored in Blender; the scout, flight markers, and starfield
 // animate around it without changing the environment's baked geometry.
@@ -30,15 +31,15 @@ export async function createLanternScene(container, world, { resized, lost, rest
   const sky = new THREE.HemisphereLight('#e5e4ff', '#68618d', 1.8);
   scene.add(sky);
   const sun = new THREE.DirectionalLight('#ffd8b4', 2.45);
-  sun.position.set(-20, 30, 18);
+  sun.position.set(-30, 65, 30);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.left = sun.shadow.camera.bottom = -22;
-  sun.shadow.camera.right = sun.shadow.camera.top = 22;
+  sun.shadow.camera.left = sun.shadow.camera.bottom = -64;
+  sun.shadow.camera.right = sun.shadow.camera.top = 64;
   sun.shadow.camera.near = 1;
-  sun.shadow.camera.far = 85;
-  sun.shadow.bias = -.0004;
-  sun.shadow.normalBias = .035;
+  sun.shadow.camera.far = 170;
+  sun.shadow.bias = -.0001;
+  sun.shadow.normalBias = .12;
   scene.add(sun);
   const rimLight = new THREE.DirectionalLight('#acbaff', 1.3);
   rimLight.position.set(12, 8, -20);
@@ -127,7 +128,7 @@ export async function createLanternScene(container, world, { resized, lost, rest
 
   let asset;
   try {
-    asset = await new GLTFLoader().loadAsync(new URL('./assets/lantern-vale.glb', import.meta.url).href,
+    asset = await new GLTFLoader().loadAsync(new URL('./assets/lantern-vale.glb?v4', import.meta.url).href,
       event => { if (event.lengthComputable && event.total > 0) progress?.(event.loaded / event.total); });
   } catch (error) {
     space.dispose();
@@ -156,6 +157,8 @@ export async function createLanternScene(container, world, { resized, lost, rest
     }
   });
 
+  const expeditionView = createExpeditionScene({ THREE, scene, village, world, camera, registerGeometry, registerMaterial, glowTexture });
+
   const authoredAvatar = village.getObjectByName('Avatar');
   authoredAvatar?.removeFromParent();
   const scout = createLanternShip({ THREE, registerGeometry, registerMaterial, glowTexture });
@@ -174,6 +177,7 @@ export async function createLanternScene(container, world, { resized, lost, rest
   const cameraDestination = new THREE.Vector3(), shipPosition = new THREE.Vector3();
   const cameraRay = new THREE.Vector3(), probe = new THREE.Vector3();
   const forward = new THREE.Vector3();
+  const landscapes = [{ center: { x: 0, z: 0 }, topY: world.groundY, rx: 17.4, rz: 12.7 }, ...(world.satellites || [])];
   const animationTime = state => reduced.matches ? 0 : (state.ticks || 0) / 60;
 
   // Pull a chase camera forward if scenery lies between it and the ship.
@@ -213,9 +217,16 @@ export async function createLanternScene(container, world, { resized, lost, rest
       // Keep the engine bells in the lower third, with the destination ahead.
       // Widen portrait framing by moving back, rather than shrinking the craft.
       const distance = aspect < .85 ? 8.8 : 7.4;
-      const underIsland = player.y < -5;
-      const height = underIsland ? -1.6 : 2.8;
-      desiredFocus.set(player.x, player.y + (underIsland ? 2.5 : .45), player.z).addScaledVector(forward, 6.2);
+      const underIsland = player.y < -5 || (world.satellites || []).some(island => player.y < island.bottomY - .3 && Math.hypot(player.x - island.center.x, player.z - island.center.z) < Math.max(island.rx, island.rz) + 12);
+      const nearby = [...landscapes].sort((a, b) => Math.hypot(a.center.x - player.x, a.center.z - player.z) - Math.hypot(b.center.x - player.x, b.center.z - player.z))[0];
+      const dx = nearby.center.x - player.x, dz = nearby.center.z - player.z, range = Math.hypot(dx, dz), coast = Math.max(nearby.rx, nearby.rz);
+      const facing = range < coast ? 1 : THREE.MathUtils.clamp(((dx * forward.x + dz * forward.z) / Math.max(1, range) + .2) / .7, 0, 1);
+      const proximity = THREE.MathUtils.clamp((coast + 30 - range) / 22, 0, 1);
+      const terrainLift = underIsland ? 0 : THREE.MathUtils.clamp((player.y - nearby.topY - 2) * .75, 0, 7) * facing * proximity;
+      const height = underIsland ? -1.5 : 2.8 + terrainLift;
+      // From above, raise the chase arm and glance down toward the scenery.
+      // The engines remain in view; nearby landmarks no longer fall below the phone screen.
+      desiredFocus.set(player.x, player.y + (underIsland ? 1.7 : .45 - terrainLift * .45), player.z).addScaledVector(forward, 6.2);
       cameraDestination.set(player.x, player.y + height, player.z).addScaledVector(forward, -distance);
       keepCameraClear(cameraDestination, player);
     }
@@ -230,7 +241,7 @@ export async function createLanternScene(container, world, { resized, lost, rest
   }
 
   function render(state, time = 0) {
-    if (contextLost) return;
+    if (contextLost || renderer.getContext().isContextLost()) return;
     lastState = state;
     updateCamera(state, time);
     space.update({ time: animationTime(state), cameraPosition: camera.position, focus, reducedMotion: reduced.matches });
@@ -241,6 +252,7 @@ export async function createLanternScene(container, world, { resized, lost, rest
     sun.intensity = 2.25 + lit.size * .04;
     for (const material of windowMaterials) material.emissiveIntensity = .25 + lit.size * .15;
     scout.update(player, t, reduced.matches);
+    expeditionView.update(state, t, reduced.matches);
     if (windmill) {
       rotorTurn.setFromAxisAngle(spinAxis, reduced.matches ? 0 : t * .3);
       windmill.quaternion.copy(rotorBase).multiply(rotorTurn);
@@ -321,7 +333,12 @@ export async function createLanternScene(container, world, { resized, lost, rest
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
-    renderer.render(scene, camera);
+    try { renderer.render(scene, camera); }
+    catch (error) {
+      // The browser signals loss asynchronously; a shader compilation can
+      // notice it first. The context listeners preserve and restore the run.
+      if (!renderer.getContext().isContextLost()) throw error;
+    }
   }
 
   function resize() {
@@ -358,7 +375,7 @@ export async function createLanternScene(container, world, { resized, lost, rest
   observer.observe(container);
   resize();
   return {
-    render, resize, project, movement, renderer, camera, scene, space, ship,
+    render, resize, project, movement, renderer, camera, scene, space, ship, satellites: expeditionView.satellites,
     get state() { return lastState; },
     get assetStats() {
       let meshes = 0, vertices = 0;

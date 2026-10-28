@@ -1,5 +1,5 @@
-import { createLantern, parseLanternSave, flightTargets } from './lantern-game.js?v3';
-import { createLanternScene } from './lantern-scene.js?v3';
+import { createLantern, parseLanternSave, flightTargets } from './lantern-game.js?v4';
+import { createLanternScene } from './lantern-scene.js?v4';
 import { readGameSave, writeGameSave } from './save-store.js?v7';
 
 const $ = id => document.getElementById(id);
@@ -95,12 +95,12 @@ function hidePanel() {
 }
 function showIntro() {
   const saved = savedRun();
-  showPanel('intro', `<div class="intro-layout"><div><span class="eyebrow">YOUR LITTLE SHIP. A WORLD TO DISCOVER.</span><h1 id="panelTitle">LANTERN<br><span>VALE.</span></h1><p class="lede">An island adrift among the stars.<br>Take the pilot’s seat.</p><div class="intro-steps"><div><span>01</span><strong>FLY ANYWHERE</strong><small>Hold to fly. Drag to turn and climb. Release to hover.</small></div><div><span>02</span><strong>FOLLOW THE LIGHT</strong><small>Gather fireflies. Hover in the five lantern rings.</small></div></div></div><div>${saved ? button('continue', 'CONTINUE MY FLIGHT →', true) + button('start', 'BEGIN A FRESH FLIGHT') : button('start', 'TAKE FLIGHT →', true)}${button('help', 'FLIGHT CONTROLS')}<a class="action text-button" href="./">← ALL GAMES</a><p class="fine">FREE FLIGHT · FIVE LANTERNS · NO RUSH${profile.completed ? `<br>${profile.stars} / 3 STARS · ${profile.memories} / 5 MEMORIES FOUND` : ''}</p></div></div>`);
+  showPanel('intro', `<div class="intro-layout"><div><span class="eyebrow">YOUR LITTLE SHIP. A WORLD TO DISCOVER.</span><h1 id="panelTitle">LANTERN<br><span>VALE.</span></h1><p class="lede">Three islands among the stars.<br>One little ship. Your adventure.</p><div class="intro-steps"><div><span>01</span><strong>FLY ANYWHERE</strong><small>Hold to fly. Drag to turn and climb. Release to hover.</small></div><div><span>02</span><strong>DISCOVER THREE WORLDS</strong><small>Light the village. Wake a garden and an ancient observatory.</small></div></div></div><div>${saved ? button('continue', 'CONTINUE MY FLIGHT →', true) + button('start', 'BEGIN A FRESH FLIGHT') : button('start', 'TAKE FLIGHT →', true)}${button('help', 'FLIGHT CONTROLS')}<a class="action text-button" href="./">← ALL GAMES</a><p class="fine">THREE ISLANDS · FREE FLIGHT · NO RUSH${profile.completed ? `<br>${profile.stars} / 3 STARS · ${profile.memories} / 5 MEMORIES FOUND` : ''}</p></div></div>`);
 }
 function showHelp() {
   panelReturn = playing() || state.mode === 'paused' ? 'pause' : panelKind || 'intro';
   if (playing()) { game.pause(); changed(); }
-  showPanel('help', `<span class="eyebrow">A VIEW FROM YOUR OWN LITTLE SPACESHIP</span><h2 id="panelTitle">The island<br>is yours to explore.</h2><ul class="help-list"><li><span>↟</span><div><b>Hold anywhere in space to fly.</b>Drag left or right to steer. Drag up to climb, down to descend. Lift your thumb to hover. Hold BOOST for a burst of speed.</div></li><li><span>✧</span><div><b>Fly through the golden fireflies.</b>They power the village lanterns. Your compass points toward the next glow and tells you whether to climb or descend.</div></li><li><span>◎</span><div><b>Hover in the lantern rings.</b>With enough fireflies aboard, stop inside a golden ring above a landmark. The village lantern lights itself.</div></li><li><span>✦</span><div><b>Explore above and below.</b>Five purple memories wait around the coast and beneath the floating island. Find them all for three stars. Your ship gently avoids solid ground.</div></li></ul><p class="fine">${touch ? 'HOLD TO FLY · RELEASE TO HOVER.' : 'W/S OR ↑/↓ FLY · A/D OR ←/→ TURN · Q/E DESCEND/CLIMB · SHIFT BOOST · P/ESC PAUSE.'}<br>USE THE MAP TO FIND YOUR WAY. NO LIVES. NO TIMERS.</p>${button('helpBack', 'READY TO FLY →', true)}`);
+  showPanel('help', `<span class="eyebrow">A VIEW FROM YOUR OWN LITTLE SPACESHIP</span><h2 id="panelTitle">Three islands.<br>A sky full of stories.</h2><ul class="help-list"><li><span>↟</span><div><b>Hold anywhere in space to fly.</b>Drag left or right to steer. Drag up to climb, down to descend. Lift your thumb to hover. Hold BOOST for a burst of speed.</div></li><li><span>✧</span><div><b>Fly through the golden fireflies.</b>They power the village lanterns. Your compass points toward the next glow and tells you whether to climb or descend.</div></li><li><span>◎</span><div><b>Hover in the lantern rings.</b>With enough fireflies aboard, stop inside a golden ring above a landmark. The village lantern lights itself.</div></li><li><span>✦</span><div><b>Explore above and below.</b>Five purple memories wait around the coast and beneath the floating island. Find them all for three stars. Your ship gently avoids solid ground.</div></li><li><span>❋</span><div><b>Two new islands are waiting.</b>Choose a destination on the map. Gather Moonbloom’s three dew seeds to open its giant flower. Fly through Sunspire’s three star rings to wake the observatory. Visit in any order.</div></li></ul><p class="fine">${touch ? 'HOLD TO FLY · RELEASE TO HOVER.' : 'W/S OR ↑/↓ FLY · A/D OR ←/→ TURN · Q/E DESCEND/CLIMB · SHIFT BOOST · P/ESC PAUSE.'}<br>USE THE MAP TO FIND YOUR WAY. NO LIVES. NO TIMERS.</p>${button('helpBack', 'READY TO FLY →', true)}`);
 }
 function showPause() {
   showPanel('pause', `<span class="eyebrow">THE FIREFLIES CAN WAIT</span><h2 id="panelTitle">A little pause.</h2><p>${state.lit.length} of 5 village lanterns are glowing.<br>${storageAvailable ? 'Your flight and discoveries are saved on this device.' : 'Device storage is unavailable. Keep this page open to continue your journey.'}</p>${button('resume', 'BACK TO THE VALE →', true, contextLost)}${button('map', 'FLIGHT MAP')}${button('help', 'HOW TO PLAY')}${button('restart', 'BEGIN A FRESH FLIGHT')}<a class="action text-button" href="./">← ALL GAMES</a>`);
@@ -108,21 +108,31 @@ function showPause() {
 function showMap() {
   panelReturn = playing() || state.mode === 'paused' ? 'pause' : panelKind || 'intro';
   if (playing()) { game.pause(); changed(); }
-  const scale = Math.min(6, 130 / Math.max(20, Math.abs(state.player.x)), 100 / Math.max(16, Math.abs(state.player.z)));
-  const mapPoint = p => ({ x: 160 + p.x * scale, y: 115 + p.z * scale });
-  const player = mapPoint(state.player);
-  const labels = world.beacons.map(beacon => {
-    const p = mapPoint(beacon), lit = state.lit.includes(beacon.id);
-    return `<circle cx="${p.x}" cy="${p.y}" r="9" fill="${lit ? '#e2a655' : '#7e9791'}" stroke="#fff9e8" stroke-width="2"/><text x="${p.x}" y="${p.y + 3.5}" text-anchor="middle" font-size="10" fill="white" font-family="Arial">${beacon.id + 1}</text>`;
+  const expedition = state.expedition;
+  const scale = Math.min(2.35, 138 / Math.max(56, Math.abs(state.player.x)), 99 / Math.max(45, Math.abs(state.player.z + 13)));
+  const mapPoint = p => ({ x: 160 + p.x * scale, y: 110 + (p.z + 13) * scale });
+  const player = mapPoint(state.player), vale = mapPoint({ x: 0, z: 0 });
+  const islandDrawings = world.satellites.map(island => {
+    const p = mapPoint(island.center), awake = expedition.awakened.includes(island.id);
+    const marks = island.nodes.map((node, index) => { const n = mapPoint(node); return `<circle cx="${n.x}" cy="${n.y}" r="3" fill="${expedition.collected.includes(`${island.id}:${index}`) ? '#ffdb93' : '#edf0ff'}"/>`; }).join('');
+    return `<path d="M${vale.x},${vale.y}L${p.x},${p.y}" stroke="#b5b9de55" stroke-dasharray="3 5"/><ellipse cx="${p.x}" cy="${p.y}" rx="${island.rx * scale}" ry="${island.rz * scale}" fill="${island.color}" opacity=".65" stroke="${awake ? '#ffe1a1' : '#d2d7ff'}" stroke-width="${awake ? 3 : 1}"/>${marks}<text x="${p.x}" y="${p.y - island.rz * scale - 9}" text-anchor="middle" fill="#f7eccf" font-family="Arial" font-size="9">${island.id === 'moonbloom' ? 'MOONBLOOM' : 'SUNSPIRE'}</text>`;
   }).join('');
-  const memories = targets.secrets.map((secret, id) => {
-    const p = mapPoint(secret);
-    return `<text x="${p.x}" y="${p.y + 4}" text-anchor="middle" fill="${state.secrets.includes(id) ? '#fcdf9c' : '#bcadf6'}" font-size="15">✦</text>`;
-  }).join('');
-  showPanel('map', `<span class="eyebrow">YOUR FLIGHT CHART</span><h2 id="panelTitle">An island of discoveries.</h2><svg class="village-map" viewBox="0 0 320 230" role="img" aria-label="Flight map. Your ship is the white arrow. Lanterns are numbered; lit lanterns are gold. Purple stars mark memories."><ellipse cx="160" cy="115" rx="${world.bounds.rx * scale}" ry="${world.bounds.rz * scale}" fill="#93b89c" stroke="#e2cc9c" stroke-width="3"/><path d="M${160 + 2.4 * scale},${115 - 10.7 * scale}v${21.4 * scale}" stroke="#79cedb" stroke-width="${2.6 * scale}"/>${labels}${memories}<path d="M0,9 L-6,-6 L0,-3 L6,-6Z" fill="#fff9e8" stroke="#244b61" stroke-width="2" transform="translate(${player.x},${player.y}) rotate(${-state.player.heading * 180 / Math.PI})"/></svg><div class="map-legend"><span>➤ YOUR SHIP</span><span>● LANTERN</span><span>✦ MEMORY</span></div><p class="fine">${world.beacons.map(beacon => `${beacon.id + 1} ${beacon.name}`).join(' · ')}<br>YOUR ALTITUDE: ${Math.round(state.player.y)} M · MEMORIES CAN BE BELOW THE ISLAND.</p>${button('mapBack', 'BACK TO MY FLIGHT →', true)}`);
+  const markers = world.beacons.map(beacon => { const p = mapPoint(beacon); return `<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="${state.lit.includes(beacon.id) ? '#ffdc8e' : '#f2eee5'}"/>`; }).join('');
+  const cards = [{ id: 'vale', name: 'Lantern Vale', color: '#a8c98f', mission: 'Gather fireflies and hover in five lantern rings.', status: `${state.lit.length} / 5 lanterns · ${state.secrets.length} / 5 memories` }, ...world.satellites.map(island => {
+    const count = expedition.collected.filter(id => id.startsWith(`${island.id}:`)).length, awake = expedition.awakened.includes(island.id);
+    return { ...island, mission: awake ? island.reward : island.mission, status: awake ? 'AWAKENED · STORY DISCOVERED' : `${count} / 3 ${island.id === 'moonbloom' ? 'dew seeds' : 'star rings'}${expedition.visited.includes(island.id) ? ' · DISCOVERED' : ' · UNEXPLORED'}` };
+  })].map(island => `<button class="island-card${expedition.destination === island.id ? ' selected' : ''}" data-destination="${island.id}" style="--island-color:${island.color}"><span class="island-icon" aria-hidden="true">${island.id === 'vale' ? '✧' : island.id === 'moonbloom' ? '❋' : '☼'}</span><span><strong>${island.name}</strong><small>${island.status}</small><span>${island.mission}</span></span><b aria-hidden="true">↗</b></button>`).join('');
+  showPanel('map', `<span class="eyebrow">YOUR FLIGHT CHART & DISCOVERY JOURNAL</span><h2 id="panelTitle">Where next, pilot?</h2><div class="expedition-map-layout"><div><svg class="village-map" viewBox="0 0 320 230" role="img" aria-label="Flight chart with Lantern Vale, Moonbloom Sanctuary and Sunspire Observatory. Your ship is the white arrow.">${islandDrawings}<ellipse cx="${vale.x}" cy="${vale.y}" rx="${17.4 * scale}" ry="${12.7 * scale}" fill="#93b89c" stroke="#e2cc9c" stroke-width="2"/>${markers}<text x="${vale.x}" y="${vale.y + 12.7 * scale + 13}" text-anchor="middle" fill="#f7eccf" font-family="Arial" font-size="9">LANTERN VALE</text><path d="M0,8 L-5,-5 L0,-2 L5,-5Z" fill="#fff9e8" stroke="#244b61" stroke-width="1.5" transform="translate(${player.x},${player.y}) rotate(${-state.player.heading * 180 / Math.PI})"/></svg><p class="fine">TAP AN ISLAND TO SET YOUR COMPASS.<br>FLY THERE YOURSELF · EXPLORE IN ANY ORDER.</p></div><div class="island-cards">${cards}</div></div>${button('mapBack', 'BACK TO MY FLIGHT →', true)}`);
+}
+function chooseDestination(id) {
+  if (!game.setDestination(id) || contextLost) return;
+  if (state.mode === 'paused') game.resume();
+  else if (state.mode === 'won') game.explore();
+  lastMode = 'paused'; lastFrame = performance.now(); changed(); save();
+  toast(`COURSE SET · ${id === 'vale' ? 'LANTERN VALE' : world.satellites.find(island => island.id === id).name.toUpperCase()}`, 2);
 }
 function showResult() {
-  showPanel('won', `<div class="result-layout"><div><div class="result-stars" aria-label="${state.stars} stars">${'★'.repeat(state.stars)}${'☆'.repeat(3 - state.stars)}</div><span class="eyebrow">FIVE LANTERNS. ONE HAPPY LITTLE VILLAGE.</span><h2 id="panelTitle">You brought<br><em>the evening home.</em></h2><p>The vale is glowing again. Every little light has a story, and you’re part of this one now.</p></div><div><div class="result-stats"><div><strong>5 / 5</strong><span>LANTERNS</span></div><div><strong>${state.secrets.length} / 5</strong><span>MEMORIES</span></div></div>${button('explore', state.secrets.length < 5 ? 'FIND THE HIDDEN MEMORIES →' : 'KEEP FLYING →', true)}${button('replay', 'BEGIN A NEW FLIGHT')}<a class="action text-button" href="./">← ALL GAMES</a><p class="fine">${state.stars < 3 ? 'FIND ALL FIVE MEMORIES FOR THREE STARS.<br>' : ''}${storageAvailable && recordsAvailable ? 'YOUR JOURNEY IS SAVED ON THIS DEVICE' : 'DEVICE STORAGE UNAVAILABLE'}</p></div></div>`);
+  showPanel('won', `<div class="result-layout"><div><div class="result-stars" aria-label="${state.stars} stars">${'★'.repeat(state.stars)}${'☆'.repeat(3 - state.stars)}</div><span class="eyebrow">FIVE LANTERNS. ONE HAPPY LITTLE VILLAGE.</span><h2 id="panelTitle">You brought<br><em>the evening home.</em></h2><p>The vale is glowing again. Every little light has a story, and you’re part of this one now.</p></div><div><div class="result-stats"><div><strong>5 / 5</strong><span>LANTERNS</span></div><div><strong>${state.secrets.length} / 5</strong><span>MEMORIES</span></div></div>${button('explore', state.secrets.length < 5 ? 'FIND THE HIDDEN MEMORIES →' : 'EXPLORE THE OTHER ISLANDS →', true)}${button('replay', 'BEGIN A NEW FLIGHT')}<a class="action text-button" href="./">← ALL GAMES</a><p class="fine">${state.stars < 3 ? 'FIND ALL FIVE MEMORIES FOR THREE STARS.<br>' : ''}${storageAvailable && recordsAvailable ? 'YOUR JOURNEY IS SAVED ON THIS DEVICE' : 'DEVICE STORAGE UNAVAILABLE'}</p></div></div>`);
 }
 function showRestoring() {
   showPanel('restoring', `<span class="eyebrow">HOLD ON TO THAT LITTLE LIGHT</span><h2 id="panelTitle">The picture is returning.</h2><p>Your ship and discoveries are safe here.</p>${button('waiting', 'RESTORING THE VALE…', true, true)}`);
@@ -131,11 +141,13 @@ function toast(message, seconds = 2.2) {
   $('toast').textContent = message; $('toast').hidden = false; toastUntil = performance.now() + seconds * 1000;
 }
 function refreshHUD() {
-  const guide = state.guide;
+  const guide = state.guide, expedition = state.expedition;
+  const island = world.satellites.find(item => item.id === guide?.island || item.id === guide?.id);
+  $('expeditionValue').textContent = `${expedition.awakened.length} / 2`;
   $('litValue').innerHTML = `${state.lit.length} <small>/ 5</small>`;
   $('chargeValue').textContent = state.charge; $('memoryValue').textContent = `${state.secrets.length} / 5`;
-  $('objectiveLabel').textContent = state.lit.length === 5 ? state.secrets.length === 5 ? 'THE SKY IS YOURS' : 'DISCOVER THE HIDDEN MEMORIES' : 'BRING THE VILLAGE TO LIFE';
-  $('objectiveTitle').textContent = guide?.instruction || (guide?.kind === 'mote' ? `Gather ${guide.needed} more firefl${guide.needed === 1 ? 'y' : 'ies'}.` : guide?.kind === 'beacon' ? `Light ${guide.name}.` : guide?.kind === 'secret' ? guide.name : 'Fly wherever curiosity leads.');
+  $('objectiveLabel').textContent = island ? island.name.toUpperCase() : state.lit.length === 5 ? state.secrets.length === 5 ? 'THE SKY IS YOURS' : 'DISCOVER THE HIDDEN MEMORIES' : 'BRING THE VILLAGE TO LIFE';
+  $('objectiveTitle').textContent = guide?.instruction || (guide?.kind === 'seed' ? `Gather the dew seeds · ${guide.count} / ${guide.total}` : guide?.kind === 'signal' ? `Align the star rings · ${guide.count} / ${guide.total}` : guide?.kind === 'island' ? `Explore ${guide.name}.` : guide?.kind === 'mote' ? `Gather ${guide.needed} more firefl${guide.needed === 1 ? 'y' : 'ies'}.` : guide?.kind === 'beacon' ? `Light ${guide.name}.` : guide?.kind === 'secret' ? guide.name : 'Fly wherever curiosity leads.');
   $('pauseButton').disabled = !playing() || contextLost;
   $('mapButton').disabled = state.mode === 'ready' || contextLost;
   $('boostButton').disabled = !playing() || contextLost;
@@ -149,7 +161,7 @@ function refreshHUD() {
   $('navArrow').style.transform = `rotate(${relative}rad)`;
   $('navDistance').textContent = `${Math.round(Math.hypot(dx, dy, dz))} m`;
   $('navAltitude').textContent = dy > 1.7 ? 'CLIMB ↑' : dy < -1.7 ? 'DESCEND ↓' : 'LEVEL';
-  $('navLabel').textContent = guide?.viaCoast ? 'COAST ROUTE' : guide?.kind === 'mote' ? 'FIREFLY' : guide?.kind === 'secret' ? 'MEMORY' : guide?.kind === 'beacon' ? 'LANTERN' : 'ISLAND';
+  $('navLabel').textContent = guide?.viaCoast || guide?.viaRoute ? 'SAFE ROUTE' : guide?.kind === 'seed' ? 'DEW SEED' : guide?.kind === 'signal' ? 'STAR RING' : guide?.kind === 'mote' ? 'FIREFLY' : guide?.kind === 'secret' ? 'MEMORY' : guide?.kind === 'beacon' ? 'LANTERN' : 'ISLAND';
   $('flightNav').hidden = state.mode === 'ready' || state.mode === 'won';
 }
 function handleMode() {
@@ -165,6 +177,9 @@ function changed() {
     if (event.type === 'mote') { tone(490 + event.charge % 6 * 65, 0, 0.14); checkpoint = true; }
     if (event.type === 'light') { chime([392, 494, 587, 784]); toast(`${event.name.toUpperCase()} IS GLOWING`); checkpoint = true; }
     if (event.type === 'secret') { chime([659, 784, 988]); toast(`A MEMORY FOUND · ${event.name}`); bankRecords(); checkpoint = true; }
+    if (event.type === 'island') { toast(`DISCOVERED · ${event.name.toUpperCase()}`, 3); chime([440, 554, 659]); checkpoint = true; }
+    if (event.type === 'seed' || event.type === 'signal') { toast(`${event.type === 'seed' ? 'DEW SEED' : 'STAR RING'} · ${event.count} / ${event.total}`); chime([659, 880]); checkpoint = true; }
+    if (event.type === 'island-awakened') { toast(`${event.name.toUpperCase()} AWAKENS · STORY SAVED IN YOUR MAP`, 5); chime([440, 554, 659, 880, 1109]); checkpoint = true; }
     if (event.type === 'won') chime([392, 494, 587, 784, 988]);
   }
   handleMode(); refreshHUD(); if (checkpoint) save(); dirty = true;
@@ -199,7 +214,7 @@ function suspend() {
 }
 function bindInputs() {
   $('panelContent').addEventListener('pointerdown', () => { resultClickGuardUntil = 0; });
-  $('panelContent').addEventListener('click', event => { if (event.detail && performance.now() < resultClickGuardUntil) return; const target = event.target.closest('button'); if (target?.dataset.action) doAction(target.dataset.action); });
+  $('panelContent').addEventListener('click', event => { if (event.detail && performance.now() < resultClickGuardUntil) return; const target = event.target.closest('button'); if (target?.dataset.destination) { chooseDestination(target.dataset.destination); return; } if (target?.dataset.action) doAction(target.dataset.action); });
   $('soundButton').addEventListener('click', () => { profile.sound = !profile.sound; recordsAvailable = saveProfile(); unlockAudio(); soundUI(); if (profile.sound) chime([440, 659]); });
   $('helpButton').addEventListener('click', showHelp);
   $('mapButton').addEventListener('click', showMap);
@@ -276,9 +291,9 @@ function frame(now) {
 }
 
 try {
-  const response = await fetch('./assets/lantern-world.json');
+  const response = await fetch('./assets/lantern-world.json?v4');
   if (!response.ok) throw Error('The village map could not be loaded.');
-  world = await response.json(); targets = flightTargets(world); game = createLantern({ world }); state = game.state;
+  world = await response.json(); world.satellites ||= []; targets = flightTargets(world); game = createLantern({ world }); state = game.state;
   view = await createLanternScene($('gameStage'), world, {
     resized: () => { clearInput(); dirty = true; },
     lost: () => { contextLost = true; suspend(); showRestoring(); refreshHUD(); },

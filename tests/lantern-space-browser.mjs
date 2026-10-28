@@ -93,10 +93,11 @@ try {
       return before === JSON.stringify(view.renderer.info.memory);
     });
     assert.ok(stable, 'parallax frames reuse their GPU resources');
-    const boundaryCameras = await page.evaluate(() => {
+    const boundaryCameras = await page.evaluate(async () => {
+      const { FLIGHT } = await import('./lantern-game.js');
       const { view, game } = __lantern;
-      const locations = [{ x: 0, y: 32, z: 26, heading: Math.PI }, { x: 60, y: 9, z: 0, heading: -Math.PI / 2 },
-        { x: 4, y: -8, z: 3, heading: 0 }, { x: 0, y: -16, z: 0, heading: 0 }];
+      const locations = [{ x: 0, y: FLIGHT.maxY, z: 26, heading: Math.PI }, { x: FLIGHT.radius, y: 9, z: 0, heading: -Math.PI / 2 },
+        { x: 4, y: -8, z: 3, heading: 0 }, { x: 0, y: FLIGHT.minY, z: 0, heading: 0 }];
       const results = locations.map((position, index) => {
         const display = { ...game.state, player: { ...game.state.player, ...position, speed: 0, verticalSpeed: 0, bank: 0 } };
         for (let i = 0; i < 40; i++) view.render(display, 100 + index * 2 + i / 30);

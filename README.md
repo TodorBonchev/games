@@ -11,7 +11,7 @@ A collection of **six Three.js browser games**, made for phones and computers. W
 | **Garden Guard** | [Launch garden defense](https://todorbonchev.github.io/games/garden.html) | Five garden defense levels with five lanes, three plant types, runners, armored zombies, and up to five waves. |
 | **Borrowed Tomorrow** | [Launch the time sail](https://todorbonchev.github.io/games/borrowed.html) | Six clockworld chambers where your two recorded past selves steer a triangular weapon. Flow and Rift difficulties, clockblooms, crosswinds, armor, and a final boss. |
 | **Prism Orchard** | [Launch Prism Orchard](https://todorbonchev.github.io/games/prism.html) | Turn crystal mirrors, split colored light, and combine beams to bloom eight night gardens. |
-| **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Pilot a spaceship around a floating island, gather fireflies, light five lanterns, and discover memories above and below the cliffs. |
+| **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Explore three Blender-built islands by spaceship: a lantern village, a moonlit garden, and a celestial observatory. |
 
 ## Wonderwake
 
@@ -76,11 +76,13 @@ No account or cookies are needed. Saves belong to this browser and device; clear
 
 Fly your own little spaceship around a handmade island village floating through open space. A camera follows behind the ivory-and-teal ship, revealing rooftops, coastal cliffs, and the underside of the island. Three layers of parallax stars and a soft nebula surround the world. Reduced-motion mode removes decorative banking, bobbing and backdrop movement.
 
-Gather airborne fireflies, then hover in the sky rings above five landmarks to light their lanterns. Five memories reward exploration around the coast and beneath the island: three memories earn two stars, and all five earn three. There are no lives or timers, and you can keep flying after lighting the village. A compass shows the next target, distance and altitude direction; the flight map includes your ship and all discoveries.
+Gather airborne fireflies, then hover in the sky rings above five landmarks to light their lanterns. Five memories reward exploration around the coast and beneath the island: three memories earn two stars, and all five earn three. There are no lives or timers, and you can keep flying after lighting the village. A compass shows the next target, distance and altitude direction. The flight map lets you choose any island and records each discovery.
+
+Two nearby worlds reward a longer flight. **Moonbloom Sanctuary** is a lavender sculpture garden with luminous pools, mushroom groves, hanging vines, and a giant sleeping flower. Gather its three dew seeds to open the six Blender-authored petals and release luminous pollen. **Sunspire Observatory** is a sandstone island with suspended stairs, ruin arches, a telescope, and a brass orrery. Fly through its three calibration rings to set its miniature sun in motion. Both activities can be explored in any order; their discoveries and awakenings save independently of the village lanterns.
 
 On a phone, hold anywhere in the scene to fly forward. Drag left/right to turn and up/down to climb/descend; release to hover. Hold the separate Boost button with another thumb to fly faster. On a keyboard, W/S or up/down fly forward/backward, A/D or left/right turn, Q/E descend/climb, and Shift boosts. P or Esc pauses. Collision protection keeps the ship outside the island and buildings. Progress saves on the device, including existing journeys from the walking version.
 
-The world is authored in Blender at `blender/lantern-vale.blend` and exported as `assets/lantern-vale.glb`; `assets/lantern-world.json` describes the playable world. These assets are bundled locally. The editable scene keeps its objects separate; the 1.7 MB web model merges static geometry by material. The generation script was tested with Blender 4.5 LTS.
+The world is authored in Blender at `blender/lantern-vale.blend` and exported as `assets/lantern-vale.glb`; `assets/lantern-world.json` describes the playable world. These assets are bundled locally. The editable scene keeps its objects separate; the 2.72 MB web model merges static geometry by material. The two neighboring islands retain their own editable Blender collections, close-up cameras, and lighting, and the flower petals and orrery remain separate for animation. `scripts/build-lantern-satellites.py` is composed by the main generator. The generation script was tested with Blender 4.5 LTS.
 
 To regenerate the editable Blender file and exported model with Blender installed, run:
 
@@ -294,6 +296,7 @@ npm run test:ribbon
 npm run test:dewfall
 npm run test:lantern
 npm run test:lantern:space
+npm run test:lantern:expedition
 npm run test:collection
 npm run test:voyage
 npm run test:voyage:legacy
@@ -343,7 +346,7 @@ Pond Post uses `pondpost.html`, `pondpost.css`, `pondpost-main.js` (input, UI, s
 
 Prism Orchard, Ribbon Reef, and Dewdrop Drift each use their own `{slug}.html`, `{slug}.css`, `{slug}-main.js`, `{slug}-scene.js`, and `{slug}-game.js`, with slugs `prism`, `ribbon`, and `dewfall`. Their `?debug=1` pages expose `window.__prism`, `window.__ribbon`, and `window.__dewfall` for local inspection. Normal play does not expose these helpers. The respective browser suites exercise legal completion, real touch controls, phone layouts, interruption and graphics recovery, and storage failures. Their hub previews are captured from the actual Three.js scenes.
 
-Lantern Vale uses `lantern.html`, `lantern.css`, `lantern-main.js`, `lantern-scene.js`, `lantern-ship.js`, `lantern-space.js`, and `lantern-game.js`. `/lantern.html?debug=1` exposes `window.__lantern` for local inspection. Its browser suites fly a legal route through all five lanterns and memories, including below the island, and exercise chase-camera framing, multi-touch steering and boost, old-save migration, exact flight continuation, graphics recovery, and seven phone layouts. Normal play does not expose the helper.
+Lantern Vale uses `lantern.html`, `lantern.css`, `lantern-main.js`, `lantern-scene.js`, `lantern-ship.js`, `lantern-space.js`, `lantern-expedition-scene.js`, and `lantern-game.js`. `/lantern.html?debug=1` exposes `window.__lantern` for local inspection. Its browser suites fly a legal route through all five lanterns and memories, including below the island, and exercise chase-camera framing, multi-touch steering and boost, old-save migration, exact flight continuation, graphics recovery, and seven phone layouts. The expedition suite verifies both detailed Blender landscapes, legally flies all six activity nodes, checks visible landmark transformations and saved awakenings, and migrates older flight saves. Normal play does not expose the helper.
 
 The collection browser suite checks all six homepage choices, independent standalone and adventure continuation, actual preview loading, 44px phone controls, and notch clearance in small portrait and landscape layouts. `test:voyage` checks the connected campaign shell; `test:voyage:legacy` checks the five adapted mission engines. Pure campaign tests verify island unlocks from distinct friends, festival and full-crew milestones, checkpoint recovery, and storage isolation.
 

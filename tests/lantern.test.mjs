@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createLantern, isFlyable, isFlightClear, flightTargets, flightSpawn, FLIGHT, parseLanternSave, STEP } from '../lantern-game.js';
+import { createLantern, isFlyable, isFlightClear, flightTargets, expeditionTargets, flightSpawn, FLIGHT, parseLanternSave, STEP } from '../lantern-game.js';
 import { finishVillage, flyTo } from './lantern-strategy.mjs';
 const world = JSON.parse(await readFile(new URL('../assets/lantern-world.json', import.meta.url), 'utf8'));
 const targets = flightTargets(world);
@@ -31,8 +31,8 @@ test('island rock, rooflines, and the edge of space are solid without trapping t
   assert.equal(isFlyable(world, -7.4, 7, -7.3), true);
   assert.equal(isFlyable(world, 0, -8, 0), true);
   assert.equal(isFlyable(world, 0, 6.8, 0), true);
-  assert.equal(isFlyable(world, 70, 40, 70), false);
-  assert.equal(isFlightClear(world, 70, 40, 70), true, 'camera can safely extend beyond the flight fence');
+  assert.equal(isFlyable(world, 120, 50, 120), false);
+  assert.equal(isFlightClear(world, 120, 50, 120), true, 'camera can safely extend beyond the flight fence');
   const game = make(); flyTo(game, { x: 0, y: -8, z: 0 });
   advance(game, 8, { lift: 1 }); assert.ok(game.state.player.y < -6.5, 'cannot fly through the underside');
   assert.ok(isFlyable(world, game.state.player.x, game.state.player.y, game.state.player.z));
@@ -74,14 +74,14 @@ test('fireflies require three-dimensional proximity and every flight target is a
 });
 test('malformed positions, velocity, and impossible checkpoint progress are rejected', () => {
   const valid = make().snapshot();
-  for (const value of [null, 7, [], {}, { ...valid, schema: 3 }, { ...valid, player: null }, ...[
-    { x: 0, y: 0, z: 0 }, { x: 100 }, { y: NaN }, { speed: Infinity }, { verticalSpeed: 90 }, { bank: 9 },
+  for (const value of [null, 7, [], {}, { ...valid, schema: 4 }, { ...valid, player: null }, ...[
+    { x: 0, y: 0, z: 0 }, { x: 120 }, { y: NaN }, { speed: Infinity }, { verticalSpeed: 90 }, { bank: 9 },
   ].map(change => ({ ...valid, player: { ...valid.player, ...change } })), { ...valid, collected: [0, 0], charge: 2 }, { ...valid, charge: 99 }, { ...valid, lit: [0] }, { ...valid, mode: 'exploring' }, { ...valid, stars: 3 }, { ...valid, channel: { beacon: 0, progress: .5 } }]) assert.equal(parseLanternSave(value, world), null);
   const copy = parseLanternSave(valid, world); copy.player.x = 100; assert.notEqual(valid.player.x, 100);
 });
 test('walking checkpoints migrate without losing collected light, discoveries, or lanterns', () => {
   const legacy = { ...make().snapshot(), schema: 1, player: { ...world.spawn, heading: .7, moving: false }, collected: [0, 1, 2, 3], charge: 1, lit: [0], secrets: [1, 2], ticks: 600, distance: 20 };
-  const migrated = parseLanternSave(legacy, world); assert.ok(migrated); assert.equal(migrated.schema, 2);
+  const migrated = parseLanternSave(legacy, world); assert.ok(migrated); assert.equal(migrated.schema, 3);
   assert.deepEqual(migrated.collected, legacy.collected); assert.deepEqual(migrated.lit, legacy.lit); assert.deepEqual(migrated.secrets, legacy.secrets);
   assert.equal(migrated.player.y, FLIGHT.targetY); assert.equal(migrated.player.x, legacy.player.x); assert.equal(migrated.player.speed, 0);
   assert.ok(parseLanternSave(migrated, world)); assert.ok(make().restore(legacy));
@@ -140,7 +140,7 @@ test('under-island guidance takes a safe coast route and survives reload on the 
   assert.deepEqual(restored.state.guide, game.state.guide);
   flyTo(game, { x: 0, y: -6.7, z: 0 }); game.refreshGuide();
   assert.equal(game.state.guide.viaCoast, undefined, 'a ship already clear of the underside follows the memory instead of climbing into rock');
-  flyTo(game, targets.secrets[4]); assert.equal(game.state.guide, null);
+  flyTo(game, targets.secrets[4]); assert.ok(!game.state.guide || game.state.guide.kind !== 'secret');
   const unfinished = make(); flyTo(unfinished, { x: 0, y: -8, z: 0 }); unfinished.refreshGuide();
   assert.equal(unfinished.state.guide.instruction, 'Fly beyond the coast'); assert.equal(unfinished.state.guide.y, -8);
   flyTo(unfinished, { x: 0, y: -8, z: 22 }); unfinished.refreshGuide();
@@ -148,4 +148,91 @@ test('under-island guidance takes a safe coast route and survives reload on the 
   advance(unfinished, 1, { lift: 1 }); unfinished.refreshGuide();
   const clone = make(); assert.ok(clone.restore(unfinished.snapshot()));
   assert.deepEqual(clone.state.guide, unfinished.state.guide);
+});
+
+test('both Blender satellite hulls, structures, and mission nodes agree with flight clearance', () => {
+  assert.deepEqual(world.satellites.map(island => island.id), ['moonbloom', 'sunspire']);
+  for (const island of world.satellites) {
+    assert.equal(isFlyable(world, island.center.x, (island.topY + island.bottomY) / 2, island.center.z), false);
+    assert.equal(isFlyable(world, island.center.x, island.bottomY - 2, island.center.z), true);
+    for (const collider of island.colliders) assert.equal(isFlyable(world, collider.x, (collider.maxY + (collider.minY ?? island.topY)) / 2, collider.z), false);
+    for (const node of island.nodes) assert.ok(isFlyable(world, node.x, node.y, node.z), `${island.id} node is clear`);
+    assert.ok(isFlyable(world, island.approach.x, island.approach.y, island.approach.z));
+  }
+});
+test('both new island missions awaken exactly once using only legal spaceship controls', () => {
+  const game = make(), nodes = expeditionTargets(world);
+  for (const island of world.satellites) {
+    assert.equal(game.setDestination(island.id), true);
+    assert.equal(game.state.guide.island, island.id);
+    for (const node of nodes.filter(node => node.island === island.id)) flyTo(game, node);
+    assert.ok(game.state.expedition.visited.includes(island.id));
+    assert.ok(game.state.expedition.awakened.includes(island.id));
+    assert.equal(game.state.guide.kind, 'island'); assert.equal(game.state.guide.island, island.id);
+    flyTo(game, island.approach);
+  }
+  assert.equal(game.state.expedition.collected.length, 6);
+  assert.equal(game.state.events.filter(event => event.type === 'island').length, 2);
+  assert.equal(game.state.events.filter(event => event.type === 'island-awakened').length, 2);
+  assert.equal(game.state.events.filter(event => event.type === 'seed').length, 3);
+  assert.equal(game.state.events.filter(event => event.type === 'signal').length, 3);
+  for (const node of nodes) flyTo(game, node);
+  assert.equal(game.state.events.filter(event => event.type === 'island-awakened').length, 2);
+  assert.equal(game.state.mode, 'playing', 'satellite rewards never end the central adventure');
+  assert.deepEqual(game.state.lit, []); assert.equal(game.state.stars, 0);
+  assert.equal(game.setDestination('vale'), true); assert.ok(['mote', 'beacon'].includes(game.state.guide.kind));
+  assert.equal(game.setDestination('missing'), false); assert.equal(game.state.expedition.destination, 'vale');
+  assert.ok(parseLanternSave(game.snapshot(), world));
+});
+test('satellite discoveries and navigation survive exact checkpoint continuation', () => {
+  const game = make(); game.setDestination('moonbloom');
+  flyTo(game, expeditionTargets(world)[0]); game.pause();
+  const saved = game.snapshot(), restored = make(); assert.equal(restored.restore(saved), true);
+  assert.deepEqual(restored.snapshot(), saved); assert.deepEqual(restored.state.guide, game.state.guide);
+  game.resume(); restored.resume();
+  for (let i = 0; i < 90; i++) {
+    const input = { throttle: .6, turn: .2, lift: .15 };
+    game.advance(STEP, input); restored.advance(STEP, input);
+  }
+  assert.deepEqual(restored.snapshot(), game.snapshot());
+  const profileBefore = structuredClone(game.state.expedition); game.pause(); game.advance(1, { throttle: 1 });
+  assert.deepEqual(game.state.expedition, profileBefore);
+});
+test('schema2 airborne saves retain exact motion and only newly occupied space gets a safe lift', () => {
+  const game = make(); advance(game, .7, { throttle: .6, lift: .3, turn: -.2 });
+  const old = { ...game.snapshot(), schema: 2 }; delete old.expedition;
+  const migrated = parseLanternSave(old, world); assert.ok(migrated); assert.equal(migrated.schema, 3);
+  assert.deepEqual(migrated.player, old.player);
+  assert.deepEqual(migrated.expedition, { visited: [], collected: [], awakened: [], destination: null });
+  const moon = world.satellites[0], occupied = { ...old, player: { ...old.player, x: moon.center.x, y: moon.center.y, z: moon.center.z } };
+  const repaired = parseLanternSave(occupied, world); assert.ok(repaired); assert.ok(repaired.player.y > moon.topY);
+  assert.equal(repaired.player.x, occupied.player.x); assert.equal(repaired.player.z, occupied.player.z);
+  assert.equal(repaired.player.heading, occupied.player.heading); assert.equal(repaired.player.speed, occupied.player.speed);
+  assert.deepEqual(repaired.collected, occupied.collected); assert.deepEqual(repaired.lit, occupied.lit);
+  assert.ok(isFlyable(world, repaired.player.x, repaired.player.y, repaired.player.z));
+  assert.equal(parseLanternSave({ ...occupied, schema: 3, expedition: migrated.expedition }, world), null);
+});
+test('expedition checkpoints reject unknown islands and inconsistent one-time rewards', () => {
+  const valid = make().snapshot(), blank = valid.expedition;
+  const bad = [null, {}, { ...blank, visited: ['unknown'] }, { ...blank, visited: ['moonbloom', 'moonbloom'] },
+    { ...blank, destination: {} }, { ...blank, collected: ['moonbloom:0'] },
+    { ...blank, visited: ['moonbloom'], collected: ['moonbloom:9'] },
+    { ...blank, visited: ['moonbloom'], collected: ['moonbloom:0', 'moonbloom:0'] },
+    { ...blank, visited: ['moonbloom'], awakened: ['moonbloom'] },
+    { ...blank, visited: ['moonbloom'], collected: ['moonbloom:0', 'moonbloom:1', 'moonbloom:2'] },
+  ];
+  for (const expedition of bad) assert.equal(parseLanternSave({ ...valid, expedition }, world), null);
+  const good = { ...valid, expedition: { visited: ['moonbloom'], collected: ['moonbloom:0'], awakened: [], destination: 'sunspire' } };
+  assert.ok(parseLanternSave(good, world));
+});
+
+test('navigation beneath a new satellite first clears its coast instead of pointing into the rock', () => {
+  const game = make(), sun = world.satellites.find(island => island.id === 'sunspire');
+  flyTo(game, { x: sun.center.x, y: sun.bottomY - 2, z: sun.center.z });
+  game.setDestination('sunspire');
+  assert.equal(game.state.guide.instruction, 'Fly beyond the coast');
+  assert.ok(game.state.guide.z > sun.center.z + sun.rz);
+  assert.equal(game.state.guide.y, game.state.player.y);
+  flyTo(game, expeditionTargets(world).find(node => node.island === sun.id));
+  assert.ok(game.state.expedition.collected.some(id => id.startsWith('sunspire:')));
 });

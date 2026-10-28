@@ -124,7 +124,7 @@ main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   .control-copy span { font-size: 11px; margin-top: 5px; }
   #mapButton { padding: 0 13px; }
   .pocket { left: 13px; bottom: 13px; padding: 8px 13px; }
-  .pocket>span:not(.firefly-symbol):not(.memory-symbol) { display: none; }
+  .pocket>span:not(.firefly-symbol):not(.memory-symbol):not(.island-symbol) { display: none; }
   .lighting { bottom: 66px; }
   .panel { padding: 25px; }
   .panel h1 { font-size: 53px; }
@@ -191,3 +191,32 @@ main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 }
 
 .brand .full-name { margin-right: .18em; }
+/* Each neighboring island is a destination and a saved discovery journal. */
+.stage .pocket>span.island-symbol { color: #baebdd; font-size: 17px; }
+.pocket #expeditionValue { font-size: 17px; color: #ceeee4; }
+.expedition-map-layout { display: grid; grid-template-columns: .95fr 1.05fr; gap: 18px; align-items: start; }
+.island-cards { display: grid; gap: 8px; }
+.panel .island-card { margin: 0; width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px; text-align: left; border-color: #b9c9bd; background: #fffdf366; letter-spacing: 0; }
+.panel .island-card.selected { border-color: #3c6e78; box-shadow: inset 3px 0 #3c6e78; background: #e8f0e5; }
+.island-card .island-icon { flex: none; width: 28px; height: 34px; font-size: 29px; color: #45646d; }
+.island-card>span:nth-child(2) { display: grid; gap: 5px; flex: 1; }
+.island-card strong { font: 800 22px/1 Barlow, sans-serif; color: #37555d; }
+.island-card small { font-size: 8px; letter-spacing: .05em; color: #718b83; }
+.island-card span span { font-size: 11px; font-weight: 400; line-height: 1.4; color: #617679; }
+.island-card>b { color: #557c78; font-size: 17px; }
+@media (max-width: 600px) {
+  .pocket { gap: 6px; padding: 8px 10px; }
+  .pocket i { margin: 0 2px; }
+  .pocket>span:not(.firefly-symbol):not(.memory-symbol):not(.island-symbol) { display: none; }
+  .pocket>.island-symbol { display: inline; }
+  .pocket #memoryValue, .pocket #expeditionValue { font-size: 15px; }
+  .expedition-map-layout { grid-template-columns: 1fr; gap: 8px; }
+  .expedition-map-layout .village-map { height: 180px; margin: 5px 0; }
+  .panel .island-card { padding: 10px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .expedition-map-layout { grid-template-columns: .9fr 1.1fr; gap: 15px; }
+  .expedition-map-layout .village-map { height: 160px; margin: 5px 0; }
+  .island-card span span { font-size: 10px; }
+  .island-card strong { font-size: 20px; }
+}

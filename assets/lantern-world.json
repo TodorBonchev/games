@@ -354,5 +354,167 @@
       "radius": 0.25,
       "kind": "lantern"
     }
+  ],
+  "satellites": [
+    {
+      "id": "moonbloom",
+      "name": "Moonbloom Sanctuary",
+      "center": {
+        "x": -42,
+        "y": 3,
+        "z": -25
+      },
+      "rx": 11,
+      "rz": 9.5,
+      "topY": 4.8,
+      "bottomY": -4.3,
+      "colliders": [
+        {
+          "x": -44,
+          "z": -26,
+          "radius": 2.4,
+          "minY": 4.8,
+          "maxY": 9.3
+        },
+        {
+          "x": -49,
+          "z": -27,
+          "radius": 2.6,
+          "minY": 3.45,
+          "maxY": 8.5
+        },
+        {
+          "x": -44,
+          "z": -31,
+          "radius": 2.6,
+          "minY": 3.45,
+          "maxY": 8.8
+        },
+        {
+          "x": -35.7,
+          "z": -22.9,
+          "radius": 2,
+          "minY": 3.45,
+          "maxY": 8.1
+        },
+        {
+          "x": -47,
+          "z": -21,
+          "radius": 1.3,
+          "minY": 3.45,
+          "maxY": 6.3
+        }
+      ],
+      "nodes": [
+        {
+          "x": -33.7,
+          "y": 10,
+          "z": -21
+        },
+        {
+          "x": -48,
+          "y": 11.5,
+          "z": -22
+        },
+        {
+          "x": -45,
+          "y": 12,
+          "z": -32
+        }
+      ],
+      "landmark": {
+        "x": -44,
+        "y": 5.4,
+        "z": -26
+      },
+      "approach": {
+        "x": -42,
+        "y": 14,
+        "z": -12
+      },
+      "mission": "Gather three drifting dewseeds.",
+      "reward": "The moonblossom opens. Its luminous pollen carries your light to sleeping gardens among the stars.",
+      "color": "#c4adee"
+    },
+    {
+      "id": "sunspire",
+      "name": "Sunspire Observatory",
+      "center": {
+        "x": 42,
+        "y": 7,
+        "z": -28
+      },
+      "rx": 10.6,
+      "rz": 9,
+      "topY": 9.6,
+      "bottomY": 0.2,
+      "colliders": [
+        {
+          "x": 42,
+          "z": -29,
+          "radius": 3.2,
+          "minY": 9.6,
+          "maxY": 17
+        },
+        {
+          "x": 36,
+          "z": -28.5,
+          "radius": 2.1,
+          "minY": 7.45,
+          "maxY": 12.5
+        },
+        {
+          "x": 46.7,
+          "z": -33,
+          "radius": 1.8,
+          "minY": 7.45,
+          "maxY": 12.2
+        },
+        {
+          "x": 38,
+          "z": -33,
+          "radius": 0.65,
+          "minY": 7.45,
+          "maxY": 10
+        },
+        {
+          "x": 47,
+          "z": -30.8,
+          "radius": 0.65,
+          "minY": 7.45,
+          "maxY": 10.8
+        }
+      ],
+      "nodes": [
+        {
+          "x": 49,
+          "y": 12.5,
+          "z": -23
+        },
+        {
+          "x": 36,
+          "y": 14,
+          "z": -32
+        },
+        {
+          "x": 44,
+          "y": 18.5,
+          "z": -30
+        }
+      ],
+      "landmark": {
+        "x": 42,
+        "y": 13.2,
+        "z": -29
+      },
+      "approach": {
+        "x": 42,
+        "y": 20,
+        "z": -15
+      },
+      "mission": "Fly through three calibration rings.",
+      "reward": "The ancient orrery turns again. Its golden sun marks a safe route home for every wandering ship.",
+      "color": "#f6c777"
+    }
   ]
 }
