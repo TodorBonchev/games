@@ -32,6 +32,7 @@
     "test:voyage:legacy": "node tests/voyage-legacy-browser.mjs",
     "test:voyage:wins": "node tests/voyage-arcade-wins-browser.mjs",
     "test:lantern:space": "node tests/lantern-space-browser.mjs",
+    "test:piano": "node tests/piano-wait-browser.mjs",
     "test:lantern:expedition": "node tests/lantern-expedition-browser.mjs"
   },
   "engines": {
