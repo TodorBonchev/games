@@ -52,6 +52,10 @@ html,body{height:100%;overflow:hidden;background:#111;color:#eee;font:600 14px s
 #sheet.show{display:flex}
 #sheet .panel{background:#1d1d1d;width:min(640px,100%);max-height:88%;overflow:auto;border-radius:16px 16px 0 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom));touch-action:pan-y}
 #sheet h2{font-size:16px;margin:2px 4px 10px;display:flex;justify-content:space-between;align-items:center}
+#songq{flex:1;margin:0 10px;height:34px;border-radius:8px;border:0;background:#333;color:#eee;padding:0 10px;font:inherit;font-size:15px;min-width:0}
+#sheet h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;opacity:.6;margin:12px 4px 6px}
+.lvl{font-style:normal;font-size:11px;border-radius:6px;padding:2px 7px;margin-left:6px}.lvl.Easy{background:#2f6b3c}.lvl.Medium{background:#7a5f1c}.lvl.Hard{background:#7a2a2a}
+.none{opacity:.6;padding:10px}
 #sheet h2 button{background:#333;color:#eee;border:0;border-radius:8px;height:34px;width:40px;font:inherit}
 .song{display:flex;width:100%;align-items:center;gap:10px;text-align:left;background:#2a2a2a;color:#eee;border:0;border-radius:10px;padding:12px 14px;margin:0 0 8px;font:inherit;font-size:15px}
 .song small{display:block;opacity:.6;font-weight:500;font-size:12px}.song b{flex:1}
@@ -79,9 +83,9 @@ html,body{height:100%;overflow:hidden;background:#111;color:#eee;font:600 14px s
   <button id="lmode" title="Wait for me / follow the tempo">Wait</button><button id="ldemo">▶ Listen</button><button id="lrestart">↺</button><button id="lexit" aria-label="Exit song">✕</button></div>
  <div id="kb"></div>
 </div>
-<div id="sheet"><div class="panel"><h2>Learn a song <button id="sheetX" aria-label="Close">✕</button></h2><div id="songlist"></div></div></div>
+<div id="sheet"><div class="panel"><h2>Learn a song <input id="songq" type="search" placeholder="Search songs…" autocomplete="off" aria-label="Search songs"> <button id="sheetX" aria-label="Close">✕</button></h2><div id="songlist"></div></div></div>
 <div id="rot"><div>📱</div>Rotate your phone to play</div>
-<script src="songs.js?v1"></script>
+<script src="songs.js?v2"></script>
 <script>
 (() => {
 const kb = document.getElementById('kb');
@@ -231,7 +235,7 @@ if ((root.requestFullscreen || root.webkitRequestFullscreen) && !/iPhone|iPad|iP
 const MAP = 'zsxdcvgbhnjmq2w3er5t6y7ui';   // 25 keys C4..C6
 const kdown = new Set();
 addEventListener('keydown', e=>{
-  if (e.repeat || e.ctrlKey || e.metaKey) return;
+  if (e.repeat || e.ctrlKey || e.metaKey || e.target.closest?.('input')) return;
   if (e.key===' '){ e.preventDefault(); $('sus').click(); return; }
   if (e.key==='ArrowLeft') return $('od').click();
   if (e.key==='ArrowRight') return $('ou').click();
@@ -249,8 +253,25 @@ const toMidi = s => { const m = /^([A-G])(#|b)?(\d)$/.exec(s); return (m[3]*1+1)
 const L = { song:null, steps:[], pos:0, follow:false, demo:null, timer:null };
 window.__learn = L;
 const sheet = $('sheet'), list = $('songlist');
-SONGS.forEach((sg,k)=>{ const b=document.createElement('button'); b.className='song'+(sg.featured?' feat':'');
-  b.innerHTML=`<b>${sg.title}<small>${sg.subtitle||''}</small></b>${k===0?'<em>FIRST</em>':''}`; b.onclick=()=>{ sheet.classList.remove('show'); startSong(sg); }; list.appendChild(b); });
+const CATS = window.PIANO_CATEGORIES || [];
+function renderList(q=''){
+  q=q.trim().toLowerCase(); list.innerHTML='';
+  const match = sg => !q || (sg.title+' '+(sg.subtitle||'')+' '+sg.category+' '+sg.level).toLowerCase().includes(q);
+  const cats = [...CATS, ...new Set(SONGS.map(s=>s.category).filter(c=>!CATS.includes(c)))];
+  let shown=0;
+  for (const cat of cats){
+    const items = SONGS.filter(sg=>sg.category===cat && match(sg)); if(!items.length) continue;
+    const h=document.createElement('h3'); h.textContent=cat; list.appendChild(h);
+    for (const sg of items){ shown++;
+      const b=document.createElement('button'); b.className='song'+(sg.featured?' feat':''); b.dataset.id=sg.id;
+      b.innerHTML=`<b></b>${sg.featured?'<em>FIRST</em>':''}<i class="lvl ${sg.level}">${sg.level}</i>`;
+      b.firstChild.textContent=sg.title; const sm=document.createElement('small'); sm.textContent=sg.subtitle||''; b.firstChild.appendChild(sm);
+      b.onclick=()=>{ sheet.classList.remove('show'); startSong(sg); }; list.appendChild(b); }
+  }
+  if(!shown) list.innerHTML='<p class="none">No songs match.</p>';
+}
+renderList();
+$('songq').addEventListener('input',e=>renderList(e.target.value));
 $('songsBtn').onclick=()=>sheet.classList.add('show');
 $('sheetX').onclick=()=>sheet.classList.remove('show');
 sheet.addEventListener('pointerdown',e=>{ if(e.target===sheet) sheet.classList.remove('show'); });
@@ -307,6 +328,7 @@ $('ldemo').onclick=()=>{
   const last=L.steps[L.steps.length-1];
   L.demo.push(setTimeout(()=>{ stopDemo(); L.pos=0; render(true); window.__demoDone=true; }, (last.beat+last.dur)*spb+300));
 };
+window.__piano={startSong,keyDown,keyUp,L,songs:SONGS};
 $('lrestart').onclick=restart; $('lexit').onclick=exitSong;
 $('lmode').onclick=()=>{ L.follow=!L.follow; $('lmode').textContent=L.follow?'Tempo':'Wait'; $('lmode').classList.toggle('on',L.follow); clearTimeout(L.timer); };
 const _labels = labels; labels = function(){ _labels(); if(L && L.song) render(); };
