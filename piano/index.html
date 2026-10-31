@@ -32,6 +32,31 @@ html,body{height:100%;overflow:hidden;background:#111;color:#eee;font:600 14px s
 .b.down{background:linear-gradient(#7a5a1a,#4a360c)}
 .k span{pointer-events:none}
 .nolabels .k span{display:none}
+
+#songsBtn.on,#lbar button.on{background:#3aa0c7;color:#111}
+.k.next{box-shadow:inset 0 0 0 3px #39d0ff,0 0 18px #39d0ffcc;z-index:3}
+.w.next{z-index:1;background:linear-gradient(#bfefff,#7fdcff)}
+.b.next{background:linear-gradient(#1b8fbf,#0b5f86)}
+.w.after{background:linear-gradient(#f4f4f0,#dff5ec)}.b.after{background:linear-gradient(#2a4a40,#123028)}
+.k.after{box-shadow:inset 0 0 0 2px #5fdca099}
+.k.pulse{animation:pulse .3s}@keyframes pulse{0%{transform:scale(.94)}100%{transform:scale(1)}}
+.k.wrong{background:linear-gradient(#ffb0b0,#e06060)!important;transition:none}
+#lbar{display:none;flex:0 0 auto;height:34px;align-items:center;gap:6px;padding:0 8px;background:#14232a}
+#lbar.show{display:flex}
+#lbar button{color:#eee;background:#24404a;border:0;border-radius:8px;height:28px;padding:0 10px;font:inherit}
+#ltitle{max-width:28%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.85}
+#lprog{flex:1;height:8px;background:#0006;border-radius:4px;overflow:hidden;min-width:40px}
+#lprog i{display:block;height:100%;width:0;background:#39d0ff;transition:width .15s}
+#lstep{min-width:86px;text-align:right;font-variant-numeric:tabular-nums}
+#sheet{display:none;position:fixed;inset:0;z-index:8;background:#000a;align-items:flex-end;justify-content:center}
+#sheet.show{display:flex}
+#sheet .panel{background:#1d1d1d;width:min(640px,100%);max-height:88%;overflow:auto;border-radius:16px 16px 0 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom));touch-action:pan-y}
+#sheet h2{font-size:16px;margin:2px 4px 10px;display:flex;justify-content:space-between;align-items:center}
+#sheet h2 button{background:#333;color:#eee;border:0;border-radius:8px;height:34px;width:40px;font:inherit}
+.song{display:flex;width:100%;align-items:center;gap:10px;text-align:left;background:#2a2a2a;color:#eee;border:0;border-radius:10px;padding:12px 14px;margin:0 0 8px;font:inherit;font-size:15px}
+.song small{display:block;opacity:.6;font-weight:500;font-size:12px}.song b{flex:1}
+.song.feat{background:#173847;box-shadow:inset 0 0 0 2px #39d0ff}
+.song em{font-style:normal;font-size:11px;background:#39d0ff;color:#111;border-radius:6px;padding:2px 6px}
 #rot{display:none;position:fixed;inset:0;z-index:9;background:#111;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;font-size:18px}
 #rot div{font-size:54px;animation:r 2s infinite}
 @keyframes r{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
@@ -45,13 +70,18 @@ html,body{height:100%;overflow:hidden;background:#111;color:#eee;font:600 14px s
   <button id="lab">C D E</button>
   <button id="od" aria-label="Octave down">−</button><span id="oct">C4</span><button id="ou" aria-label="Octave up">+</button>
   <button id="sus">Sustain</button>
+  <button id="songsBtn">♪ Songs</button>
   <input id="vol" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume">
   <span class="sp"></span>
   <button id="fs" aria-label="Fullscreen" hidden>⛶</button>
  </div>
+ <div id="lbar"><span id="ltitle"></span><div id="lprog"><i></i></div><span id="lstep"></span>
+  <button id="lmode" title="Wait for me / follow the tempo">Wait</button><button id="ldemo">▶ Listen</button><button id="lrestart">↺</button><button id="lexit" aria-label="Exit song">✕</button></div>
  <div id="kb"></div>
 </div>
+<div id="sheet"><div class="panel"><h2>Learn a song <button id="sheetX" aria-label="Close">✕</button></h2><div id="songlist"></div></div></div>
 <div id="rot"><div>📱</div>Rotate your phone to play</div>
+<script src="songs.js?v1"></script>
 <script>
 (() => {
 const kb = document.getElementById('kb');
@@ -147,7 +177,7 @@ function release(i, time=0.35){
   v.oscs.forEach(o=>{ try{o.stop(t+time+0.05)}catch(e){} });
   voices.delete(i);
 }
-function keyDown(i){ held.add(i); noteOn(i); }
+function keyDown(i){ held.add(i); noteOn(i); learnHit(i); }
 function keyUp(i){ held.delete(i); keys[i]?.classList.remove('down'); if (!sustain) release(i); }
 // ---------- pointers (multi-touch + glissando) ----------
 const ptr = new Map();          // pointerId -> key idx
@@ -177,7 +207,7 @@ function up(e){
 }
 ['pointerup','pointercancel','pointerleave'].forEach(t=>kb.addEventListener(t,up));
 // block gestures / menus
-['touchstart','touchmove','gesturestart','dblclick'].forEach(t=>document.addEventListener(t,e=>{ if(!e.target.closest('button,a,input')) e.preventDefault(); },{passive:false}));
+['touchstart','touchmove','gesturestart','dblclick'].forEach(t=>document.addEventListener(t,e=>{ if(!e.target.closest("button,a,input,#sheet .panel")) e.preventDefault(); },{passive:false}));
 document.addEventListener('contextmenu',e=>e.preventDefault());
 // unlock on first touch (iOS)
 const unlock = ()=>{ audio(); const b=ctx.createBuffer(1,1,22050), s=ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination); s.start(0); };
@@ -213,6 +243,73 @@ addEventListener('keyup', e=>{
   if (i>=0 && kdown.has(i)){ kdown.delete(i); keyUp(i); }
 });
 addEventListener('blur', ()=>{ [...held].forEach(keyUp); kdown.clear(); ptr.clear(); });
+// ---------- learn mode ----------
+const SONGS = window.PIANO_SONGS || [];
+const toMidi = s => { const m = /^([A-G])(#|b)?(\d)$/.exec(s); return (m[3]*1+1)*12 + [0,2,4,5,7,9,11]['CDEFGAB'.indexOf(m[1])] + (m[2]==='#'?1:m[2]==='b'?-1:0); };
+const L = { song:null, steps:[], pos:0, follow:false, demo:null, timer:null };
+window.__learn = L;
+const sheet = $('sheet'), list = $('songlist');
+SONGS.forEach((sg,k)=>{ const b=document.createElement('button'); b.className='song'+(sg.featured?' feat':'');
+  b.innerHTML=`<b>${sg.title}<small>${sg.subtitle||''}</small></b>${k===0?'<em>FIRST</em>':''}`; b.onclick=()=>{ sheet.classList.remove('show'); startSong(sg); }; list.appendChild(b); });
+$('songsBtn').onclick=()=>sheet.classList.add('show');
+$('sheetX').onclick=()=>sheet.classList.remove('show');
+sheet.addEventListener('pointerdown',e=>{ if(e.target===sheet) sheet.classList.remove('show'); });
+function startSong(sg){
+  stopDemo(); L.song=sg;
+  // transpose into C4..C6 by octaves if needed, then pick octave view
+  let ms = sg.notes.filter(x=>!x.rest).map(x=>toMidi(x.note));
+  let t = 0; const lo=Math.min(...ms), hi=Math.max(...ms);
+  if (hi-lo<=24){ while(lo+t<36) t+=12; while(hi+t>96) t-=12; }
+  let sh = Math.max(-3,Math.min(2,Math.floor((lo+t-BASE)/12)));
+  if (hi+t > BASE+sh*12+COUNT-1) sh = Math.min(2, Math.ceil((hi+t-BASE-COUNT+1)/12));
+  shift = sh; labels();
+  L.steps=[]; let beat=0;
+  sg.notes.forEach(x=>{ if(!x.rest) L.steps.push({midi:toMidi(x.note)+t, beat, dur:x.dur}); beat+=x.dur; });
+  $('ltitle').textContent=sg.title; $('lbar').classList.add('show'); $('songsBtn').classList.add('on');
+  restart();
+}
+function restart(){ stopDemo(); L.pos=0; L.t0=null; render(true); }
+function exitSong(){ stopDemo(); L.song=null; L.steps=[]; clearMarks(); $('lbar').classList.remove('show'); $('songsBtn').classList.remove('on'); }
+function clearMarks(){ keys.forEach(k=>k.classList.remove('next','after')); }
+const keyOf = midi => midi-(BASE+shift*12);
+const nm = midi => NAMES[midi%12]+(Math.floor(midi/12)-1);
+function render(pulse){
+  clearMarks(); const n=L.steps.length, st=L.steps[L.pos];
+  $('lprog').firstChild.style.width=(100*L.pos/n)+'%';
+  if (!st){ $('lstep').textContent='Done! 🎉 '+n+'/'+n; return; }
+  $('lstep').textContent=`${nm(st.midi)} • ${L.pos+1}/${n}`;
+  const nx=L.steps[L.pos+1];
+  if (nx && nx.midi!==st.midi) keys[keyOf(nx.midi)]?.classList.add('after');
+  const el=keys[keyOf(st.midi)];
+  if (el){ el.classList.add('next'); if(pulse){ el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); } }
+}
+function learnHit(i){
+  if (!L.song || L.demo || L.pos>=L.steps.length) return;
+  const midi=BASE+shift*12+i, st=L.steps[L.pos];
+  if (midi===st.midi){ L.pos++; if(L.follow) scheduleFollow(); render(true); }
+  else { const el=keys[i]; el.classList.add('wrong'); setTimeout(()=>el.classList.remove('wrong'),180); }
+}
+// follow-the-tempo: if the player doesn't hit the next note in time, it advances anyway
+function scheduleFollow(){
+  clearTimeout(L.timer); const st=L.steps[L.pos-1]; if(!st || L.pos>=L.steps.length) return;
+  const gap=(L.steps[L.pos].beat-st.beat)*60000/L.song.tempo;
+  L.timer=setTimeout(()=>{ if(L.pos<L.steps.length && !L.demo){ L.pos++; render(true); scheduleFollow(); } }, gap*1.6+250);
+}
+function stopDemo(){ clearTimeout(L.timer); if(L.demo){ L.demo.forEach(clearTimeout); L.demo=null; } $('ldemo').textContent='▶ Listen'; }
+$('ldemo').onclick=()=>{
+  if (L.demo){ stopDemo(); render(); return; }
+  if (!L.song) return; audio(); stopDemo(); L.demo=[]; $('ldemo').textContent='■ Stop';
+  const spb=60000/L.song.tempo;
+  L.steps.forEach((st,k)=>{
+    L.demo.push(setTimeout(()=>{ const i=keyOf(st.midi); L.pos=k; render(); if(keys[i]){ noteOn(i,0.8); keys[i].classList.add('down');
+      setTimeout(()=>{ keys[i].classList.remove('down'); if(!sustain) release(i); }, Math.max(90, st.dur*spb*0.9)); } }, st.beat*spb+60));
+  });
+  const last=L.steps[L.steps.length-1];
+  L.demo.push(setTimeout(()=>{ stopDemo(); L.pos=0; render(true); window.__demoDone=true; }, (last.beat+last.dur)*spb+300));
+};
+$('lrestart').onclick=restart; $('lexit').onclick=exitSong;
+$('lmode').onclick=()=>{ L.follow=!L.follow; $('lmode').textContent=L.follow?'Tempo':'Wait'; $('lmode').classList.toggle('on',L.follow); clearTimeout(L.timer); };
+const _labels = labels; labels = function(){ _labels(); if(L && L.song) render(); };
 build();
 })();
 </script>
