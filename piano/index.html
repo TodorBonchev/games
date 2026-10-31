@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Piano">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<title>Piano</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#111;color:#eee;font:600 14px system-ui,-apple-system,sans-serif;
+ user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;overscroll-behavior:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;
+ padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#bar{flex:0 0 auto;height:42px;display:flex;align-items:center;gap:6px;padding:0 8px;background:#1c1c1c}
+#bar a,#bar button{color:#eee;background:#2c2c2c;border:0;border-radius:8px;height:32px;min-width:38px;padding:0 10px;font:inherit;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+#bar button.on{background:#c79a3a;color:#111}
+#oct{min-width:34px;text-align:center;opacity:.8}
+#vol{width:90px;accent-color:#c79a3a}
+.sp{flex:1}
+#bar [hidden]{display:none}
+#kb{flex:1;position:relative;margin:4px 4px 6px;touch-action:none}
+.k{position:absolute;top:0;border-radius:0 0 8px 8px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;font-size:13px}
+.w{background:linear-gradient(#f4f4f0,#fff 85%,#e6e6e0);height:100%;border:1px solid #999;color:#666;z-index:1}
+.b{background:linear-gradient(#333,#111);height:60%;z-index:2;color:#aaa;font-size:10px;border:1px solid #000;box-shadow:0 3px 4px #0008}
+.w.down{background:linear-gradient(#e2d2a8,#f0dca8)}
+.b.down{background:linear-gradient(#7a5a1a,#4a360c)}
+.k span{pointer-events:none}
+.nolabels .k span{display:none}
+#rot{display:none;position:fixed;inset:0;z-index:9;background:#111;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;font-size:18px}
+#rot div{font-size:54px;animation:r 2s infinite}
+@keyframes r{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
+@media (orientation:portrait) and (max-width:820px){#rot{display:flex}}
+</style>
+</head>
+<body>
+<div id="app">
+ <div id="bar">
+  <a href="../" aria-label="Back to games">←</a>
+  <button id="lab">C D E</button>
+  <button id="od" aria-label="Octave down">−</button><span id="oct">C4</span><button id="ou" aria-label="Octave up">+</button>
+  <button id="sus">Sustain</button>
+  <input id="vol" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume">
+  <span class="sp"></span>
+  <button id="fs" aria-label="Fullscreen" hidden>⛶</button>
+ </div>
+ <div id="kb"></div>
+</div>
+<div id="rot"><div>📱</div>Rotate your phone to play</div>
+<script>
+(() => {
+const kb = document.getElementById('kb');
+const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const SOLF = ['Do','Do#','Re','Re#','Mi','Fa','Fa#','Sol','Sol#','La','La#','Si'];
+const BASE = 60;                // C4
+const COUNT = 25;               // C4..C6
+let shift = 0, labelMode = 0, sustain = false;
+const keys = [];                // {el, idx}
+// ---------- layout ----------
+const whites = []; for (let i=0;i<COUNT;i++) if (![1,3,6,8,10].includes(i%12)) whites.push(i);
+function build(){
+  kb.innerHTML=''; keys.length=0;
+  const ww = 100/whites.length;
+  let wi = 0;
+  for (let i=0;i<COUNT;i++){
+    const black = [1,3,6,8,10].includes(i%12);
+    const el = document.createElement('div');
+    el.className = 'k ' + (black?'b':'w');
+    el.dataset.i = i;
+    if (black){ el.style.left = (wi*ww - ww*0.31)+'%'; el.style.width = (ww*0.62)+'%'; }
+    else { el.style.left = (wi*ww)+'%'; el.style.width = ww+'%'; wi++; }
+    el.appendChild(document.createElement('span'));
+    kb.appendChild(el); keys[i]=el;
+  }
+  labels();
+}
+function labels(){
+  keys.forEach((el,i)=>{
+    const m = BASE+shift*12+i, n = m%12, o = Math.floor(m/12)-1;
+    el.firstChild.textContent = labelMode===1 ? SOLF[n] : NAMES[n]+o;
+  });
+  kb.classList.toggle('nolabels', labelMode===2);
+  document.getElementById('lab').textContent = ['C D E','Do Re Mi','No labels'][labelMode];
+  document.getElementById('oct').textContent = 'C'+(4+shift);
+}
+// ---------- audio ----------
+let ctx, master, comp;
+function audio(){
+  if (!ctx){
+    ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
+    comp = ctx.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4;
+    master = ctx.createGain(); master.gain.value = vol.value;
+    master.connect(comp).connect(ctx.destination);
+  }
+  if (ctx.state !== 'running') ctx.resume();
+  return ctx;
+}
+const voices = new Map();       // key idx -> voice
+const held = new Set();         // key idx physically held
+function noteOn(i, vel=0.9){
+  const c = audio(), t = c.currentTime;
+  if (voices.has(i)) release(i, 0.03);
+  const midi = BASE+shift*12+i, f = 440*Math.pow(2,(midi-69)/12);
+  const out = c.createGain(), lp = c.createBiquadFilter();
+  lp.type='lowpass'; lp.Q.value=0.7;
+  lp.frequency.setValueAtTime(Math.min(16000, f*10), t);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(600, f*2.5), t+1.6);
+  const decay = 1.2 + 5*Math.pow(0.97, midi-48);   // low notes ring longer
+  const peak = 0.32*vel;
+  out.gain.setValueAtTime(0.0001, t);
+  out.gain.linearRampToValueAtTime(peak, t+0.004);
+  out.gain.exponentialRampToValueAtTime(peak*0.45, t+0.25);
+  out.gain.exponentialRampToValueAtTime(0.0001, t+decay);
+  const parts = [[1,1,0],[1,0.5,6],[2,0.38,-4],[3,0.16,3],[4,0.1,-2],[5,0.05,4],[6,0.03,0]];
+  const oscs = [];
+  for (const [h,a,det] of parts){
+    if (f*h > 18000) continue;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = h===1 ? 'triangle' : 'sine';
+    o.frequency.value = f*h*(1+0.0004*h*h);  // slight inharmonicity
+    o.detune.value = det;
+    g.gain.setValueAtTime(a, t);
+    g.gain.exponentialRampToValueAtTime(a*0.2+0.0001, t+decay*0.6/h);
+    o.connect(g).connect(lp); o.start(t); o.stop(t+decay+0.1); oscs.push(o);
+  }
+  // hammer click
+  const nb = c.createBuffer(1, c.sampleRate*0.03|0, c.sampleRate), d = nb.getChannelData(0);
+  for (let k=0;k<d.length;k++) d[k]=(Math.random()*2-1)*Math.pow(1-k/d.length,3);
+  const ns = c.createBufferSource(), ng = c.createGain(), nf = c.createBiquadFilter();
+  ns.buffer=nb; nf.type='bandpass'; nf.frequency.value=Math.min(8000,f*4); ng.gain.value=0.06*vel;
+  ns.connect(nf).connect(ng).connect(out); ns.start(t);
+  lp.connect(out).connect(master);
+  voices.set(i, {out, oscs});
+  keys[i]?.classList.add('down');
+  window.__notes && window.__notes.push(NAMES[midi%12]+(Math.floor(midi/12)-1));
+}
+function release(i, time=0.35){
+  const v = voices.get(i); if (!v) return;
+  const t = ctx.currentTime;
+  v.out.gain.cancelScheduledValues(t);
+  v.out.gain.setTargetAtTime(0.0001, t, time/4);
+  v.oscs.forEach(o=>{ try{o.stop(t+time+0.05)}catch(e){} });
+  voices.delete(i);
+}
+function keyDown(i){ held.add(i); noteOn(i); }
+function keyUp(i){ held.delete(i); keys[i]?.classList.remove('down'); if (!sustain) release(i); }
+// ---------- pointers (multi-touch + glissando) ----------
+const ptr = new Map();          // pointerId -> key idx
+function keyAt(x,y){
+  const el = document.elementFromPoint(x,y);
+  const k = el && el.closest && el.closest('.k');
+  return k ? +k.dataset.i : -1;
+}
+kb.addEventListener('pointerdown', e=>{
+  e.preventDefault(); audio();
+  try{ kb.releasePointerCapture?.(e.pointerId) }catch(_){}
+  const i = keyAt(e.clientX,e.clientY); ptr.set(e.pointerId,i);
+  if (i>=0) keyDown(i);
+});
+kb.addEventListener('pointermove', e=>{
+  if (!ptr.has(e.pointerId)) return;
+  const i = keyAt(e.clientX,e.clientY), prev = ptr.get(e.pointerId);
+  if (i===prev) return;
+  ptr.set(e.pointerId,i);
+  if (prev>=0 && ![...ptr.values()].includes(prev)) keyUp(prev);
+  if (i>=0) keyDown(i);
+});
+function up(e){
+  if (!ptr.has(e.pointerId)) return;
+  const prev = ptr.get(e.pointerId); ptr.delete(e.pointerId);
+  if (prev>=0 && ![...ptr.values()].includes(prev)) keyUp(prev);
+}
+['pointerup','pointercancel','pointerleave'].forEach(t=>kb.addEventListener(t,up));
+// block gestures / menus
+['touchstart','touchmove','gesturestart','dblclick'].forEach(t=>document.addEventListener(t,e=>{ if(!e.target.closest('button,a,input')) e.preventDefault(); },{passive:false}));
+document.addEventListener('contextmenu',e=>e.preventDefault());
+// unlock on first touch (iOS)
+const unlock = ()=>{ audio(); const b=ctx.createBuffer(1,1,22050), s=ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination); s.start(0); };
+['touchend','pointerdown','keydown'].forEach(t=>document.addEventListener(t,unlock,{once:true,capture:true}));
+// ---------- controls ----------
+const $ = id=>document.getElementById(id);
+const vol = $('vol');
+vol.addEventListener('input',()=>{ if(master) master.gain.value = vol.value; });
+$('lab').onclick = ()=>{ labelMode=(labelMode+1)%3; labels(); };
+$('od').onclick = ()=>{ if(shift>-3){ shift--; labels(); } };
+$('ou').onclick = ()=>{ if(shift<2){ shift++; labels(); } };
+$('sus').onclick = ()=>{ sustain=!sustain; $('sus').classList.toggle('on',sustain);
+  if(!sustain) [...voices.keys()].forEach(i=>{ if(!held.has(i)) release(i); }); };
+const fsb = $('fs'), root = document.documentElement;
+if ((root.requestFullscreen || root.webkitRequestFullscreen) && !/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+  fsb.hidden = false;
+  fsb.onclick = ()=>{ if (document.fullscreenElement) document.exitFullscreen();
+    else (root.requestFullscreen||root.webkitRequestFullscreen).call(root).then(()=>screen.orientation?.lock?.('landscape').catch(()=>{})).catch(()=>{}); };
+}
+// ---------- desktop keyboard ----------
+const MAP = 'zsxdcvgbhnjmq2w3er5t6y7ui';   // 25 keys C4..C6
+const kdown = new Set();
+addEventListener('keydown', e=>{
+  if (e.repeat || e.ctrlKey || e.metaKey) return;
+  if (e.key===' '){ e.preventDefault(); $('sus').click(); return; }
+  if (e.key==='ArrowLeft') return $('od').click();
+  if (e.key==='ArrowRight') return $('ou').click();
+  const i = MAP.indexOf(e.key.toLowerCase());
+  if (i>=0 && !kdown.has(i)){ kdown.add(i); keyDown(i); }
+});
+addEventListener('keyup', e=>{
+  const i = MAP.indexOf(e.key.toLowerCase());
+  if (i>=0 && kdown.has(i)){ kdown.delete(i); keyUp(i); }
+});
+addEventListener('blur', ()=>{ [...held].forEach(keyUp); kdown.clear(); ptr.clear(); });
+build();
+})();
+</script>
+</body>
+</html>
