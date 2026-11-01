@@ -14,7 +14,7 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 // sample fetches deliberately blocked in the offline test log network errors; ignore only those
-page.on('console', m => m.type() === 'error' && !(/Failed to load resource/.test(m.text()) && /midi-js-soundfonts/.test(m.location().url)) && errors.push(m.text()));
+page.on('console', m => m.type() === 'error' && !(/Failed to load resource/.test(m.text()) && /midi-js-soundfonts|salamander/.test(m.location().url)) && errors.push(m.text()));
 let passed = 0;
 const t = async (name, fn) => { await fn(); passed++; console.log('ok -', name); };
 await page.goto(URL);
@@ -172,6 +172,22 @@ await t('Exit leaves song mode', async () => {
   assert.equal(await page.locator('#kb .k.next').count(), 0);
 });
 
+await t('Grand piano: Salamander samples load, touch velocity shapes gain + brightness, damper release is gradual', async () => {
+  await page.waitForFunction(() => __sound.id === 'grand' && __sound.state === 'ready', null, { timeout: 30000 });
+  const urls = await page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name).filter(u => /salamander/.test(u)));
+  assert.ok(urls.length >= 4 && urls.every(u => u.startsWith('https://tonejs.github.io/audio/salamander/')), 'salamander sample urls');
+  const box = await page.locator('#kb .k[data-i="0"]').boundingBox();
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height * 0.15);
+  const soft = await page.evaluate(() => __lastVoice);
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height * 0.92);
+  const loud = await page.evaluate(() => __lastVoice);
+  assert.ok(soft.sampled && loud.sampled, 'sampled voices');
+  assert.ok(loud.peak > soft.peak * 1.5, `velocity changes gain ${soft.peak} -> ${loud.peak}`);
+  assert.ok(loud.cutoff > soft.cutoff, 'louder is brighter');
+  const rel = await page.evaluate(() => __lastRelease);
+  assert.ok(rel.dur >= 0.15 && rel.dur <= 0.45 && rel.tau > 0.03, `release ${JSON.stringify(rel)}`);
+});
+
 await t('Sound picker: present, opens, switches, remembered, falls back when samples fail', async () => {
   assert.ok(await page.isVisible('#sndBtn'));
   await page.tap('#sndBtn');
@@ -187,7 +203,7 @@ await t('Sound picker: present, opens, switches, remembered, falls back when sam
   await page.reload();
   assert.equal(await page.evaluate(() => __sound.id), 'church');
   // offline: every sample request fails -> built-in synth still plays
-  await page.route('**/midi-js-soundfonts/**', r => r.abort());
+  await page.route('**/midi-js-soundfonts/**', r => r.abort()); await page.route('**/salamander/**', r => r.abort());
   await page.tap('#sndBtn'); await page.tap('#sndMenu .opt[data-snd="harpsi"]');
   await page.waitForFunction(() => __sound.state === 'failed', null, { timeout: 20000 });
   await page.evaluate(() => { window.__notes = []; });
@@ -196,10 +212,11 @@ await t('Sound picker: present, opens, switches, remembered, falls back when sam
   await page.tap('#sndBtn');
   assert.match(await page.textContent('#sndStat'), /built-in synth/);
   if (shot) await page.screenshot({ path: 'piano-sounds-screenshot.png' });
+  const rv = await page.evaluate(() => __sound.reverb);
   await page.tap('#rvb');
-  assert.equal(await page.evaluate(() => __sound.reverb), true);
+  assert.equal(await page.evaluate(() => __sound.reverb), !rv);
   await page.tap('#sndMenu .opt[data-snd="grand"]');
-  await page.unroute('**/midi-js-soundfonts/**');
+  await page.unroute('**/midi-js-soundfonts/**'); await page.unroute('**/salamander/**');
 });
 
 if (shot) { await pick('imperial'); await tapNext(); await tapNext(); await page.screenshot({ path: 'piano-wait-screenshot.png' }); }

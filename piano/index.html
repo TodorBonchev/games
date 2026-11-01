@@ -98,6 +98,7 @@ body.staffon #staff.has{display:block}
 #sndMenu #rvb{background:#2a2a2a;color:#eee;border:0;border-radius:8px;height:32px;padding:0 12px;font:inherit}#sndMenu #rvb.on{background:#c79a3a;color:#111}
 #sndMenu .credit{grid-column:1/-1;font-size:10px;font-weight:500;opacity:.55;padding:2px 4px}
 #sndMenu .credit a{color:inherit}
+#sndMenu .credit .src{white-space:nowrap;text-decoration:none;opacity:.85;margin-left:4px}
 #sndStat{font-size:11px;opacity:.7;font-weight:500}
 </style>
 </head>
@@ -126,9 +127,9 @@ body.staffon #staff.has{display:block}
  <div class="row"><button id="dagain">↻ Play again</button><button id="dsongs">♪ Songs</button><button id="dclose">Close</button></div></div></div>
 <div id="sndMenu" role="dialog" aria-label="Choose a sound"><div class="panel"><div id="sndList" style="display:contents"></div>
  <div class="row"><button id="rvb" aria-pressed="false">Reverb</button><span id="sndStat"></span></div>
- <div class="credit">Sampled sounds: FluidR3_GM SoundFont by Frank Wen, via <a href="https://github.com/gleitz/midi-js-soundfonts" target="_blank" rel="noopener">gleitz/midi-js-soundfonts</a> — CC BY 3.0. Falls back to the built-in synth when offline.</div></div></div>
+ <div class="credit">Grand &amp; Old Piano: <a href="https://archive.org/details/SalamanderGrandPianoV3" target="_blank" rel="noopener">Salamander Grand Piano</a> by Alexander Holm (CC BY 3.0), via <a href="https://github.com/Tonejs/audio" target="_blank" rel="noopener">Tone.js audio</a>. Other sounds: FluidR3_GM SoundFont by Frank Wen, via <a href="https://github.com/gleitz/midi-js-soundfonts" target="_blank" rel="noopener">gleitz/midi-js-soundfonts</a> — CC BY 3.0. Falls back to the built-in synth when offline. <a class="src" href="https://github.com/TodorBonchev/games" target="_blank" rel="noopener" aria-label="Source code on GitHub"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" style="vertical-align:-2px;fill:currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.6 7.6 0 0 1 8 3.87c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg> Source</a></div></div></div>
 <div id="rot"><div>📱</div>Rotate your phone to play<button id="rotgo">Play in portrait</button></div>
-<script src="songs.js?v5"></script>
+<script src="songs.js?v6"></script>
 <script>
 (() => {
 const kb = document.getElementById('kb');
@@ -168,8 +169,8 @@ function labels(){
 // ---------- audio ----------
 const SF = 'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/';   // CC BY 3.0
 const SOUNDS = [
-  {id:'grand',  name:'Grand Piano',    sub:'Concert grand', gm:'acoustic_grand_piano', rel:0.3},
-  {id:'old',    name:'Old Piano',      sub:'Honky-tonk upright', gm:'honkytonk_piano', rel:0.25, vintage:true},
+  {id:'grand',  name:'Grand Piano',    sub:'Salamander concert grand', gm:'salamander', sal:true, rel:0.3},
+  {id:'old',    name:'Old Piano',      sub:'Honky-tonk upright', gm:'salamander', sal:true, rel:0.25, vintage:true},
   {id:'epiano', name:'Electric Piano', sub:'Rhodes-style', gm:'electric_piano_1', rel:0.3},
   {id:'church', name:'Church Organ',   sub:'Pipe organ', gm:'church_organ', loop:true, rel:0.18},
   {id:'jazz',   name:'Jazz Organ',     sub:'Hammond drawbars', gm:'drawbar_organ', loop:true, rel:0.06},
@@ -183,46 +184,84 @@ const LO = 48, HI = 96, STEP = 3;   // C3..C7, one sample every 3 semitones (≤
 const MAXV = 24;
 let ctx, master, comp, wet, dry, conv;
 let soundId = (()=>{ try{ const v=localStorage.getItem('piano.sound'); return SOUNDS.some(x=>x.id===v)?v:'grand'; }catch(e){ return 'grand'; } })();
-let reverbOn = (()=>{ try{ return localStorage.getItem('piano.reverb')==='1'; }catch(e){ return false; } })();
+let reverbOn = (()=>{ try{ return localStorage.getItem('piano.reverb')!=='0'; }catch(e){ return true; } })();   // small hall, low wet, on by default
+const SAL = 'https://tonejs.github.io/audio/salamander/';   // Salamander Grand Piano V3, Alexander Holm, CC BY 3.0
+const SALN = ['C','Ds','Fs','A'], SAL_CACHE = 'piano-samples-v1';
+let limiter, resSend, decoder;
 const banks = {};                  // id -> {state:'loading'|'ready'|'failed', buf:Map(midi->AudioBuffer)}
 function audio(){
   if (!ctx){
     ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
-    comp = ctx.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4;
+    comp = ctx.createDynamicsCompressor(); comp.threshold.value=-18; comp.knee.value=12; comp.ratio.value=3; comp.attack.value=0.005; comp.release.value=0.2;
+    limiter = ctx.createDynamicsCompressor(); limiter.threshold.value=-2; limiter.knee.value=0; limiter.ratio.value=20; limiter.attack.value=0.001; limiter.release.value=0.08;
     master = ctx.createGain(); master.gain.value = vol.value;
     dry = ctx.createGain(); wet = ctx.createGain(); conv = ctx.createConvolver();
-    conv.buffer = impulse(ctx, 2.2); wet.gain.value = reverbOn ? 0.28 : 0;
+    conv.buffer = impulse(ctx, 1.9); wet.gain.value = reverbOn ? 0.2 : 0;
+    resSend = ctx.createGain(); resSend.gain.value = 0;   // sympathetic string ring while sustain is down
     master.connect(dry).connect(comp); master.connect(conv).connect(wet).connect(comp);
-    comp.connect(ctx.destination);
+    master.connect(resSend).connect(conv);
+    comp.connect(limiter).connect(ctx.destination);
     loadSound(soundId);
   }
   if (ctx.state !== 'running') ctx.resume();
   return ctx;
 }
 function impulse(c, sec){
-  const n = c.sampleRate*sec|0, b = c.createBuffer(2, n, c.sampleRate);
-  for (let ch=0; ch<2; ch++){ const d=b.getChannelData(ch); for (let k=0;k<n;k++) d[k]=(Math.random()*2-1)*Math.pow(1-k/n,3.2); }
+  // small concert hall: sparse early reflections, then a diffuse tail that darkens as it decays
+  const sr = c.sampleRate, n = sr*sec|0, b = c.createBuffer(2, n, sr), pre = sr*0.012|0;
+  for (let ch=0; ch<2; ch++){
+    const d = b.getChannelData(ch); let lp = 0;
+    for (let r=0; r<9; r++){ const k = pre + (sr*(0.006+Math.random()*0.07)|0); if (k<n) d[k] += (Math.random()<.5?-1:1)*(0.5-r*0.04); }
+    for (let k=pre; k<n; k++){
+      const x = (k-pre)/(n-pre), env = Math.exp(-6.9*x) * Math.min(1,(k-pre)/(sr*0.02));
+      const a = 0.55 - 0.45*x;                     // one-pole lowpass closes over time
+      lp += a*((Math.random()*2-1) - lp); d[k] += lp*env*0.6;
+    }
+  }
   return b;
 }
 const cur = ()=>SOUNDS.find(x=>x.id===soundId);
-function decode(ab){ return new Promise((res,rej)=>{ const p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }); }
-async function fetchBuf(url){
+function decode(ab){
+  // before the first tap there is no AudioContext (iOS); decode on a tiny offline context so samples are ready anyway
+  const d = ctx || decoder || (decoder = new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1, 1, 44100));
+  return new Promise((res,rej)=>{ const p = d.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); });
+}
+async function getBytes(url, cache){
+  if (cache && window.caches && location.protocol==='https:'){
+    try { const c = await caches.open(SAL_CACHE), hit = await c.match(url); if (hit) return await hit.arrayBuffer();
+      const r = await fetchT(url); c.put(url, r.clone()).catch(()=>{}); return await r.arrayBuffer(); } catch(e){}
+  }
+  return (await fetchT(url)).arrayBuffer();
+}
+async function fetchT(url){
   const ac = window.AbortController ? new AbortController() : null;
-  const to = setTimeout(()=>ac && ac.abort(), 12000);
-  try { const r = await fetch(url, ac ? {signal:ac.signal} : {}); if (!r.ok) throw new Error('HTTP '+r.status); return await decode(await r.arrayBuffer()); }
+  const to = setTimeout(()=>ac && ac.abort(), 15000);
+  try { const r = await fetch(url, ac ? {signal:ac.signal, mode:'cors'} : {}); if (!r.ok) throw new Error('HTTP '+r.status); return r; }
   finally { clearTimeout(to); }
 }
+async function fetchBuf(url, cache){ return decode(await getBytes(url, cache)); }
 function loadSound(id){
   const sd = SOUNDS.find(x=>x.id===id);
-  if (!sd || !sd.gm || !ctx || banks[id]) { status(); return; }
+  if (!sd || !sd.gm || banks[id] || (!ctx && !sd.sal)) { status(); return; }
+  if (sd.sal && id!=='grand' && banks.grand && banks.grand.state!=='failed'){ banks[id] = banks.grand; status(); return; }   // Old Piano shares the grand's samples
   const bank = banks[id] = {state:'loading', buf:new Map()};
+  if (sd.sal) banks.grand = banks.old = bank;
   status();
   const jobs = [];
-  for (let m=LO; m<=HI; m+=STEP){
+  if (sd.sal){
+    // A0..C8 in minor thirds, nearest to middle C first so the main octaves are ready soonest
+    const ms = []; for (let m=21; m<=108; m+=3) ms.push(m);
+    ms.sort((a,b)=>Math.abs(a-62)-Math.abs(b-62));
+    for (const m of ms){
+      const url = SAL + SALN[(m%12)/3] + (Math.floor(m/12)-1) + '.mp3';
+      jobs.push(fetchBuf(url, true).then(b=>{ bank.buf.set(m,b); if (bank.state==='loading' && [57,60,63,66].every(k=>bank.buf.has(k))) { bank.state='ready'; status(); } }, ()=>{}));
+    }
+  }
+  for (let m=LO; m<=HI && !sd.sal; m+=STEP){
     const url = SF + sd.gm + '-mp3/' + FL[m%12] + (Math.floor(m/12)-1) + '.mp3';
     jobs.push(fetchBuf(url).then(b=>bank.buf.set(m,b), ()=>{}));
   }
-  Promise.all(jobs).then(()=>{ bank.state = bank.buf.size >= 3 ? 'ready' : 'failed'; if (bank.state==='failed') delete banks[id].buf; status(); });
+  Promise.all(jobs).then(()=>{ bank.state = bank.buf.size >= 3 ? 'ready' : 'failed'; if (bank.state==='failed') bank.buf.clear(); status(); });
 }
 function status(){
   const b = banks[soundId], sd = cur(), btn = $('sndBtn');
@@ -236,9 +275,9 @@ function status(){
 const voices = new Map();       // key idx -> voice
 const held = new Set();         // key idx physically held
 const tails = [];               // released voices still ringing (for polyphony cap)
-function noteOn(i, vel=0.9){
+function noteOn(i, vel=0.75){
   const c = audio();
-  if (voices.has(i)) release(i, 0.03);
+  if (voices.has(i)) release(i, 0.06, true);   // re-strike: quick crossfade, no click
   const midi = BASE+shift*12+i;
   const sd = cur(), b = banks[soundId];
   const v = (sd.gm && b && b.state==='ready') ? sampleVoice(c, midi, vel, sd, b) : synthVoice(c, midi, vel);
@@ -253,10 +292,16 @@ function sampleVoice(c, midi, vel, sd, b){
   for (const m of b.buf.keys()){ const d = Math.abs(m-midi); if (d<bd){ bd=d; best=m; } }
   const buf = b.buf.get(best), rate = Math.pow(2,(midi-best)/12), t = c.currentTime;
   const out = c.createGain(), srcs = [];
-  const peak = 0.75*vel;
-  out.gain.setValueAtTime(0.0001, t);
-  out.gain.linearRampToValueAtTime(peak, t + (sd.loop ? 0.012 : 0.003));
+  const peak = (sd.sal ? 0.9 : 0.75) * Math.pow(vel, 1.5);
+  out.gain.setValueAtTime(0, t);
+  out.gain.linearRampToValueAtTime(peak, t + (sd.loop ? 0.012 : 0.004));
   let node = out;
+  const vf = c.createBiquadFilter(); vf.type='lowpass'; vf.Q.value=0.5;   // softer = darker, like real hammers
+  const bright = Math.min(18000, 900 + 17000*vel*vel + 6*440*Math.pow(2,(midi-69)/12));
+  vf.frequency.setValueAtTime(bright, t);
+  if (sd.sal) vf.frequency.setTargetAtTime(Math.max(700, bright*0.55), t+0.05, 1.2);
+  vf.connect(node); node = vf;
+  window.__lastVoice = {midi, vel, peak, cutoff:bright, sampled:true};
   if (sd.vintage){       // old upright: duller top end + a slightly out-of-tune second string
     const lp = c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=4200; lp.Q.value=0.5;
     lp.connect(out); node = lp;
@@ -273,10 +318,15 @@ function sampleVoice(c, midi, vel, sd, b){
     n.buffer = noiseBuf(c); nf.type='bandpass'; nf.frequency.value=2500; ng.gain.value=0.025*vel;
     n.connect(nf).connect(ng).connect(out); n.start(t); srcs.push(n);
   }
-  out.connect(master);
+  out.connect(panFor(c, midi)).connect(master);
   const end = t + (sd.loop ? 1e9 : buf.duration/rate + 0.05);
   if (!sd.loop) srcs.forEach(s=>{ try{s.stop(end)}catch(e){} });
-  return {out, srcs, rel:sd.rel, end};
+  return {out, srcs, rel:sd.rel, end, midi, sal:sd.sal};
+}
+function panFor(c, midi){
+  // player's perspective: bass left, treble right, kept subtle
+  if (!c.createStereoPanner) return c.createGain();
+  const p = c.createStereoPanner(); p.pan.value = Math.max(-0.45, Math.min(0.45, (midi-64)/48*0.55)); return p;
 }
 let _nb;
 function noiseBuf(c){ if (_nb) return _nb; const n=c.sampleRate*0.05|0; _nb=c.createBuffer(1,n,c.sampleRate); const d=_nb.getChannelData(0); for(let k=0;k<n;k++) d[k]=(Math.random()*2-1)*Math.pow(1-k/n,4); return _nb; }
@@ -287,7 +337,8 @@ function synthVoice(c, midi, vel){
   lp.frequency.setValueAtTime(Math.min(16000, f*10), t);
   lp.frequency.exponentialRampToValueAtTime(Math.max(600, f*2.5), t+1.6);
   const decay = 1.2 + 5*Math.pow(0.97, midi-48);   // low notes ring longer
-  const peak = 0.32*vel;
+  const peak = 0.38*Math.pow(vel,1.5);
+  window.__lastVoice = {midi, vel, peak, cutoff:Math.min(16000, f*10), sampled:false};
   out.gain.setValueAtTime(0.0001, t);
   out.gain.linearRampToValueAtTime(peak, t+0.004);
   out.gain.exponentialRampToValueAtTime(peak*0.45, t+0.25);
@@ -307,21 +358,27 @@ function synthVoice(c, midi, vel){
   const ns = c.createBufferSource(), ng = c.createGain(), nf = c.createBiquadFilter();
   ns.buffer=noiseBuf(c); nf.type='bandpass'; nf.frequency.value=Math.min(8000,f*4); ng.gain.value=0.06*vel;
   ns.connect(nf).connect(ng).connect(out); ns.start(t);
-  lp.connect(out).connect(master);
-  return {out, srcs, rel:0.35, end:t+decay+0.1};
+  lp.connect(out).connect(panFor(c, midi)).connect(master);
+  return {out, srcs, rel:0.3, end:t+decay+0.1, midi};
 }
-function release(i, time){
+function release(i, time, restrike){
   const v = voices.get(i); if (!v) return;
-  const t = ctx.currentTime, r = time ?? v.rel;
-  v.out.gain.cancelScheduledValues(t);
-  v.out.gain.setValueAtTime(Math.max(0.0001, v.out.gain.value), t);
-  v.out.gain.setTargetAtTime(0.0001, t, r/4);
-  const end = t + r + 0.05;
-  v.srcs.forEach(o=>{ try{o.stop(end)}catch(e){} });
   voices.delete(i);
-  tails.push({end, kill(){ const k=ctx.currentTime; v.out.gain.cancelScheduledValues(k); v.out.gain.setTargetAtTime(0.0001,k,0.008); v.srcs.forEach(o=>{try{o.stop(k+0.04)}catch(e){}}); }});
+  const t = ctx.currentTime;
+  // strings above ~E6 have no dampers on a real piano: let them ring out (unless re-struck / switched)
+  if (time == null && v.midi >= 88 && v.end < t + 60){ tails.push({end:v.end, kill(){ v.out.gain.cancelScheduledValues(ctx.currentTime); v.out.gain.setTargetAtTime(0,ctx.currentTime,0.01); v.srcs.forEach(o=>{try{o.stop(ctx.currentTime+0.06)}catch(e){}}); }}); window.__lastRelease={tau:null, dur:v.end-t, undamped:true}; return; }
+  const r = time ?? v.rel, tau = r/3.5;   // damper: ~95% gone after r seconds, exponential like felt on strings
+  let g = v.out.gain.value;
+  if (!(g > 0)) g = 0;                    // value getter may lag; hold whatever is there
+  v.out.gain.cancelScheduledValues(t);
+  v.out.gain.setValueAtTime(g, t);
+  v.out.gain.setTargetAtTime(0, t, tau);
+  const end = t + r*1.6 + 0.05;
+  v.srcs.forEach(o=>{ try{o.stop(end)}catch(e){} });
+  window.__lastRelease = {tau, dur:r, restrike:!!restrike};
+  tails.push({end, kill(){ const k=ctx.currentTime; v.out.gain.cancelScheduledValues(k); v.out.gain.setTargetAtTime(0,k,0.01); v.srcs.forEach(o=>{try{o.stop(k+0.06)}catch(e){}}); }});
 }
-function keyDown(i){ held.add(i); noteOn(i); learnHit(i); }
+function keyDown(i, vel){ held.add(i); noteOn(i, vel); learnHit(i); }
 function keyUp(i){ held.delete(i); keys[i]?.classList.remove('down'); if (!sustain) release(i); }
 // ---------- pointers (multi-touch + glissando) ----------
 const ptr = new Map();          // pointerId -> key idx
@@ -334,7 +391,7 @@ kb.addEventListener('pointerdown', e=>{
   e.preventDefault(); audio();
   try{ kb.releasePointerCapture?.(e.pointerId) }catch(_){}
   const i = keyAt(e.clientX,e.clientY); ptr.set(e.pointerId,i);
-  if (i>=0) keyDown(i);
+  if (i>=0) keyDown(i, velFrom(e, i));
 });
 kb.addEventListener('pointermove', e=>{
   if (!ptr.has(e.pointerId)) return;
@@ -342,8 +399,16 @@ kb.addEventListener('pointermove', e=>{
   if (i===prev) return;
   ptr.set(e.pointerId,i);
   if (prev>=0 && ![...ptr.values()].includes(prev)) keyUp(prev);
-  if (i>=0) keyDown(i);
+  if (i>=0) keyDown(i, velFrom(e, i)*0.85);   // glissando: a touch lighter
 });
+function velFrom(e, i){
+  // real pressure (pen / Force Touch) when the device reports it; otherwise where on the key you hit:
+  // toward the front (bottom) edge = louder, near the back = softer
+  if ((e.pointerType==='pen' || (e.pressure>0 && e.pressure!==0.5 && e.pressure!==1)) ) return Math.max(0.25, Math.min(1, 0.3 + e.pressure*0.8));
+  const r = keys[i]?.getBoundingClientRect(); if (!r || !r.height) return 0.75;
+  const y = Math.max(0, Math.min(1, (e.clientY - r.top)/r.height));
+  return 0.35 + 0.6*Math.pow(y, 0.8);
+}
 function up(e){
   if (!ptr.has(e.pointerId)) return;
   const prev = ptr.get(e.pointerId); ptr.delete(e.pointerId);
@@ -378,14 +443,16 @@ sndMenu.addEventListener('click', e=>{
 function setSound(id){
   [...voices.keys()].forEach(i=>release(i, 0.05));
   soundId = id; try{ localStorage.setItem('piano.sound', id); }catch(e){}
-  if (banks[id] && banks[id].state==='failed') delete banks[id];
+  for (const k in banks) if (banks[k].state==='failed') delete banks[k];
   if (ctx) loadSound(id); renderSounds(); status();
 }
 $('rvb').onclick = ()=>{ reverbOn=!reverbOn; try{ localStorage.setItem('piano.reverb', reverbOn?'1':'0'); }catch(e){}
-  if (wet) wet.gain.setTargetAtTime(reverbOn?0.28:0, ctx.currentTime, 0.05); renderSounds(); status(); };
+  if (wet) wet.gain.setTargetAtTime(reverbOn?0.2:0, ctx.currentTime, 0.05); renderSounds(); status(); };
 window.__setSound = setSound;
 status();
+loadSound(soundId);   // start fetching + decoding the piano now, before the first tap
 $('sus').onclick = ()=>{ sustain=!sustain; $('sus').classList.toggle('on',sustain);
+  if (resSend) resSend.gain.setTargetAtTime(sustain && cur().sal ? 0.12 : 0, ctx.currentTime, 0.08);
   if(!sustain) [...voices.keys()].forEach(i=>{ if(!held.has(i)) release(i); }); };
 const fsb = $('fs'), root = document.documentElement;
 if ((root.requestFullscreen || root.webkitRequestFullscreen) && !/iPhone|iPad|iPod/.test(navigator.userAgent)) {
@@ -402,7 +469,7 @@ addEventListener('keydown', e=>{
   if (e.key==='ArrowLeft') return $('od').click();
   if (e.key==='ArrowRight') return $('ou').click();
   const i = MAP.indexOf(e.key.toLowerCase());
-  if (i>=0 && !kdown.has(i)){ kdown.add(i); keyDown(i); }
+  if (i>=0 && !kdown.has(i)){ kdown.add(i); keyDown(i, e.shiftKey ? 0.95 : 0.72); }
 });
 addEventListener('keyup', e=>{
   const i = MAP.indexOf(e.key.toLowerCase());
