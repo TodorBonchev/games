@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Piano">
-<link rel="manifest" href="manifest.json?v3">
+<link rel="manifest" href="manifest.json?v4">
 <link rel="apple-touch-icon" href="../icon-180.png">
 <title>Piano</title>
 <style>
@@ -43,7 +43,7 @@ html,body{height:100%;overflow:hidden;background:#111;color:#eee;font:600 14px s
 .k.wrong{background:linear-gradient(#ffb0b0,#e06060)!important;transition:none}
 #lbar{display:none;flex:0 0 auto;height:34px;align-items:center;gap:6px;padding:0 8px;background:#14232a}
 #lbar.show{display:flex}
-#lbar button{color:#eee;background:#24404a;border:0;border-radius:8px;height:28px;padding:0 10px;font:inherit}
+#lbar button{color:#eee;background:#24404a;border:0;border-radius:8px;height:28px;padding:0 10px;font:inherit;white-space:nowrap;flex:0 0 auto}
 #ltitle{max-width:28%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.85}
 #lprog{flex:1;height:8px;background:#0006;border-radius:4px;overflow:hidden;min-width:40px}
 #lprog i{display:block;height:100%;width:0;background:#39d0ff;transition:width .15s}
@@ -77,7 +77,14 @@ html,body{height:100%;overflow:hidden;background:#111;color:#eee;font:600 14px s
 #done .big{font-size:22px}#dstats{opacity:.75;font-weight:500}
 #done .row{display:flex;gap:8px;justify-content:center;margin-top:6px}
 #done button{background:#2c2c2c;color:#eee;border:0;border-radius:8px;height:36px;padding:0 14px;font:inherit}#dagain{background:#3aa0c7!important;color:#111!important}
-@media (max-height:340px){#bar{height:36px}#lbar{height:30px}#lbar button{height:24px;padding:0 7px}#lstep{min-width:60px}}
+#staff{display:none;flex:0 0 64px;margin:4px 4px 0;background:#f6f2e6;border-radius:8px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#staff::-webkit-scrollbar{display:none}
+body.staffon #staff.has{display:block}
+#staff svg{display:block;height:100%}
+#staff .n{color:#1f1f1f;cursor:pointer}#staff .n.played{color:#a3a3a3}#staff .n.cur{color:#1592c9}#staff .n.nxt{color:#21a35e}
+#staff .hit{fill:transparent}#staff .n.cur .hit{fill:#39d0ff33}#staff .n.nxt .hit{fill:#5fdca022}
+#staff .ln{stroke:#555;stroke-width:1}#staff .bm{fill:#1f1f1f}#staff .bm.played{fill:#a3a3a3}
+@media (max-height:340px){#staff{flex-basis:56px}#bar{height:36px}#lbar{height:30px}#lbar button{height:24px;padding:0 7px}#lstep{min-width:60px}}
 </style>
 </head>
 <body>
@@ -95,14 +102,15 @@ html,body{height:100%;overflow:hidden;background:#111;color:#eee;font:600 14px s
  <div id="lbar"><span id="ltitle"></span><div id="lprog"><i></i></div><span id="lstep"></span>
   <span id="lstate" data-state="ready">Ready</span>
   <button id="lplay">▶ Start</button><button id="lstop" aria-label="Stop">■</button>
-  <button id="lmode" title="Wait: the song waits for you. Tempo: it moves on in time">Wait</button><button id="ldemo">♪ Listen</button><button id="lrestart" aria-label="Restart">↺</button><button id="lexit" aria-label="Exit song">✕</button></div>
+  <button id="lmode" title="Wait: the song waits for you. Tempo: it moves on in time">Wait</button><button id="ldemo">♪ Listen</button><button id="lsheet" title="Show the notes on a staff" aria-pressed="false" aria-label="Sheet music">♫</button><button id="lrestart" aria-label="Restart">↺</button><button id="lexit" aria-label="Exit song">✕</button></div>
+ <div id="staff" aria-label="Sheet music"></div>
  <div id="kb"></div>
 </div>
 <div id="sheet"><div class="panel"><h2>Learn a song <input id="songq" type="search" placeholder="Search songs…" autocomplete="off" aria-label="Search songs"> <button id="sheetX" aria-label="Close">✕</button></h2><div id="songlist"></div></div></div>
 <div id="done"><div class="panel"><div class="big">🎉 Well done!</div><div id="dtitle"></div><div id="dstats"></div>
  <div class="row"><button id="dagain">↻ Play again</button><button id="dsongs">♪ Songs</button><button id="dclose">Close</button></div></div></div>
 <div id="rot"><div>📱</div>Rotate your phone to play<button id="rotgo">Play in portrait</button></div>
-<script src="songs.js?v3"></script>
+<script src="songs.js?v4"></script>
 <script>
 (() => {
 const kb = document.getElementById('kb');
@@ -228,7 +236,7 @@ function up(e){
 }
 ['pointerup','pointercancel','pointerleave'].forEach(t=>kb.addEventListener(t,up));
 // block gestures / menus
-['touchstart','touchmove','gesturestart','dblclick'].forEach(t=>document.addEventListener(t,e=>{ if(!e.target.closest("button,a,input,#sheet .panel")) e.preventDefault(); },{passive:false}));
+['touchstart','touchmove','gesturestart','dblclick'].forEach(t=>document.addEventListener(t,e=>{ if(!e.target.closest("button,a,input,#sheet .panel,#staff")) e.preventDefault(); },{passive:false}));
 document.addEventListener('contextmenu',e=>e.preventDefault());
 // unlock on first touch (iOS)
 const unlock = ()=>{ audio(); const b=ctx.createBuffer(1,1,22050), s=ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination); s.start(0); };
@@ -303,14 +311,15 @@ function startSong(sg){
   if (hi+t > BASE+sh*12+COUNT-1) sh = Math.min(2, Math.ceil((hi+t-BASE-COUNT+1)/12));
   shift = sh; _labels();
   L.steps=[]; let beat=0;
-  sg.notes.forEach(x=>{ if(!x.rest) L.steps.push({midi:toMidi(x.note)+t, beat, dur:x.dur}); beat+=x.dur; });
+  sg.notes.forEach(x=>{ if(!x.rest) L.steps.push({midi:toMidi(x.note)+t, beat, dur:x.dur, name:x.note.replace(/\d$/,d=>+d+t/12)}); beat+=x.dur; });
   L.total = beat;
   $('ltitle').textContent=sg.title; $('lbar').classList.add('show'); $('songsBtn').classList.add('on');
+  buildStaff();
   restart();
 }
 function setState(s){ L.state=s; render(); }
 function restart(){ stopDemo(false); clearTimeout(L.timer); allOff(); L.pos=0; L.needShift=true; L.hits=0; L.misses=0; hideDone(); setState('ready'); pulseNext(); }
-function exitSong(){ stopDemo(false); clearTimeout(L.timer); allOff(); hideDone(); L.song=null; L.steps=[]; L.pos=0; L.state='ready'; clearMarks(); $('lbar').classList.remove('show'); $('songsBtn').classList.remove('on'); hint(0); }
+function exitSong(){ stopDemo(false); clearTimeout(L.timer); allOff(); hideDone(); L.song=null; L.steps=[]; L.pos=0; L.state='ready'; clearMarks(); $('lbar').classList.remove('show'); $('songsBtn').classList.remove('on'); hint(0); staffEl.classList.remove('has'); staffEl.innerHTML=''; }
 function clearMarks(){ keys.forEach(k=>k.classList.remove('next','after')); }
 const keyOf = midi => midi-(BASE+shift*12);
 const nm = midi => NAMES[midi%12]+(Math.floor(midi/12)-1);
@@ -339,6 +348,7 @@ function render(){
   $('lmode').textContent = L.follow?'Tempo':'Wait';
   $('lmode').classList.toggle('on',L.follow);
   document.body.dataset.learn = L.state;
+  markStaff(p);
   if (L.state==='listening'){ hint(0); $('lstep').textContent=`${Math.min(L.demoPos+1,n)}/${n}`; return; }
   if (!st){ hint(0); $('lstep').textContent='Done! 🎉 '+n+'/'+n; return; }
   const vis = ensureVisible(st.midi), i = keyOf(st.midi); L.needShift=false;
@@ -424,7 +434,85 @@ $('lexit').onclick=exitSong;
 $('lmode').onclick=()=>{ if(L.state==='listening') return; L.follow=!L.follow; clearTimeout(L.timer); L.timer=null;
   if (L.state==='playing') scheduleFollow(); render(); };
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(L.demo) stopDemo(); pause(); releaseAllKeys(); allOff(); } });
-window.__piano={startSong,keyDown,keyUp,L,songs:SONGS,play,pause,stop,listen,restart,exitSong};
+
+// ---------- sheet music (treble staff, own SVG) ----------
+const staffEl = $('staff'), SP = 7, Y0 = 56;            // SP: line spacing; Y0: y of the bottom line (E4)
+const yOf = pos => Y0 - pos*SP/2;                         // pos: diatonic steps above E4
+let staffOn = false, staffNotes = []; try{ staffOn = localStorage.getItem('piano.sheet')==='1'; }catch(_){}
+function setStaff(on){ staffOn=on; try{ localStorage.setItem('piano.sheet', on?'1':'0'); }catch(_){}
+  document.body.classList.toggle('staffon', on); $('lsheet').classList.toggle('on', on); $('lsheet').setAttribute('aria-pressed', on);
+  if (on && L.song) markStaff(L.state==='listening'?L.demoPos:L.pos, true); }
+$('lsheet').onclick = ()=>setStaff(!staffOn);
+const GLY = d => d>=5.5?['w',1]:d>=3.5?['w',0]:d>=2.75?['h',1]:d>=1.85?['h',0]:d>=1.4?['q',1]:d>=.9?['q',0]:d>=.7?['e',1]:d>=.4?['e',0]:['s',0];
+const CLEF = 'M15 66c-4 0-6-3-5-6 1-2 4-2 5 0 1 2-1 4-3 4 1 2 5 2 7-1 2-4 0-9-3-17l-2-12c-1-6 1-13 5-15 2 4 1 10-4 14-6 5-11 10-11 17 0 7 6 11 12 11 6 0 9-4 9-8 0-5-4-8-8-8-5 0-8 3-8 7 0 2 1 4 3 5-4-1-6-4-6-7 0-5 5-9 11-9 6 0 10 4 10 10 0 6-5 10-12 10-9 0-15-6-15-13 0-8 6-13 12-18 3-3 5-6 4-10-2 1-3 5-2 10l5 31c1 6-2 10-7 10z';
+function buildStaff(){
+  const sg=L.song, meter=sg.meter||4, pick=sg.pickup||0, out=[]; staffNotes=[];
+  let x=64, beat=0, k=0, nextBar = pick>0 ? pick : meter, accs={}, beams=[], grp=[];
+  const flush=()=>{ if (grp.length>1) beams.push(grp); else if (grp.length===1) grp[0].flag=true; grp=[]; };
+  for (const ev of sg.notes){
+    while (beat >= nextBar-1e-6){ flush(); out.push(`<line class="ln" x1="${x}" x2="${x}" y1="${yOf(8)}" y2="${Y0}"/>`); x+=10; nextBar+=meter; accs={}; }
+    const [g,dot]=GLY(ev.dur);
+    if (ev.rest){ flush();
+      const y=yOf(4); out.push(g==='w'||g==='h' ? `<rect x="${x-4}" y="${g==='w'?yOf(6):y-3}" width="9" height="3" fill="#1f1f1f"/>` :
+        g==='q' ? `<path d="M${x-2} ${y-9}l4 5-3 4 4 5c-3-1-5 0-4 3-3-3-1-6 1-5l-4-5 3-4z" fill="#1f1f1f"/>` :
+        `<circle cx="${x-1}" cy="${y-3}" r="2" fill="#1f1f1f"/><path d="M${x-2} ${y-2}l6-2-4 10" stroke="#1f1f1f" stroke-width="1.3" fill="none"/>`);
+      x += 16+14*Math.min(ev.dur,4)**.6; beat+=ev.dur; continue; }
+    const step=L.steps[k], m=/^([A-G])(#|b)?(-?\d+)$/.exec(step.name)||/^([A-G])(#|b)?(\d)$/.exec(nm(step.midi));
+    const pos=(+m[3])*7+'CDEFGAB'.indexOf(m[1])-30, acc=m[2]||'', key=m[1]+m[3];
+    let a=''; if ((accs[key]||'')!==acc){ a=acc==='#'?'♯':acc==='b'?'♭':'♮'; accs[key]=acc; x+=7; }
+    const n={k, x, pos, g, dot, a, up: pos<4, beat:beat-pick}; staffNotes.push(n);
+    if (g==='e'||g==='s'){ if (grp.length && Math.floor(grp[0].beat+1e-6)!==Math.floor(n.beat+1e-6)) flush(); grp.push(n); } else flush();
+    x += 18+14*Math.min(ev.dur,4)**.6 + (dot?4:0); beat+=ev.dur; k++;
+  }
+  flush();
+  // beams: shared stem direction, flat-ish beam at the extreme stem end
+  for (const b of beams){ const up = b.reduce((s,n)=>s+n.pos,0)/b.length < 4;
+    const ext = up ? Math.max(...b.map(n=>n.pos))+7 : Math.min(...b.map(n=>n.pos))-7;
+    b.forEach(n=>{ n.up=up; n.stemEnd=ext; n.beam=b; }); }
+  for (const n of staffNotes){
+    const hx=n.x, hy=yOf(n.pos), sx = n.up ? hx+4 : hx-4, se = yOf(n.stemEnd ?? (n.up ? n.pos+7 : n.pos-7)), parts=[];
+    parts.push(`<rect class="hit" x="${hx-10}" y="0" width="22" height="74" rx="4"/>`);
+    for (let l=-2; l>=n.pos; l-=2) parts.push(`<line x1="${hx-7}" x2="${hx+7}" y1="${yOf(l)}" y2="${yOf(l)}" stroke="currentColor" stroke-width="1.1"/>`);
+    for (let l=10; l<=n.pos; l+=2) parts.push(`<line x1="${hx-7}" x2="${hx+7}" y1="${yOf(l)}" y2="${yOf(l)}" stroke="currentColor" stroke-width="1.1"/>`);
+    if (n.a) parts.push(`<text x="${hx-14}" y="${hy+4}" font-size="13" fill="currentColor">${n.a}</text>`);
+    const open = n.g==='w'||n.g==='h';
+    parts.push(`<ellipse cx="${hx}" cy="${hy}" rx="4.3" ry="3.1" transform="rotate(-22 ${hx} ${hy})" fill="${open?'none':'currentColor'}" stroke="currentColor" stroke-width="${open?1.6:1}"/>`);
+    if (n.dot) parts.push(`<circle cx="${hx+8}" cy="${hy-(n.pos%2===0?2:0)}" r="1.5" fill="currentColor"/>`);
+    if (n.g!=='w') parts.push(`<line x1="${sx}" x2="${sx}" y1="${hy}" y2="${se}" stroke="currentColor" stroke-width="1.2"/>`);
+    if (n.flag && !n.beam){ const f = c=>n.up ? `<path d="M${sx} ${se+c}c1 4 7 6 5 13 0-5-3-7-5-8" fill="currentColor"/>` : `<path d="M${sx} ${se-c}c1-4 7-6 5-13 0 5-3 7-5 8" fill="currentColor"/>`;
+      parts.push(f(0)); if (n.g==='s') parts.push(f(n.up?5:5)); }
+    out.push(`<g class="n" data-k="${n.k}">${parts.join('')}</g>`);
+  }
+  for (const b of beams){ const a=b[0], z=b[b.length-1], up=a.up, sx=n=>n.x+(up?4:-4), y=yOf(a.stemEnd), d=up?0:-3.5;
+    out.push(`<path class="bm" data-k="${a.k}" d="M${sx(a)} ${y+d}H${sx(z)}v3.5H${sx(a)}z"/>`);
+    const yy = y + (up?5.5:-9);
+    for (let i=0;i<b.length;i++) if (b[i].g==='s'){ const n=b[i], nb=b[i+1], x1=sx(n), x2 = nb && nb.g==='s' ? sx(nb) : (nb ? x1+6 : x1-6);
+      if (b[i-1]?.g==='s' && !(nb && nb.g==='s')) continue;
+      out.push(`<path class="bm" data-k="${n.k}" d="M${Math.min(x1,x2)} ${yy}H${Math.max(x1,x2)}v3H${Math.min(x1,x2)}z"/>`); } }
+  const W = x+40, lines=[0,2,4,6,8].map(l=>`<line class="ln" x1="4" x2="${W-4}" y1="${yOf(l)}" y2="${yOf(l)}"/>`).join('');
+  const ts = `<text x="38" y="${yOf(6)+1}" font-size="17" font-weight="800" fill="#1f1f1f" font-family="serif">${meter}</text><text x="38" y="${yOf(2)+1}" font-size="17" font-weight="800" fill="#1f1f1f" font-family="serif">4</text>`;
+  staffEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" viewBox="0 0 ${W} 74" preserveAspectRatio="xMinYMid meet">${lines}<path d="${CLEF}" transform="translate(4 -8) scale(.95)" fill="#1f1f1f"/>${ts}<line class="ln" x1="${W-8}" x2="${W-8}" y1="${yOf(8)}" y2="${Y0}" stroke-width="3"/>${out.join('')}</svg>`;
+  staffEl.classList.add('has'); staffEl._els = [...staffEl.querySelectorAll('.n')]; staffEl._last=-2;
+}
+function markStaff(p, force){
+  if (!staffEl._els || !L.song) return;
+  if (p===staffEl._last && !force) return; staffEl._last=p;
+  staffEl._els.forEach((g,i)=>{ g.classList.toggle('played', i<p); g.classList.toggle('cur', i===p); g.classList.toggle('nxt', i===p+1); });
+  staffEl.querySelectorAll('.bm').forEach(b=>b.classList.toggle('played', +b.dataset.k < p));
+  if (!staffOn) return;
+  const n = staffNotes[Math.min(p, staffNotes.length-1)]; if (!n) return;
+  const sc = (staffEl.clientHeight||74)/74, want = Math.max(0, n.x*sc - staffEl.clientWidth*0.3);
+  if (Math.abs(staffEl.scrollLeft-want) > 4) { if (staffEl.scrollTo) staffEl.scrollTo({ left: want, behavior: force ? 'auto' : 'smooth' }); else staffEl.scrollLeft = want; }
+}
+function jumpTo(k){
+  if (!L.song || k<0 || k>=L.steps.length) return;
+  if (L.demo) stopDemo(false); clearTimeout(L.timer); L.timer=null; allOff(); hideDone();
+  if (L.state==='done' || L.state==='listening') L.state='ready';
+  L.pos=k; L.needShift=true; render(); pulseNext(); if (L.follow && L.state==='playing') scheduleFollow();
+}
+staffEl.addEventListener('click', e=>{ const g=e.target.closest('.n'); if (g) jumpTo(+g.dataset.k); });
+setStaff(staffOn);
+window.__piano={jumpTo,setStaff,startSong,keyDown,keyUp,L,songs:SONGS,play,pause,stop,listen,restart,exitSong};
 const _labels = labels; labels = function(){ _labels(); if(L && L.song) render(); };
 $('rotgo').onclick=()=>document.body.classList.add('portraitok');
 build();

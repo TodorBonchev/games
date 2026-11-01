@@ -138,6 +138,33 @@ for (const id of ['jingle', 'twinkle', 'imperial']) {
   });
 }
 
+await t('sheet music: toggle persists, highlight follows wait mode, auto-scrolls, tap jumps', async () => {
+  await pick('elise');
+  assert.ok(!(await page.isVisible('#staff')), 'sheet hidden by default');
+  await page.tap('#lsheet');
+  assert.ok(await page.isVisible('#staff'));
+  const kb = await page.locator('#kb').boundingBox(), sb = await page.locator('#staff').boundingBox();
+  assert.ok(sb.height <= 66 && kb.height >= 180, `keys keep room (${kb.height}px, staff ${sb.height}px)`);
+  const cur = () => page.evaluate(() => [...document.querySelectorAll('#staff .n')].findIndex(g => g.classList.contains('cur')));
+  assert.equal(await cur(), 0);
+  for (let k = 0; k < 30; k++) await tapNext();
+  assert.equal(await cur(), 30); assert.equal((await L()).pos, 30);
+  assert.equal(await page.locator('#staff .n.played').count(), 30);
+  assert.equal(await page.evaluate(() => document.querySelectorAll('#staff .n')[31].classList.contains('nxt')), true);
+  await page.waitForTimeout(500);
+  const vis = await page.evaluate(() => { const s = document.getElementById('staff'), r = s.getBoundingClientRect(), n = s.querySelector('.n.cur ellipse').getBoundingClientRect(); return { sl: s.scrollLeft, inside: n.left >= r.left && n.right <= r.right }; });
+  assert.ok(vis.sl > 0 && vis.inside, 'staff scrolled so the current note is visible');
+  const target = page.locator('#staff .n[data-k="40"] .hit');
+  await target.scrollIntoViewIfNeeded(); await target.tap();
+  assert.equal((await L()).pos, 40, 'tapping a note jumps there');
+  await page.reload();
+  await pick('ode');
+  assert.ok(await page.isVisible('#staff'), 'toggle remembered after reload');
+  assert.equal(await page.getAttribute('#lsheet', 'aria-pressed'), 'true');
+});
+
+if (shot) { await pick('imperial'); for (let k = 0; k < 6; k++) await tapNext(); await page.waitForTimeout(500); await page.screenshot({ path: 'piano-sheet-screenshot.png' }); }
+
 await t('Exit leaves song mode', async () => {
   await page.tap('#lexit');
   assert.ok(!(await page.isVisible('#lbar')));
