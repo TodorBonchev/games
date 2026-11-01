@@ -43,106 +43,133 @@ window.PIANO_SONGS = (() => {
   const lbA = 'G4:1.5 A4:.5 G4 F4 | E4 F4 G4:2 | D4 E4 F4:2 | E4 F4 G4:2 |';
   const fj = 'F4 G4 A4 F4 | F4 G4 A4 F4 | A4 A#4 C5:2 | A4 A#4 C5:2 | C5:.5 D5:.5 C5:.5 A#4:.5 A4 F4 | C5:.5 D5:.5 C5:.5 A#4:.5 A4 F4 | F4 C4 F4:2 | F4 C4 F4:2';
   const omd = 'G4 G4 G4 D4 | E4 E4 D4:2 | B4 B4 A4 A4 | G4:3 ';
+
+  const pirB = 'D5 D5 D5:.5 E5:.5 | F5 F5 F5:.5 G5:.5 | E5 E5 D5:.5 C5:.5 |';
+  const pirFull = 'A4:.5 C5:.5 | ' + pirB + ' C5:.5 D5:1.5 A4:.5 C5:.5 | ' + pirB + ' C5:.5 D5:2 A4:.5 C5:.5 | ' +
+    'D5 D5 D5:.5 F5:.5 | G5 G5 G5:.5 A5:.5 | A#5 A#5 A5:.5 G5:.5 | A5:.5 D5:1.5 D5:.5 E5:.5 | F5 F5 G5 | A5:.5 D5:1.5 D5:.5 F5:.5 | E5 E5 F5:.5 D5:.5 |';
+  const hwA = 'B4 E5:1.5 G5:.5 F#5 | E5:2 B5 | A5:3 | F#5:3 | E5:1.5 G5:.5 F#5 | D#5:2 F5 | B4:5 | B4 E5:1.5 G5:.5 F#5 | E5:2 B5 | D6:2 C#6 | C6:2 G#5 | C6:1.5 B5:.5 A#5 | A#4:2 G5 |';
+  const gotA = 'G4 C4 D#4:.5 F4:.5 | G4 C4 D#4:.5 F4:.5 | G4 C4 D#4:.5 F4:.5 | G4 C4 D#4:.5 F4:.5 | G4 C4 E4:.5 F4:.5 | G4 C4 E4:.5 F4:.5 | G4 C4 E4:.5 F4:.5 | G4 C4 E4:.5 F4:.5 | ' +
+    'G4:3 | C4:3 | D#4:.5 F4:.5 G4:2 | C4:2 D#4:.5 F4:.5 | D4:6 | F4:3 | A#3:3 | D#4:.5 D4:.5 F4:2 | A#3:2 D#4:.5 D4:.5 | C4:6';
+  const marI = 'E5:.5 E5:.5 r:.5 E5:.5 r:.5 C5:.5 E5 | G5 r G4 r | ';
+  const marA = 'C5 r:.5 G4 r:.5 E4 | r:.5 A4 B4 A#4:.5 A4 | G4:.67 E5:.67 G5:.66 A5 F5:.5 G5:.5 | r:.5 E5 C5:.5 D5:.5 B4 r:.5 | ';
+  const marB = 'r G5:.5 F#5:.5 F5:.5 D#5 E5:.5 | r:.5 G#4:.5 A4:.5 C5:.5 r:.5 A4:.5 C5:.5 D5:.5 | r G5:.5 F#5:.5 F5:.5 D#5 E5:.5 | r:.5 C6 C6:.5 C6:2 | ' +
+    'r G5:.5 F#5:.5 F5:.5 D#5 E5:.5 | r:.5 G#4:.5 A4:.5 C5:.5 r:.5 A4:.5 C5:.5 D5:.5 | r D#5 r:.5 D5:1.5 | C5:2 r:2 | ';
+  const marCh = 'C5:.5 C5:.5 r:.5 C5:.5 r:.5 C5:.5 D5 | E5:.5 C5 A4:.5 G4:2 | ';
+  const marC = marCh + 'C5:.5 C5:.5 r:.5 C5:.5 r:.5 C5:.5 D5:.5 E5:.5 | r:4 | ' + marCh;
+  const tetC = 'E5:2 C5:2 | D5:2 B4:2 | C5:2 A4:2 | G#4:2 B4:2 | E5:2 C5:2 | D5:2 B4:2 | C5 E5 A5:2 | G#5:4 |';
+  const wwV = 'D4 | G4 G4:.5 A4:.5 G4:.5 F#4:.5 | E4 E4 E4 | A4 A4:.5 B4:.5 A4:.5 G4:.5 | F#4 D4 D4 | B4 B4:.5 C5:.5 B4:.5 A4:.5 | G4 E4 D4:.5 D4:.5 | E4 A4 F#4 | G4:2 ';
+  const wwC = 'D4 | G4 G4 G4 | F#4:2 F#4 | G4 F#4 E4 | D4:2 A4 | B4 A4:.5 A4:.5 G4:.5 G4:.5 | D5 D4 D4:.5 D4:.5 | E4 A4 F#4 | G4';
+  const snV = 'G4:1.5 A4:.5 G4 E4:3 | G4:1.5 A4:.5 G4 E4:3 | D5:2 D5 B4:3 | C5:2 C5 G4:3 | A4:2 A4 C5:1.5 B4:.5 A4 | G4:1.5 A4:.5 G4 E4:3 | ' +
+    'A4:2 A4 C5:1.5 B4:.5 A4 | G4:1.5 A4:.5 G4 E4:3 | D5:2 D5 F5:1.5 D5:.5 B4 | C5:3 E5:3 | C5 G4 E4 G4:1.5 F4:.5 D4 | C4:6';
+  const deckA = 'D5:1.5 C5:.5 B4 A4 | G4 A4 B4 G4 | A4:.5 B4:.5 C5:.5 A4:.5 B4:1.5 A4:.5 | G4 F#4 G4:2 | ';
+  const deckV = deckA + deckA + 'A4:1.5 B4:.5 C5 A4 | B4:1.5 C5:.5 D5 A4 | B4:.5 C#5:.5 D5 E5:.5 F#5:.5 G5 | F#5 E5 D5:2 | ' +
+    'D5:1.5 C5:.5 B4 A4 | G4 A4 B4 G4 | E5:.5 E5:.5 E5:.5 E5:.5 D5:1.5 C5:.5 | B4 A4 G4:2';
+  const joyV = 'C5:2 B4:1.5 A4:.5 | G4:3 F4 | E4:2 D4:2 | C4:3 G4 | A4:3 A4 | B4:3 B4 | C5:3 C5 | ' +
+    'C5 B4 A4 G4 | G4:1.5 F4:.5 E4 C5 | C5 B4 A4 G4 | G4:1.5 F4:.5 E4 E4 | E4 E4 E4 E4:.5 F4:.5 | G4:3 F4:.5 E4:.5 | ' +
+    'D4 D4 D4 D4:.5 E4:.5 | F4:3 E4:.5 D4:.5 | C4 C5:2 A4 | G4:1.5 F4:.5 E4 F4 | E4:2 D4:2 |';
+  const rdA = 'G4:.5 A4 G4:.5 E4 C5 | A4 G4:3 | G4:.5 A4:.5 G4:.5 A4:.5 G4 C5 | B4:4 | ';
+  const rdB = 'F4:.5 G4 F4:.5 D4 B4 | A4 G4:3 | G4:.5 A4:.5 G4:.5 A4:.5 G4 ';
+  const rdEnd = 'A4 | E4:4 | ';
+  const rdBr = 'A4 A4 C5 A4 | G4 E4 G4:2 | F4 A4 G4 F4 | E4:4 | D4 E4 G4 A4 | B4 B4 B4:2 | C5 C5 B4 A4 | G4 F4 D4:2 | ' + rdA;
+  const scA = 'C5:.5 A4:.5 | A#4:.5 C5 C5 C5:.5 | D5:.5 E5:.5 F5 F5:2 | A4:.5 A#4:.5 | C5 C5 C5:.5 D5:.5 | C5 A#4 A#4:2 | A4 C5 F4 A4 | G4:2 A#4 E4 |';
+  const gkV = 'G4 G4 G4 A4 | G4 G4 D4:2 | E4 D4 E4 F#4 | G4:2 G4:2 | G4 G4 G4 A4 | G4 G4 D4:2 | E4 D4 E4 F#4 | G4:2 G4:2 | ' +
+    'D5 C5 B4 A4 | B4 A4 G4:2 | E4 D4 E4 F#4 | G4:2 G4:2 | D4 D4 E4 F#4 | G4 G4 A4:2 | D5 C5 B4 A4 | G4:2 C5:2 | G4:4';
+  const ocV = 'G4:2 D4 G4 | A4:2 D4:2 | B4 A4 B4 C5 | B4:2 A4 G4 | G4:2 F#4 E4 | F#4 G4 A4 B4 | F#4:1.5 E4:.5 D4:2 | ' +
+    'D5:2 C5 B4 | C5:2 B4:2 | A4 B4 G4 A4 | F#4:1.5 E4:.5 D4 G4 | G4 F#4 G4 A4 | G4:2 D4 B4 | B4 A4 B4 C5 | B4:2 A4 B4 | ' +
+    'C5 B4 A4 G4 | F#4:2 G4 C5 | B4:2 A4:1.5 G4:.5 |';
+  const cbO = 'A#4 A4:.5 A#4:.5 G4 | A#4 A4:.5 A#4:.5 G4 | A#4 A4:.5 A#4:.5 G4 | A#4 A4:.5 A#4:.5 G4 | ';
+  const cbD = 'D5 C5:.5 D5:.5 A#4 | D5 C5:.5 D5:.5 A#4 | ';
+  const cbH = 'G5 G5:.5 G5:.5 F5:.5 D#5:.5 | D5 D5:.5 D5:.5 C5:.5 A#4:.5 | C5 C5:.5 C5:.5 D5:.5 C5:.5 | G4 G4:.5 G4:.5 G4 | ';
+  const cnA = 'F#5:2 E5:2 | D5:2 C#5:2 | B4:2 A4:2 | B4:2 C#5:2 | ';
+  const cnQ = 'D5 F#5 A5 G5 | F#5 D5 F#5 E5 | D5 B4 D5 A5 | G5 B5 A5 G5 | ';
+  const mtkA = mtk + ' B4 C#5 D5 E5 F#5 D5 F#5 B5 | A5 F#5 D5 F#5 A5:2 | ';
+  const mtkB = 'F#4 G#4 A#4 B4 C#5 A#4 C#5:1 | D5 A#4 D5:1 C#5 A#4 C#5:1 | F#4 G#4 A#4 B4 C#5 A#4 C#5:1 | D5 A#4 D5:1 C#5:2 | ';
+  const brV = 'E4:.5 E4:.5 | G4:2 E4:.5 E4:.5 | G4:2 E4:.5 G4:.5 | C5 B4:1.5 A4:.5 | A4 G4 D4:.5 E4:.5 | F4 D4 D4:.5 E4:.5 | F4:2 D4:.5 F4:.5 | B4:.5 A4:.5 G4 B4 | C5:2 ' +
+    'C4:.5 C4:.5 | C5:2 A4:.5 F4:.5 | G4:2 E4:.5 C4:.5 | F4 G4 A4 | G4:2 C4:.5 C4:.5 | C5:2 A4:.5 F4:.5 | G4:2 E4:.5 C4:.5 | F4 E4 D4 | C4:2';
+  const tkA = 'B4:.25 A4:.25 G#4:.25 A4:.25 C5 | D5:.25 C5:.25 B4:.25 C5:.25 E5 | F5:.25 E5:.25 D#5:.25 E5:.25 B5:.25 A5:.25 G#5:.25 A5:.25 | B5:.25 A5:.25 G#5:.25 A5:.25 C6 | ' +
+    'A5:.5 C6:.5 | B5:.5 A5:.5 G5:.5 A5:.5 | B5:.5 A5:.5 G5:.5 A5:.5 | B5:.5 A5:.5 G5:.5 F#5:.5 | E5';
+  const tomR = 'F#5 F#5 D5 B4 r B4 r E5 | r E5 r E5 G#5 G#5 A5 B5 | A5 A5 A5 E5 r D5 r F#5 | r F#5 r F#5 E5 E5 F#5 E5';
+  const snaR = 'E5:1.5 E5:.5 G5:.75 E5:.75 D5:.5 | C5:2 B4:2 | E5:1.5 E5:.5 G5:.75 E5:.75 D5:.5 | C5 D5:.5 C5:.5 B4:2 | ';
+  const smR = 'G4 A#4 C5:2 | G4 A#4 C#5:.5 C5:1.5 | G4 A#4 C5:2 | A#4 G4:3 | ';
+  const scmR = 'D4 D5 A4 G4 G5 A4 F#5 A4 | D4 D5 A4 G4 G5 A4 F#5 A4 | E4 D5 A4 G4 G5 A4 F#5 A4 | E4 D5 A4 G4 G5 A4 F#5 A4 | ' +
+    'G4 D5 A4 G4 G5 A4 F#5 A4 | G4 D5 A4 G4 G5 A4 F#5 A4 | D4 D5 A4 G4 G5 A4 F#5 A4 | D4 D5 A4 G4 G5 A4 F#5 A4';
+  const twV = 'C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2 G4 G4 F4 F4 E4 E4 D4:2 G4 G4 F4 F4 E4 E4 D4:2 C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2';
+  const hbV = 'G4:.75 G4:.25 | A4 G4 C5 | B4:2 G4:.75 G4:.25 | A4 G4 D5 | C5:2 G4:.75 G4:.25 | G5 E5 C5 | B4 A4 F5:.75 F5:.25 | E5 C5 D5 |';
+  const mhV = 'E4 D4 C4 D4 | E4 E4 E4:2 | D4 D4 D4:2 | E4 G4 G4:2 | E4 D4 C4 D4 | E4 E4 E4 E4 | D4 D4 E4 D4 | C4:4 | ';
+  const omV = omd + 'D4 | ' + omd + 'D4:.5 D4:.5 | G4 G4 G4 D4:.5 D4:.5 | G4 G4 G4:2 | G4:.5 G4:.5 G4 G4:.5 G4:.5 G4 | G4:.5 G4:.5 G4:.5 G4:.5 G4 G4 | G4 G4 G4 D4 | E4 E4 D4:2 | B4 B4 A4 A4 |';
+  const rwV = 'C4:1.5 C4:1.5 | C4 D4:.5 E4:1.5 | E4 D4:.5 E4 F4:.5 | G4:3 | C5:.5 C5:.5 C5:.5 G4:.5 G4:.5 G4:.5 | E4:.5 E4:.5 E4:.5 C4:.5 C4:.5 C4:.5 | G4 F4:.5 E4 D4:.5 | C4:3 | ';
+  const lbV = lbA + ' G4:1.5 A4:.5 G4 F4 | E4 F4 G4:2 | D4:2 G4:2 | E4 C4:3 | ';
+  const stV = 'G4:4 | r C4 E4 F4 | G4:4 | r C4 E4 F4 | G4:2 E4:2 | C4:2 E4:2 | D4:4 | r E4 E4 D4 | C4:3 C4 | E4:2 G4:2 | G4 F4:3 | r E4 F4 G4 | E4:2 C4:2 | D4:2 |';
+  const alV = 'G4:1.5 G4:.5 G4 B4 | A4:1.5 G4:.5 A4 B4:.5 A4:.5 | G4:1.5 G4:.5 B4 D5 | E5:3 E5 | D5:1.5 B4:.5 B4 G4 | A4:1.5 G4:.5 A4 B4:.5 A4:.5 | G4:1.5 E4:.5 E4 D4 |';
+  const agV = 'G4:2 B4:.5 G4:.5 | B4:2 A4 | G4:2 E4 | D4:2 D4 | G4:2 B4:.5 G4:.5 | B4:2 A4 | D5:3 | D5:2 B4:.5 D5:.5 | B4:.5 G4:1.5 D4 | E4:1.5 G4:.5 G4:.5 E4:.5 | D4:2 D4 | G4:2 B4:.5 G4:.5 | B4:2 A4 |';
+  const gsV = 'C5 D5:.5 E5:.75 F5:.25 E5:.5 | D5 B4:.5 G4:.75 A4:.25 B4:.5 | C5 A4:.5 A4:.75 G#4:.25 A4:.5 | B4 G#4:.5 E4 A4:.5 | ' +
+    'C5 D5:.5 E5:.75 F5:.25 E5:.5 | D5 B4:.5 G4:.75 A4:.25 B4:.5 | C5:.75 B4:.25 A4:.5 G#4:.75 F#4:.25 G#4:.5 | A4:3 | ';
+  const gsC = 'G5:1.5 G5:.75 F#5:.25 E5:.5 | D5 B4:.5 G4:.75 A4:.25 B4:.5 | C5 A4:.5 A4:.75 G#4:.25 A4:.5 | B4 G#4:.5 E4:1.5 | ' +
+    'G5:1.5 G5:.75 F#5:.25 E5:.5 | D5 B4:.5 G4:.75 A4:.25 B4:.5 | C5:.75 B4:.25 A4:.5 G#4:.75 F#4:.25 G#4:.5 |';
   return [
     // ---------------- Star Wars & Movies ----------------
     { id: 'imperial', title: 'The Imperial March', subtitle: 'Star Wars · right hand', category: M, level: 'Medium', tempo: 104, featured: true, melody:
       impOpen + ' | ' + impOpen + ' | ' +
       impA + ' G4:.25 | A#4 G4:.75 A#4:.25 D5:2 | ' + impA + ' A#4:.25 | G4 D#4:.75 A#4:.25 G4:2 | ' + impOpen },
     { id: 'starwars', title: 'Star Wars Main Theme', subtitle: 'John Williams · in C', category: M, level: 'Medium', tempo: 104, meter: 4, pickup: 1, melody: swA + ' ' + swA + ' ' + swB + ' ' + swA },
-    { id: 'pirate', title: "He's a Pirate", subtitle: 'Pirates of the Caribbean', category: M, level: 'Hard', tempo: 140, meter: 3, pickup: 1, melody:
-      pirA + ' D5:.5 C5:.5 C5:.5 D5:1.5 | ' + pirA + ' C5:.5 D5:2 | ' +
-      'A4:.5 C5:.5 | D5 D5 D5:.5 F5:.5 | G5 G5 G5:.5 A5:.5 | A#5 A#5 A5:.5 G5:.5 | A5:.5 D5:1.5 | D5:.5 E5:.5 | F5 F5 G5 | A5:.5 D5:1.5 D5:.5 F5:.5 | E5 E5 F5:.5 D5:.5 | E5:2' },
+    { id: 'pirate', title: "He's a Pirate", subtitle: 'Pirates of the Caribbean · A A B, twice', category: M, level: 'Hard', tempo: 140, meter: 3, pickup: 1, melody:
+      pirFull + ' E5:2 ' + pirFull + ' E5:2' },
     { id: 'hedwig', title: "Hedwig's Theme", subtitle: 'Harry Potter · transposed to D minor', category: M, level: 'Hard', tempo: 120, transpose: -2, meter: 3, pickup: 1, melody:
-      'B4 E5:1.5 G5:.5 F#5 | E5:2 B5 | A5:3 | F#5:3 | E5:1.5 G5:.5 F#5 | D#5:2 F5 | B4:5 | ' +
-      'B4 E5:1.5 G5:.5 F#5 | E5:2 B5 | D6:2 C#6 | C6:2 G#5 | C6:1.5 B5:.5 A#5 | A#4:2 G5 | E5:5' },
-    { id: 'got', title: 'Game of Thrones', subtitle: 'Main title · transposed to F minor', category: M, level: 'Medium', tempo: 160, transpose: 5, meter: 3, melody:
-      'G4 C4 D#4:.5 F4:.5 | G4 C4 D#4:.5 F4:.5 | G4 C4 D#4:.5 F4:.5 | G4 C4 D#4:.5 F4:.5 | G4 C4 E4:.5 F4:.5 | G4 C4 E4:.5 F4:.5 | G4 C4 E4:.5 F4:.5 | G4 C4 E4:.5 F4:.5 | ' +
-      'G4:3 | C4:3 | D#4:.5 F4:.5 G4:2 | C4:2 D#4:.5 F4:.5 | D4:6 | F4:3 | A#3:3 | D#4:.5 D4:.5 F4:2 | A#3:2 D#4:.5 D4:.5 | C4:6' },
+      hwA + ' E5:5 ' + hwA + ' E5:6' },
+    { id: 'got', title: 'Game of Thrones', subtitle: 'Main title · transposed to F minor', category: M, level: 'Medium', tempo: 160, transpose: 5, meter: 3, melody: gotA + ' | ' + gotA },
     { id: 'mario', title: 'Super Mario Bros. Theme', subtitle: 'Overworld · Koji Kondo', category: M, level: 'Hard', tempo: 180, melody:
-      'E5:.5 E5:.5 r:.5 E5:.5 r:.5 C5:.5 E5 | G5 r G4 r | C5 r:.5 G4 r:.5 E4 | r:.5 A4 B4 A#4:.5 A4 | G4:.67 E5:.67 G5:.66 A5 F5:.5 G5:.5 | r:.5 E5 C5:.5 D5:.5 B4 r:.5 | ' +
-      'C5 r:.5 G4 r:.5 E4 | r:.5 A4 B4 A#4:.5 A4 | G4:.67 E5:.67 G5:.66 A5 F5:.5 G5:.5 | r:.5 E5 C5:.5 D5:.5 B4:1.5' },
-    { id: 'tetris', title: 'Tetris (Korobeiniki)', subtitle: 'Game Boy theme A', category: M, level: 'Medium', tempo: 150, melody: tetA + tetB + tetA + tetB },
+      marI + marA + marA + marB + marB + marC + marI + marA + marA },
+    { id: 'tetris', title: 'Tetris (Korobeiniki)', subtitle: 'Game Boy theme A · A and B sections', category: M, level: 'Medium', tempo: 150, melody:
+      tetA + tetB + tetA + tetB + tetC + tetA + tetB },
     // ---------------- Christmas ----------------
     { id: 'jingle', title: 'Jingle Bells', subtitle: 'Two verses + choruses', category: X, level: 'Easy', tempo: 140, melody:
       jbVerse + jbChorus + ' E5 D5 D5 E5 | D5:2 G5:2 | ' + jbChorus + ' G5 G5 F5 D5 | C5:4 | ' + jbVerse + jbChorus + ' E5 D5 D5 E5 | D5:2 G5:2 | ' + jbChorus + ' G5 G5 F5 D5 | C5:4' },
-    { id: 'wewish', title: 'We Wish You a Merry Christmas', subtitle: 'Traditional', category: X, level: 'Easy', tempo: 150, meter: 3, pickup: 1, melody:
-      'D4 | G4 G4:.5 A4:.5 G4:.5 F#4:.5 | E4 E4 E4 | A4 A4:.5 B4:.5 A4:.5 G4:.5 | F#4 D4 D4 | B4 B4:.5 C5:.5 B4:.5 A4:.5 | G4 E4 D4:.5 D4:.5 | E4 A4 F#4 | G4:2 ' +
-      'D4 | G4 G4 G4 | F#4:2 F#4 | G4 F#4 E4 | D4:2 A4 | B4 A4:.5 A4:.5 G4:.5 G4:.5 | D5 D4 D4:.5 D4:.5 | E4 A4 F#4 | G4:3' },
-    { id: 'silent', title: 'Silent Night', subtitle: 'Franz Gruber', category: X, level: 'Easy', tempo: 120, meter: 3, melody:
-      'G4:1.5 A4:.5 G4 E4:3 | G4:1.5 A4:.5 G4 E4:3 | D5:2 D5 B4:3 | C5:2 C5 G4:3 | A4:2 A4 C5:1.5 B4:.5 A4 | G4:1.5 A4:.5 G4 E4:3 | ' +
-      'A4:2 A4 C5:1.5 B4:.5 A4 | G4:1.5 A4:.5 G4 E4:3 | D5:2 D5 F5:1.5 D5:.5 B4 | C5:3 E5:3 | C5 G4 E4 G4:1.5 F4:.5 D4 | C4:6' },
-    { id: 'deck', title: 'Deck the Halls', subtitle: 'Traditional Welsh', category: X, level: 'Easy', tempo: 130, melody:
-      'D5:1.5 C5:.5 B4 A4 | G4 A4 B4 G4 | A4:.5 B4:.5 C5:.5 A4:.5 B4:1.5 A4:.5 | G4 F#4 G4:2 | ' +
-      'D5:1.5 C5:.5 B4 A4 | G4 A4 B4 G4 | A4:.5 B4:.5 C5:.5 A4:.5 B4:1.5 A4:.5 | G4 F#4 G4:2 | ' +
-      'A4:1.5 B4:.5 C5 A4 | B4:1.5 C5:.5 D5 A4 | B4:.5 C#5:.5 D5 E5:.5 F#5:.5 G5 | F#5 E5 D5:2 | ' +
-      'D5:1.5 C5:.5 B4 A4 | G4 A4 B4 G4 | E5:.5 E5:.5 E5:.5 E5:.5 D5:1.5 C5:.5 | B4 A4 G4:2' },
-    { id: 'joy', title: 'Joy to the World', subtitle: 'G. F. Handel / Lowell Mason', category: X, level: 'Medium', tempo: 110, melody:
-      'C5:2 B4:1.5 A4:.5 | G4:3 F4 | E4:2 D4:2 | C4:3 G4 | A4:3 A4 | B4:3 B4 | C5:3 C5 | ' +
-      'C5 B4 A4 G4 | G4:1.5 F4:.5 E4 C5 | C5 B4 A4 G4 | G4:1.5 F4:.5 E4 E4 | E4 E4 E4 E4:.5 F4:.5 | G4:3 F4:.5 E4:.5 | ' +
-      'D4 D4 D4 D4:.5 E4:.5 | F4:3 E4:.5 D4:.5 | C4 C5:2 A4 | G4:1.5 F4:.5 E4 F4 | E4:2 D4:2 | C4:4' },
-    { id: 'rudolph', title: 'Rudolph the Red-Nosed Reindeer', subtitle: 'Johnny Marks · verse', category: X, level: 'Easy', tempo: 140, melody:
-      'G4:.5 A4 G4:.5 E4 C5 | A4 G4:3 | G4:.5 A4:.5 G4:.5 A4:.5 G4 C5 | B4:4 | F4:.5 G4 F4:.5 D4 B4 | A4 G4:3 | G4:.5 A4:.5 G4:.5 A4:.5 G4 A4 | E4:4 | ' +
-      'G4:.5 A4 G4:.5 E4 C5 | A4 G4:3 | G4:.5 A4:.5 G4:.5 A4:.5 G4 C5 | B4:4 | F4:.5 G4 F4:.5 D4 B4 | A4 G4:3 | G4:.5 A4:.5 G4:.5 A4:.5 G4 D5 | C5:4' },
-    { id: 'santa', title: 'Santa Claus Is Coming to Town', subtitle: 'Chorus · in F', category: X, level: 'Medium', tempo: 130, pickup: 1, melody:
-      'C5:.5 A4:.5 | A#4:.5 C5 C5 C5:.5 | D5:.5 E5:.5 F5 F5:2 | A4:.5 A#4:.5 | C5 C5 C5:.5 D5:.5 | C5:.5 A#4 A#4:2 | A4 C5 F4 A4 | G4 A#4 E4 | F4:4 | ' +
-      'C5:.5 A4:.5 | A#4:.5 C5 C5 C5:.5 | D5:.5 E5:.5 F5 F5:2 | A4:.5 A#4:.5 | C5 C5 C5:.5 D5:.5 | C5:.5 A#4 A#4:2 | A4 C5 F4 A4 | G4 A#4 E4 | F4:4' },
-    { id: 'wenceslas', title: 'Good King Wenceslas', subtitle: 'Traditional', category: X, level: 'Easy', tempo: 120, melody:
-      'G4 G4 G4 A4 | G4 G4 D4:2 | E4 D4 E4 F#4 | G4:2 G4:2 | G4 G4 G4 A4 | G4 G4 D4:2 | E4 D4 E4 F#4 | G4:2 G4:2 | ' +
-      'D5 C5 B4 A4 | B4 A4 G4:2 | E4 D4 E4 F#4 | G4:2 G4:2 | D4 D4 E4 F#4 | G4 G4 A4:2 | D5 C5 B4 A4 | G4:2 C5:2 | G4:4' },
-    { id: 'faithful', title: 'O Come, All Ye Faithful', subtitle: 'Adeste Fideles · first lines', category: X, level: 'Medium', tempo: 100, pickup: 1, melody:
-      'G4 | G4:2 D4 G4 | A4:2 D4:2 | B4 A4 B4 C5 | B4:2 A4 G4 | G4:2 F#4 E4 | F#4 G4 A4 B4 | F#4:1.5 E4:.5 D4:3' },
-    { id: 'carol', title: 'Carol of the Bells', subtitle: 'Leontovych · opening ostinato', category: X, level: 'Easy', tempo: 150, meter: 3, melody:
-      'A#4 A4:.5 A#4:.5 G4 | A#4 A4:.5 A#4:.5 G4 | A#4 A4:.5 A#4:.5 G4 | A#4 A4:.5 A#4:.5 G4 | A#4 A4:.5 A#4:.5 G4 | A#4 A4:.5 A#4:.5 G4 | A#4 A4:.5 A#4:.5 G4 | A#4 A4:.5 A#4:.5 G4' },
+    { id: 'wewish', title: 'We Wish You a Merry Christmas', subtitle: 'Traditional · verses, good tidings, figgy pudding', category: X, level: 'Easy', tempo: 150, meter: 3, pickup: 1, melody:
+      wwV + wwC + ' D4 | ' + wwV + wwC + ' D4 | ' + wwV + wwC + ' D4 | ' + wwV + wwC + ':2' },
+    { id: 'silent', title: 'Silent Night', subtitle: 'Franz Gruber · three verses', category: X, level: 'Easy', tempo: 120, meter: 3, melody: snV + ' | ' + snV + ' | ' + snV },
+    { id: 'deck', title: 'Deck the Halls', subtitle: 'Traditional Welsh · two verses', category: X, level: 'Easy', tempo: 130, melody: deckV + ' | ' + deckV },
+    { id: 'joy', title: 'Joy to the World', subtitle: 'G. F. Handel / Lowell Mason · two verses', category: X, level: 'Medium', tempo: 110, melody: joyV + ' C4:4 | ' + joyV + ' C4:4' },
+    { id: 'rudolph', title: 'Rudolph the Red-Nosed Reindeer', subtitle: 'Johnny Marks · verse, bridge, ending', category: X, level: 'Easy', tempo: 140, melody:
+      rdA + rdB + rdA + rdEnd + rdBr + rdB + rdEnd },
+    { id: 'santa', title: 'Santa Claus Is Coming to Town', subtitle: 'Chorus three times · in F', category: X, level: 'Medium', tempo: 130, pickup: 1, melody: scA + ' F4:3 | ' + scA + ' F4:3 | ' + scA + ' F4:3' },
+    { id: 'wenceslas', title: 'Good King Wenceslas', subtitle: 'Traditional · two verses', category: X, level: 'Easy', tempo: 120, melody: gkV + ' | ' + gkV },
+    { id: 'faithful', title: 'O Come, All Ye Faithful', subtitle: 'Adeste Fideles · verse and refrain, twice', category: X, level: 'Medium', tempo: 100, pickup: 1, melody:
+      'G4 | ' + ocV + ' G4:3 G4 | ' + ocV + ' G4:3' },
+    { id: 'carol', title: 'Carol of the Bells', subtitle: 'Leontovych · ostinato and melody', category: X, level: 'Easy', tempo: 150, meter: 3, melody:
+      cbO + cbO + cbD + cbD + cbH + cbH + cbO },
     // ---------------- Classical ----------------
     { id: 'ode', title: 'Ode to Joy', subtitle: 'Beethoven · full theme AABA, in G', category: C, level: 'Easy', tempo: 112, transpose: 7, melody:
       odeA + 'E4:1.5 D4:.5 D4:2 | ' + odeA + 'D4:1.5 C4:.5 C4:2 | ' +
       'D4 D4 E4 C4 | D4 E4:.5 F4:.5 E4 C4 | D4 E4:.5 F4:.5 E4 D4 | C4 D4 G3:2 | ' + odeA + 'D4:1.5 C4:.5 C4:2' },
     { id: 'elise', title: 'Für Elise (A section)', subtitle: 'Beethoven · theme, repeat and middle phrase', category: C, level: 'Medium', tempo: 120, unit: .5, meter: 3, pickup: 1, melody:
       elP + elQ + 'A4:2 ' + elP + elQ + 'A4:1.5 B4 C5 D5 | E5:1.5 G4 F5 E5 | D5:1.5 F4 E5 D5 | C5:1.5 E4 D5 C5 | B4:1 E4 E5 ' + elP + elQ + 'A4:2' },
-    { id: 'canon', title: 'Canon in D', subtitle: 'Pachelbel · melody', category: C, level: 'Easy', tempo: 90, melody:
-      'F#5:2 E5:2 | D5:2 C#5:2 | B4:2 A4:2 | B4:2 C#5:2 | D5:2 C#5:2 | B4:2 A4:2 | G4:2 F#4:2 | G4:2 E4:2' },
-    { id: 'mountain', title: 'In the Hall of the Mountain King', subtitle: 'Grieg', category: C, level: 'Medium', tempo: 120, unit: .5, melody:
-      mtk + ' B4 C#5 D5 E5 F#5 D5 F#5 B5 | A5 F#5 D5 F#5 A5:2 | ' + mtk + ' B4 C#5 D5 E5 F#5 D5 F#5 B5 | A5 F#5 D5 F#5 A5:2' },
-    { id: 'brahms', title: "Brahms' Lullaby", subtitle: 'Wiegenlied', category: C, level: 'Easy', tempo: 100, meter: 3, pickup: 1, melody:
-      'E4:.5 E4:.5 | G4:2 E4:.5 E4:.5 | G4:2 E4:.5 G4:.5 | C5 B4:1.5 A4:.5 | A4 G4 D4:.5 E4:.5 | F4 D4 D4:.5 E4:.5 | F4:2 D4:.5 F4:.5 | B4:.5 A4:.5 G4 B4 | C5:2 ' +
-      'C4:.5 C4:.5 | C5:2 A4:.5 F4:.5 | G4:2 E4:.5 C4:.5 | F4 G4 A4 | G4:2 C4:.5 C4:.5 | C5:2 A4:.5 F4:.5 | G4:2 E4:.5 C4:.5 | F4 E4 D4 | C4:2' },
-    { id: 'turkish', title: 'Turkish March (opening)', subtitle: 'Mozart · Rondo alla Turca', category: C, level: 'Hard', tempo: 120, melody:
-      'B4:.25 A4:.25 G#4:.25 A4:.25 C5 | D5:.25 C5:.25 B4:.25 C5:.25 E5 | F5:.25 E5:.25 D#5:.25 E5:.25 B5:.25 A5:.25 G#5:.25 A5:.25 | B5:.25 A5:.25 G#5:.25 A5:.25 C6 | ' +
-      'A5:.5 C6:.5 | B5:.5 A5:.5 G5:.5 A5:.5 | B5:.5 A5:.5 G5:.5 A5:.5 | B5:.5 A5:.5 G5:.5 F#5:.5 | E5' },
+    { id: 'canon', title: 'Canon in D', subtitle: 'Pachelbel · theme and quarter-note variation', category: C, level: 'Easy', tempo: 90, melody:
+      cnA + cnA + cnQ + cnQ + cnA },
+    { id: 'mountain', title: 'In the Hall of the Mountain King', subtitle: 'Grieg · theme, dominant section, return', category: C, level: 'Medium', tempo: 120, unit: .5, melody:
+      mtkA + mtkA + mtkB + mtkB + mtkA + mtkA },
+    { id: 'brahms', title: "Brahms' Lullaby", subtitle: 'Wiegenlied · twice', category: C, level: 'Easy', tempo: 100, meter: 3, pickup: 1, melody: brV + ' E4:.5 E4:.5 | ' + brV },
+    { id: 'turkish', title: 'Turkish March (opening)', subtitle: 'Mozart · Rondo alla Turca, with repeat', category: C, level: 'Hard', tempo: 120, melody: tkA + ' | ' + tkA },
     { id: 'nachtmusik', title: 'Eine kleine Nachtmusik', subtitle: 'Mozart · opening', category: C, level: 'Medium', tempo: 120, melody:
       'G4 r:.5 D4:.5 G4 r:.5 D4:.5 | G4:.5 D4:.5 G4:.5 B4:.5 D5:2 | C5 r:.5 A4:.5 C5 r:.5 A4:.5 | C5:.5 A4:.5 F#4:.5 A4:.5 D4:2' },
     // ---------------- Pop ----------------
-    { id: 'takeonme', title: 'Take On Me', subtitle: 'a-ha · synth riff', category: P, level: 'Hard', tempo: 168, unit: .5, melody:
-      'F#5 F#5 D5 B4 r B4 r E5 | r E5 r E5 G#5 G#5 A5 B5 | A5 A5 A5 E5 r D5 r F#5 | r F#5 r F#5 E5 E5 F#5 E5' },
-    { id: 'sevennation', title: 'Seven Nation Army', subtitle: 'The White Stripes · riff', category: P, level: 'Easy', tempo: 120, melody:
-      'E5:1.5 E5:.5 G5:.75 E5:.75 D5:.5 | C5:2 B4:2 | E5:1.5 E5:.5 G5:.75 E5:.75 D5:.5 | C5 D5 C5 B4:2' },
-    { id: 'smoke', title: 'Smoke on the Water', subtitle: 'Deep Purple · riff', category: P, level: 'Easy', tempo: 112, melody:
-      'G4 A#4 C5:1.5 | G4 A#4 C#5:.5 C5:2 | G4 A#4 C5:1.5 | A#4 G4:2.5' },
-    { id: 'sweetchild', title: "Sweet Child o' Mine", subtitle: "Guns N' Roses · intro riff", category: P, level: 'Hard', tempo: 125, unit: .5, melody:
-      'D4 D5 A4 G4 G5 A4 F#5 A4 | D4 D5 A4 G4 G5 A4 F#5 A4 | E4 D5 A4 G4 G5 A4 F#5 A4 | E4 D5 A4 G4 G5 A4 F#5 A4 | ' +
-      'G4 D5 A4 G4 G5 A4 F#5 A4 | G4 D5 A4 G4 G5 A4 F#5 A4 | D4 D5 A4 G4 G5 A4 F#5 A4 | D4 D5 A4 G4 G5 A4 F#5 A4' },
+    { id: 'takeonme', title: 'Take On Me', subtitle: 'a-ha · synth riff, twice', category: P, level: 'Hard', tempo: 168, unit: .5, melody: tomR + ' | ' + tomR },
+    { id: 'sevennation', title: 'Seven Nation Army', subtitle: 'The White Stripes · riff ×4', category: P, level: 'Easy', tempo: 120, melody: snaR + snaR + snaR + snaR },
+    { id: 'smoke', title: 'Smoke on the Water', subtitle: 'Deep Purple · riff ×4', category: P, level: 'Easy', tempo: 112, melody: smR + smR + smR + smR },
+    { id: 'sweetchild', title: "Sweet Child o' Mine", subtitle: "Guns N' Roses · intro riff, twice", category: P, level: 'Hard', tempo: 125, unit: .5, melody: scmR + ' | ' + scmR },
     // ---------------- Kids & Folk ----------------
-    { id: 'twinkle', title: 'Twinkle Twinkle Little Star', subtitle: 'Traditional', category: K, level: 'Easy', tempo: 100, melody:
-      'C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2 G4 G4 F4 F4 E4 E4 D4:2 G4 G4 F4 F4 E4 E4 D4:2 C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2' },
-    { id: 'birthday', title: 'Happy Birthday', subtitle: 'Traditional', category: K, level: 'Easy', tempo: 100, meter: 3, pickup: 1, melody:
-      'G4:.75 G4:.25 A4 G4 C5 B4:2 G4:.75 G4:.25 A4 G4 D5 C5:2 G4:.75 G4:.25 G5 E5 C5 B4 A4:2 F5:.75 F5:.25 E5 C5 D5 C5:2' },
-    { id: 'mary', title: 'Mary Had a Little Lamb', subtitle: 'Traditional', category: K, level: 'Easy', tempo: 110, melody:
-      'E4 D4 C4 D4 | E4 E4 E4:2 | D4 D4 D4:2 | E4 G4 G4:2 | E4 D4 C4 D4 | E4 E4 E4 E4 | D4 D4 E4 D4 | C4:4' },
-    { id: 'frere', title: 'Frère Jacques', subtitle: 'Traditional · in F', category: K, level: 'Easy', tempo: 110, melody: fj },
-    { id: 'oldmac', title: 'Old MacDonald Had a Farm', subtitle: 'Traditional', category: K, level: 'Easy', tempo: 130, melody:
-      omd + 'D4 | ' + omd + 'D4:.5 D4:.5 | G4 G4 G4 D4:.5 D4:.5 | G4 G4 G4:2 | G4:.5 G4:.5 G4 G4:.5 G4:.5 G4 | G4:.5 G4:.5 G4:.5 G4:.5 G4 G4 | ' + omd },
-    { id: 'row', title: 'Row, Row, Row Your Boat', subtitle: 'Traditional', category: K, level: 'Easy', tempo: 100, meter: 3, melody:
-      'C4:1.5 C4:1.5 | C4 D4:.5 E4:1.5 | E4 D4:.5 E4 F4:.5 | G4:3 | C5:.5 C5:.5 C5:.5 G4:.5 G4:.5 G4:.5 | E4:.5 E4:.5 E4:.5 C4:.5 C4:.5 C4:.5 | G4 F4:.5 E4 D4:.5 | C4:3' },
-    { id: 'london', title: 'London Bridge Is Falling Down', subtitle: 'Traditional', category: K, level: 'Easy', tempo: 120, melody:
-      lbA + ' G4:1.5 A4:.5 G4 F4 | E4 F4 G4:2 | D4:2 G4:2 | E4 C4:3' },
-    { id: 'saints', title: 'When the Saints Go Marching In', subtitle: 'Traditional', category: K, level: 'Easy', tempo: 140, pickup: 3, melody:
-      'C4 E4 F4 | G4:4 | r C4 E4 F4 | G4:4 | r C4 E4 F4 | G4:2 E4:2 | C4:2 E4:2 | D4:4 | r E4 E4 D4 | C4:3 C4 | E4:2 G4:2 | G4 F4:3 | r E4 F4 G4 | E4:2 C4:2 | D4:2 C4:2 | C4:4' },
-    { id: 'auld', title: 'Auld Lang Syne', subtitle: 'Scottish traditional', category: K, level: 'Easy', tempo: 90, pickup: 1, melody:
-      'D4 | G4:1.5 G4:.5 G4 B4 | A4:1.5 G4:.5 A4 B4:.5 A4:.5 | G4:1.5 G4:.5 B4 D5 | E5:3 E5 | D5:1.5 B4:.5 B4 G4 | A4:1.5 G4:.5 A4 B4:.5 A4:.5 | G4:1.5 E4:.5 E4 D4 | G4:3' },
-    { id: 'amazing', title: 'Amazing Grace', subtitle: 'Traditional hymn', category: K, level: 'Easy', tempo: 90, meter: 3, pickup: 1, melody:
-      'D4 | G4:2 B4:.5 G4:.5 | B4:2 A4 | G4:2 E4 | D4:2 D4 | G4:2 B4:.5 G4:.5 | B4:2 A4 | D5:3 | D5:2 B4:.5 D5:.5 | B4:.5 G4:1.5 D4 | E4:1.5 G4:.5 G4:.5 E4:.5 | D4:2 D4 | G4:2 B4:.5 G4:.5 | B4:2 A4 | G4:3' },
-    { id: 'greensleeves', title: 'Greensleeves', subtitle: 'English folk', category: K, level: 'Medium', tempo: 110, meter: 3, pickup: .5, melody:
-      'A4:.5 | C5 D5:.5 E5:.75 F5:.25 E5:.5 | D5 B4:.5 G4:.75 A4:.25 B4:.5 | C5 A4:.5 A4:.75 G#4:.25 A4:.5 | B4 G#4:.5 E4 A4:.5 | ' +
-      'C5 D5:.5 E5:.75 F5:.25 E5:.5 | D5 B4:.5 G4:.75 A4:.25 B4:.5 | C5:.75 B4:.25 A4:.5 G#4:.75 F#4:.25 G#4:.5 | A4:1.5' },
+    { id: 'twinkle', title: 'Twinkle Twinkle Little Star', subtitle: 'Traditional · two verses', category: K, level: 'Easy', tempo: 100, melody: twV + ' ' + twV },
+    { id: 'birthday', title: 'Happy Birthday', subtitle: 'Traditional · twice', category: K, level: 'Easy', tempo: 100, meter: 3, pickup: 1, melody: hbV + ' C5:2 ' + hbV + ' C5:2' },
+    { id: 'mary', title: 'Mary Had a Little Lamb', subtitle: 'Traditional · three verses', category: K, level: 'Easy', tempo: 110, melody: mhV + mhV + mhV },
+    { id: 'frere', title: 'Frère Jacques', subtitle: 'Traditional · in F, twice', category: K, level: 'Easy', tempo: 110, melody: fj + ' | ' + fj },
+    { id: 'oldmac', title: 'Old MacDonald Had a Farm', subtitle: 'Traditional · two verses', category: K, level: 'Easy', tempo: 130, melody: omV + ' G4:4 | ' + omV + ' G4:4' },
+    { id: 'row', title: 'Row, Row, Row Your Boat', subtitle: 'Traditional · three times', category: K, level: 'Easy', tempo: 100, meter: 3, melody: rwV + rwV + rwV },
+    { id: 'london', title: 'London Bridge Is Falling Down', subtitle: 'Traditional · three verses', category: K, level: 'Easy', tempo: 120, melody: lbV + lbV + lbV },
+    { id: 'saints', title: 'When the Saints Go Marching In', subtitle: 'Traditional · three verses', category: K, level: 'Easy', tempo: 140, pickup: 3, melody:
+      'C4 E4 F4 | ' + stV + ' C4:2 | C4 C4 E4 F4 | ' + stV + ' C4:2 | C4 C4 E4 F4 | ' + stV + ' C4:2 | C4:4' },
+    { id: 'auld', title: 'Auld Lang Syne', subtitle: 'Scottish traditional · two verses', category: K, level: 'Easy', tempo: 90, pickup: 1, melody: 'D4 | ' + alV + ' G4:3 D4 | ' + alV + ' G4:3' },
+    { id: 'amazing', title: 'Amazing Grace', subtitle: 'Traditional hymn · three verses', category: K, level: 'Easy', tempo: 90, meter: 3, pickup: 1, melody:
+      'D4 | ' + agV + ' G4:2 D4 | ' + agV + ' G4:2 D4 | ' + agV + ' G4:3' },
+    { id: 'greensleeves', title: 'Greensleeves', subtitle: 'English folk · verse and chorus, twice', category: K, level: 'Medium', tempo: 110, meter: 3, pickup: .5, melody:
+      'A4:.5 | ' + gsV + gsC + ' A4:2.5 A4:.5 | ' + gsV + gsC + ' A4:2.5' },
   ].map(song);
 })();
