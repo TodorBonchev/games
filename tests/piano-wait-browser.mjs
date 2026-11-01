@@ -13,7 +13,8 @@ const ctx = await browser.newContext({ ...iphone });
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
-page.on('console', m => m.type() === 'error' && errors.push(m.text()));
+// sample fetches deliberately blocked in the offline test log network errors; ignore only those
+page.on('console', m => m.type() === 'error' && !(/Failed to load resource/.test(m.text()) && /midi-js-soundfonts/.test(m.location().url)) && errors.push(m.text()));
 let passed = 0;
 const t = async (name, fn) => { await fn(); passed++; console.log('ok -', name); };
 await page.goto(URL);
@@ -169,6 +170,36 @@ await t('Exit leaves song mode', async () => {
   await page.tap('#lexit');
   assert.ok(!(await page.isVisible('#lbar')));
   assert.equal(await page.locator('#kb .k.next').count(), 0);
+});
+
+await t('Sound picker: present, opens, switches, remembered, falls back when samples fail', async () => {
+  assert.ok(await page.isVisible('#sndBtn'));
+  await page.tap('#sndBtn');
+  assert.ok(await page.isVisible('#sndMenu .panel'));
+  assert.equal(await page.locator('#sndMenu .opt').count(), 9);
+  assert.match(await page.textContent('#sndMenu .credit'), /CC BY 3\.0/);
+  await page.tap('#sndMenu .opt[data-snd="church"]');
+  assert.ok(!(await page.isVisible('#sndMenu .panel')));
+  assert.equal(await page.evaluate(() => localStorage.getItem('piano.sound')), 'church');
+  await page.waitForFunction(() => __sound.state === 'ready' || __sound.state === 'failed', null, { timeout: 20000 });
+  console.log('  church organ samples:', await page.evaluate(() => __sound.state));
+  await tapMidi(60);
+  await page.reload();
+  assert.equal(await page.evaluate(() => __sound.id), 'church');
+  // offline: every sample request fails -> built-in synth still plays
+  await page.route('**/midi-js-soundfonts/**', r => r.abort());
+  await page.tap('#sndBtn'); await page.tap('#sndMenu .opt[data-snd="harpsi"]');
+  await page.waitForFunction(() => __sound.state === 'failed', null, { timeout: 20000 });
+  await page.evaluate(() => { window.__notes = []; });
+  await tapMidi(62);
+  assert.deepEqual(await page.evaluate(() => __notes), ['D4']);
+  await page.tap('#sndBtn');
+  assert.match(await page.textContent('#sndStat'), /built-in synth/);
+  if (shot) await page.screenshot({ path: 'piano-sounds-screenshot.png' });
+  await page.tap('#rvb');
+  assert.equal(await page.evaluate(() => __sound.reverb), true);
+  await page.tap('#sndMenu .opt[data-snd="grand"]');
+  await page.unroute('**/midi-js-soundfonts/**');
 });
 
 if (shot) { await pick('imperial'); await tapNext(); await tapNext(); await page.screenshot({ path: 'piano-wait-screenshot.png' }); }

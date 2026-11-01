@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Piano">
-<link rel="manifest" href="manifest.json?v4">
+<link rel="manifest" href="manifest.json?v5">
 <link rel="apple-touch-icon" href="../icon-180.png">
 <title>Piano</title>
 <style>
@@ -85,6 +85,20 @@ body.staffon #staff.has{display:block}
 #staff .hit{fill:transparent}#staff .n.cur .hit{fill:#39d0ff33}#staff .n.nxt .hit{fill:#5fdca022}
 #staff .ln{stroke:#555;stroke-width:1}#staff .bm{fill:#1f1f1f}#staff .bm.played{fill:#a3a3a3}
 @media (max-height:340px){#staff{flex-basis:56px}#bar{height:36px}#lbar{height:30px}#lbar button{height:24px;padding:0 7px}#lstep{min-width:60px}}
+#sndBtn{max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sndBtn.loading::after{content:'';width:10px;height:10px;margin-left:6px;border:2px solid #c79a3a;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex:0 0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+#sndMenu{display:none;position:fixed;z-index:8;inset:0;background:#0006}
+#sndMenu.show{display:block}
+#sndMenu .panel{position:absolute;top:calc(env(safe-area-inset-top) + 44px);left:50%;transform:translateX(-50%);width:min(560px,94vw);max-height:calc(100% - 54px);overflow:auto;background:#1d1d1d;border-radius:12px;padding:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;touch-action:pan-y;box-shadow:0 8px 24px #000a}
+#sndMenu .opt{background:#2a2a2a;color:#eee;border:0;border-radius:8px;padding:6px 9px;font:inherit;text-align:left;min-height:34px}
+#sndMenu .opt small{display:block;opacity:.6;font-weight:500;font-size:11px}
+#sndMenu .opt.on{background:#c79a3a;color:#111}
+#sndMenu .row{grid-column:1/-1;display:flex;align-items:center;gap:8px;justify-content:space-between}
+#sndMenu #rvb{background:#2a2a2a;color:#eee;border:0;border-radius:8px;height:32px;padding:0 12px;font:inherit}#sndMenu #rvb.on{background:#c79a3a;color:#111}
+#sndMenu .credit{grid-column:1/-1;font-size:10px;font-weight:500;opacity:.55;padding:2px 4px}
+#sndMenu .credit a{color:inherit}
+#sndStat{font-size:11px;opacity:.7;font-weight:500}
 </style>
 </head>
 <body>
@@ -95,6 +109,7 @@ body.staffon #staff.has{display:block}
   <button id="od" aria-label="Octave down">−</button><span id="oct">C4</span><button id="ou" aria-label="Octave up">+</button>
   <button id="sus">Sustain</button>
   <button id="songsBtn">♪ Songs</button>
+  <button id="sndBtn" aria-label="Instrument sound" aria-haspopup="true">🎹 Grand</button>
   <input id="vol" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume">
   <span class="sp"></span>
   <button id="fs" aria-label="Fullscreen" hidden>⛶</button>
@@ -109,8 +124,11 @@ body.staffon #staff.has{display:block}
 <div id="sheet"><div class="panel"><h2>Learn a song <input id="songq" type="search" placeholder="Search songs…" autocomplete="off" aria-label="Search songs"> <button id="sheetX" aria-label="Close">✕</button></h2><div id="songlist"></div></div></div>
 <div id="done"><div class="panel"><div class="big">🎉 Well done!</div><div id="dtitle"></div><div id="dstats"></div>
  <div class="row"><button id="dagain">↻ Play again</button><button id="dsongs">♪ Songs</button><button id="dclose">Close</button></div></div></div>
+<div id="sndMenu" role="dialog" aria-label="Choose a sound"><div class="panel"><div id="sndList" style="display:contents"></div>
+ <div class="row"><button id="rvb" aria-pressed="false">Reverb</button><span id="sndStat"></span></div>
+ <div class="credit">Sampled sounds: FluidR3_GM SoundFont by Frank Wen, via <a href="https://github.com/gleitz/midi-js-soundfonts" target="_blank" rel="noopener">gleitz/midi-js-soundfonts</a> — CC BY 3.0. Falls back to the built-in synth when offline.</div></div></div>
 <div id="rot"><div>📱</div>Rotate your phone to play<button id="rotgo">Play in portrait</button></div>
-<script src="songs.js?v4"></script>
+<script src="songs.js?v5"></script>
 <script>
 (() => {
 const kb = document.getElementById('kb');
@@ -148,23 +166,122 @@ function labels(){
   document.getElementById('oct').textContent = 'C'+(4+shift);
 }
 // ---------- audio ----------
-let ctx, master, comp;
+const SF = 'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/';   // CC BY 3.0
+const SOUNDS = [
+  {id:'grand',  name:'Grand Piano',    sub:'Concert grand', gm:'acoustic_grand_piano', rel:0.3},
+  {id:'old',    name:'Old Piano',      sub:'Honky-tonk upright', gm:'honkytonk_piano', rel:0.25, vintage:true},
+  {id:'epiano', name:'Electric Piano', sub:'Rhodes-style', gm:'electric_piano_1', rel:0.3},
+  {id:'church', name:'Church Organ',   sub:'Pipe organ', gm:'church_organ', loop:true, rel:0.18},
+  {id:'jazz',   name:'Jazz Organ',     sub:'Hammond drawbars', gm:'drawbar_organ', loop:true, rel:0.06},
+  {id:'harpsi', name:'Harpsichord',    sub:'Baroque', gm:'harpsichord', rel:0.12},
+  {id:'mbox',   name:'Music Box',      sub:'Tinkly', gm:'music_box', rel:0.8},
+  {id:'strings',name:'Strings',        sub:'Ensemble', gm:'string_ensemble_1', loop:true, rel:0.4},
+  {id:'synth',  name:'Classic Synth',  sub:'Built-in, offline', gm:null}
+];
+const FL = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const LO = 48, HI = 96, STEP = 3;   // C3..C7, one sample every 3 semitones (≤1.5 st shift)
+const MAXV = 24;
+let ctx, master, comp, wet, dry, conv;
+let soundId = (()=>{ try{ const v=localStorage.getItem('piano.sound'); return SOUNDS.some(x=>x.id===v)?v:'grand'; }catch(e){ return 'grand'; } })();
+let reverbOn = (()=>{ try{ return localStorage.getItem('piano.reverb')==='1'; }catch(e){ return false; } })();
+const banks = {};                  // id -> {state:'loading'|'ready'|'failed', buf:Map(midi->AudioBuffer)}
 function audio(){
   if (!ctx){
     ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
     comp = ctx.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4;
     master = ctx.createGain(); master.gain.value = vol.value;
-    master.connect(comp).connect(ctx.destination);
+    dry = ctx.createGain(); wet = ctx.createGain(); conv = ctx.createConvolver();
+    conv.buffer = impulse(ctx, 2.2); wet.gain.value = reverbOn ? 0.28 : 0;
+    master.connect(dry).connect(comp); master.connect(conv).connect(wet).connect(comp);
+    comp.connect(ctx.destination);
+    loadSound(soundId);
   }
   if (ctx.state !== 'running') ctx.resume();
   return ctx;
 }
+function impulse(c, sec){
+  const n = c.sampleRate*sec|0, b = c.createBuffer(2, n, c.sampleRate);
+  for (let ch=0; ch<2; ch++){ const d=b.getChannelData(ch); for (let k=0;k<n;k++) d[k]=(Math.random()*2-1)*Math.pow(1-k/n,3.2); }
+  return b;
+}
+const cur = ()=>SOUNDS.find(x=>x.id===soundId);
+function decode(ab){ return new Promise((res,rej)=>{ const p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }); }
+async function fetchBuf(url){
+  const ac = window.AbortController ? new AbortController() : null;
+  const to = setTimeout(()=>ac && ac.abort(), 12000);
+  try { const r = await fetch(url, ac ? {signal:ac.signal} : {}); if (!r.ok) throw new Error('HTTP '+r.status); return await decode(await r.arrayBuffer()); }
+  finally { clearTimeout(to); }
+}
+function loadSound(id){
+  const sd = SOUNDS.find(x=>x.id===id);
+  if (!sd || !sd.gm || !ctx || banks[id]) { status(); return; }
+  const bank = banks[id] = {state:'loading', buf:new Map()};
+  status();
+  const jobs = [];
+  for (let m=LO; m<=HI; m+=STEP){
+    const url = SF + sd.gm + '-mp3/' + FL[m%12] + (Math.floor(m/12)-1) + '.mp3';
+    jobs.push(fetchBuf(url).then(b=>bank.buf.set(m,b), ()=>{}));
+  }
+  Promise.all(jobs).then(()=>{ bank.state = bank.buf.size >= 3 ? 'ready' : 'failed'; if (bank.state==='failed') delete banks[id].buf; status(); });
+}
+function status(){
+  const b = banks[soundId], sd = cur(), btn = $('sndBtn');
+  const st = !sd.gm ? 'synth' : !b ? 'idle' : b.state;
+  btn.textContent = (sd.loop ? '🎛 ' : '🎹 ') + sd.name.replace(' Piano','').replace(' Organ',' Org.');
+  btn.classList.toggle('loading', st==='loading');
+  btn.dataset.state = st;
+  $('sndStat').textContent = st==='loading' ? 'Loading samples…' : st==='failed' ? 'Offline — using built-in synth' : st==='ready' ? 'Real samples loaded' : st==='synth' ? 'Built-in synth' : '';
+  window.__sound = {id:soundId, state:st, reverb:reverbOn};
+}
 const voices = new Map();       // key idx -> voice
 const held = new Set();         // key idx physically held
+const tails = [];               // released voices still ringing (for polyphony cap)
 function noteOn(i, vel=0.9){
-  const c = audio(), t = c.currentTime;
+  const c = audio();
   if (voices.has(i)) release(i, 0.03);
-  const midi = BASE+shift*12+i, f = 440*Math.pow(2,(midi-69)/12);
+  const midi = BASE+shift*12+i;
+  const sd = cur(), b = banks[soundId];
+  const v = (sd.gm && b && b.state==='ready') ? sampleVoice(c, midi, vel, sd, b) : synthVoice(c, midi, vel);
+  voices.set(i, v);
+  const live = tails.filter(x=>x.end > c.currentTime); tails.length=0; tails.push(...live);
+  while (voices.size + tails.length > MAXV && tails.length) tails.shift().kill();
+  keys[i]?.classList.add('down');
+  window.__notes && window.__notes.push(NAMES[midi%12]+(Math.floor(midi/12)-1));
+}
+function sampleVoice(c, midi, vel, sd, b){
+  let best = null, bd = 99;
+  for (const m of b.buf.keys()){ const d = Math.abs(m-midi); if (d<bd){ bd=d; best=m; } }
+  const buf = b.buf.get(best), rate = Math.pow(2,(midi-best)/12), t = c.currentTime;
+  const out = c.createGain(), srcs = [];
+  const peak = 0.75*vel;
+  out.gain.setValueAtTime(0.0001, t);
+  out.gain.linearRampToValueAtTime(peak, t + (sd.loop ? 0.012 : 0.003));
+  let node = out;
+  if (sd.vintage){       // old upright: duller top end + a slightly out-of-tune second string
+    const lp = c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=4200; lp.Q.value=0.5;
+    lp.connect(out); node = lp;
+  }
+  const mk = (det, g)=>{
+    const s = c.createBufferSource(); s.buffer = buf; s.playbackRate.value = rate; s.detune.value = det;
+    if (sd.loop){ s.loop = true; s.loopStart = Math.min(0.5, buf.duration*0.25); s.loopEnd = Math.max(s.loopStart+0.2, buf.duration-0.35); }
+    const gg = c.createGain(); gg.gain.value = g; s.connect(gg).connect(node); s.start(t); srcs.push(s);
+  };
+  mk(0, 1);
+  if (sd.vintage){
+    mk(9 + Math.random()*4, 0.35);
+    const n = c.createBufferSource(), ng = c.createGain(), nf = c.createBiquadFilter();
+    n.buffer = noiseBuf(c); nf.type='bandpass'; nf.frequency.value=2500; ng.gain.value=0.025*vel;
+    n.connect(nf).connect(ng).connect(out); n.start(t); srcs.push(n);
+  }
+  out.connect(master);
+  const end = t + (sd.loop ? 1e9 : buf.duration/rate + 0.05);
+  if (!sd.loop) srcs.forEach(s=>{ try{s.stop(end)}catch(e){} });
+  return {out, srcs, rel:sd.rel, end};
+}
+let _nb;
+function noiseBuf(c){ if (_nb) return _nb; const n=c.sampleRate*0.05|0; _nb=c.createBuffer(1,n,c.sampleRate); const d=_nb.getChannelData(0); for(let k=0;k<n;k++) d[k]=(Math.random()*2-1)*Math.pow(1-k/n,4); return _nb; }
+function synthVoice(c, midi, vel){
+  const t = c.currentTime, f = 440*Math.pow(2,(midi-69)/12);
   const out = c.createGain(), lp = c.createBiquadFilter();
   lp.type='lowpass'; lp.Q.value=0.7;
   lp.frequency.setValueAtTime(Math.min(16000, f*10), t);
@@ -176,7 +293,7 @@ function noteOn(i, vel=0.9){
   out.gain.exponentialRampToValueAtTime(peak*0.45, t+0.25);
   out.gain.exponentialRampToValueAtTime(0.0001, t+decay);
   const parts = [[1,1,0],[1,0.5,6],[2,0.38,-4],[3,0.16,3],[4,0.1,-2],[5,0.05,4],[6,0.03,0]];
-  const oscs = [];
+  const srcs = [];
   for (const [h,a,det] of parts){
     if (f*h > 18000) continue;
     const o = c.createOscillator(), g = c.createGain();
@@ -185,26 +302,24 @@ function noteOn(i, vel=0.9){
     o.detune.value = det;
     g.gain.setValueAtTime(a, t);
     g.gain.exponentialRampToValueAtTime(a*0.2+0.0001, t+decay*0.6/h);
-    o.connect(g).connect(lp); o.start(t); o.stop(t+decay+0.1); oscs.push(o);
+    o.connect(g).connect(lp); o.start(t); o.stop(t+decay+0.1); srcs.push(o);
   }
-  // hammer click
-  const nb = c.createBuffer(1, c.sampleRate*0.03|0, c.sampleRate), d = nb.getChannelData(0);
-  for (let k=0;k<d.length;k++) d[k]=(Math.random()*2-1)*Math.pow(1-k/d.length,3);
   const ns = c.createBufferSource(), ng = c.createGain(), nf = c.createBiquadFilter();
-  ns.buffer=nb; nf.type='bandpass'; nf.frequency.value=Math.min(8000,f*4); ng.gain.value=0.06*vel;
+  ns.buffer=noiseBuf(c); nf.type='bandpass'; nf.frequency.value=Math.min(8000,f*4); ng.gain.value=0.06*vel;
   ns.connect(nf).connect(ng).connect(out); ns.start(t);
   lp.connect(out).connect(master);
-  voices.set(i, {out, oscs});
-  keys[i]?.classList.add('down');
-  window.__notes && window.__notes.push(NAMES[midi%12]+(Math.floor(midi/12)-1));
+  return {out, srcs, rel:0.35, end:t+decay+0.1};
 }
-function release(i, time=0.35){
+function release(i, time){
   const v = voices.get(i); if (!v) return;
-  const t = ctx.currentTime;
+  const t = ctx.currentTime, r = time ?? v.rel;
   v.out.gain.cancelScheduledValues(t);
-  v.out.gain.setTargetAtTime(0.0001, t, time/4);
-  v.oscs.forEach(o=>{ try{o.stop(t+time+0.05)}catch(e){} });
+  v.out.gain.setValueAtTime(Math.max(0.0001, v.out.gain.value), t);
+  v.out.gain.setTargetAtTime(0.0001, t, r/4);
+  const end = t + r + 0.05;
+  v.srcs.forEach(o=>{ try{o.stop(end)}catch(e){} });
   voices.delete(i);
+  tails.push({end, kill(){ const k=ctx.currentTime; v.out.gain.cancelScheduledValues(k); v.out.gain.setTargetAtTime(0.0001,k,0.008); v.srcs.forEach(o=>{try{o.stop(k+0.04)}catch(e){}}); }});
 }
 function keyDown(i){ held.add(i); noteOn(i); learnHit(i); }
 function keyUp(i){ held.delete(i); keys[i]?.classList.remove('down'); if (!sustain) release(i); }
@@ -236,7 +351,7 @@ function up(e){
 }
 ['pointerup','pointercancel','pointerleave'].forEach(t=>kb.addEventListener(t,up));
 // block gestures / menus
-['touchstart','touchmove','gesturestart','dblclick'].forEach(t=>document.addEventListener(t,e=>{ if(!e.target.closest("button,a,input,#sheet .panel,#staff")) e.preventDefault(); },{passive:false}));
+['touchstart','touchmove','gesturestart','dblclick'].forEach(t=>document.addEventListener(t,e=>{ if(!e.target.closest("button,a,input,#sheet .panel,#sndMenu,#staff")) e.preventDefault(); },{passive:false}));
 document.addEventListener('contextmenu',e=>e.preventDefault());
 // unlock on first touch (iOS)
 const unlock = ()=>{ audio(); const b=ctx.createBuffer(1,1,22050), s=ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination); s.start(0); };
@@ -248,6 +363,28 @@ vol.addEventListener('input',()=>{ if(master) master.gain.value = vol.value; });
 $('lab').onclick = ()=>{ labelMode=(labelMode+1)%3; labels(); };
 $('od').onclick = ()=>{ if(shift>-3){ shift--; labels(); } };
 $('ou').onclick = ()=>{ if(shift<2){ shift++; labels(); } };
+// ---------- sound picker ----------
+const sndMenu = $('sndMenu');
+function renderSounds(){
+  $('sndList').innerHTML = SOUNDS.map(x=>`<button class="opt${x.id===soundId?' on':''}" data-snd="${x.id}">${x.name}<small>${x.sub}</small></button>`).join('');
+  $('rvb').classList.toggle('on', reverbOn); $('rvb').setAttribute('aria-pressed', reverbOn);
+}
+$('sndBtn').onclick = ()=>{ audio(); renderSounds(); status(); sndMenu.classList.add('show'); };
+sndMenu.addEventListener('click', e=>{
+  const o = e.target.closest('[data-snd]');
+  if (o){ setSound(o.dataset.snd); sndMenu.classList.remove('show'); return; }
+  if (e.target === sndMenu) sndMenu.classList.remove('show');
+});
+function setSound(id){
+  [...voices.keys()].forEach(i=>release(i, 0.05));
+  soundId = id; try{ localStorage.setItem('piano.sound', id); }catch(e){}
+  if (banks[id] && banks[id].state==='failed') delete banks[id];
+  if (ctx) loadSound(id); renderSounds(); status();
+}
+$('rvb').onclick = ()=>{ reverbOn=!reverbOn; try{ localStorage.setItem('piano.reverb', reverbOn?'1':'0'); }catch(e){}
+  if (wet) wet.gain.setTargetAtTime(reverbOn?0.28:0, ctx.currentTime, 0.05); renderSounds(); status(); };
+window.__setSound = setSound;
+status();
 $('sus').onclick = ()=>{ sustain=!sustain; $('sus').classList.toggle('on',sustain);
   if(!sustain) [...voices.keys()].forEach(i=>{ if(!held.has(i)) release(i); }); };
 const fsb = $('fs'), root = document.documentElement;
