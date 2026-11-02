@@ -75,10 +75,10 @@ test('extended songs keep their full forms', async () => {
   assert.ok(count('imperial') >= 100, 'Imperial March: main theme twice, B section with both endings, da capo');
   assert.equal(count('ode'), 62, 'Ode to Joy AABA');
   assert.ok(count('elise') >= 400 && count('starwars') >= 180 && count('turkish') >= 300 && count('nachtmusik') >= 300 && count('jingle') >= 190);
-  assert.ok(count('moonlight') >= 95 && count('swanlake') >= 85 && count('pinkpanther') >= 75, 'new MIDI-sourced songs');
+  assert.ok(count('moonlight') >= 95 && count('swanlake') >= 85 && count('pinkpanther') >= 75 && count('titanic') >= 90 && count('shapeofyou') >= 250 && count('santa') >= 105 && count('takeonme') >= 75, 'new MIDI-sourced songs');
   for (const s of w.PIANO_SONGS) {   // songs with a meter fill whole bars after the pickup (sheet bar lines line up)
     const total = s.notes.reduce((a, n) => a + n.dur, 0), m = s.meter || 4, whole = b => Math.abs(b / m - Math.round(b / m)) < 0.02;
-    if (['ode', 'imperial', 'elise', 'jingle', 'twinkle', 'silent', 'starwars', 'turkish', 'nachtmusik', 'danube', 'clairdelune', 'zelda', 'megalovania', 'moonlight', 'swanlake', 'pinkpanther'].includes(s.id)) assert.ok(whole(total) || whole(total - (s.pickup || 0)), `${s.id}: ${total} beats`);
+    if (['ode', 'imperial', 'elise', 'jingle', 'twinkle', 'silent', 'starwars', 'turkish', 'nachtmusik', 'danube', 'clairdelune', 'zelda', 'megalovania', 'moonlight', 'swanlake', 'pinkpanther', 'titanic', 'shapeofyou'].includes(s.id)) assert.ok(whole(total) || whole(total - (s.pickup || 0)), `${s.id}: ${total} beats`);
   }
 });
 
