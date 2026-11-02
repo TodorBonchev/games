@@ -34,8 +34,8 @@ window.PIANO_SONGS = (() => {
   const elP = 'E5 D#5 | E5 D#5 E5 B4 D5 C5 | A4:1.5 C4 E4 A4 | B4:1.5 E4 G#4 B4 | C5:1.5 E4 ';
   const elQ = 'E5 D#5 | E5 D#5 E5 B4 D5 C5 | A4:1.5 C4 E4 A4 | B4:1.5 E4 C5 B4 | ';
   const swA = 'G4:.33 G4:.33 G4:.34 | C5:2 G5:2 | F5:.33 E5:.33 D5:.34 C6:2 G5 | F5:.33 E5:.33 D5:.34 C6:2 G5 | F5:.33 E5:.33 F5:.34 D5:2';
-  const swB = 'G4:.75 G4:.25 | A4:1.5 A4:.5 F5:.5 E5:.5 D5:.5 C5:.5 | C5:.33 D5:.33 E5:.34 D5 B4 G4:.75 G4:.25 | A4:1.5 A4:.5 F5:.5 E5:.5 D5:.5 C5:.5 | G5 D5:2 G4:.75 G4:.25 | ' +
-    'A4:1.5 A4:.5 F5:.5 E5:.5 D5:.5 C5:.5 | C5:.33 D5:.33 E5:.34 D5 B4 G5:.75 G5:.25 | C6:.75 A#5:.25 G#5:.75 G5:.25 F5:.75 D#5:.25 D5:.75 C5:.25 | G5:3';
+  const swB = 'G4:.75 G4:.25 | A4:1.5 A4:.5 F5:.5 E5:.5 D5:.5 C5:.5 | C5:.33 D5:.33 E5:.34 D5:.75 A4:.25 B4 G4:.75 G4:.25 | A4:1.5 A4:.5 F5:.5 E5:.5 D5:.5 C5:.5 | G5 D5:2 G4:.75 G4:.25 | ' +
+    'A4:1.5 A4:.5 F5:.5 E5:.5 D5:.5 C5:.5 | C5:.33 D5:.33 E5:.34 D5:.75 A4:.25 B4 G5:.75 G5:.25 | C6:.67 A#5:.33 G#5:.67 G5:.33 F5:.67 D#5:.33 D5:.67 C5:.33 | G5:3';
   const pirA = 'A4:.5 C5:.5 | D5 D5 D5:.5 E5:.5 | F5 F5 F5:.5 G5:.5 | E5 E5 D5:.5 C5:.5 |';
   const tetA = 'E5 B4:.5 C5:.5 D5 C5:.5 B4:.5 | A4 A4:.5 C5:.5 E5 D5:.5 C5:.5 | B4:1.5 C5:.5 D5 E5 | C5 A4 A4:2 |';
   const tetB = 'r:.5 D5 F5:.5 A5 G5:.5 F5:.5 | E5:1.5 C5:.5 E5 D5:.5 C5:.5 | B4 B4:.5 C5:.5 D5 E5 | C5 A4 A4:2 |';
@@ -113,11 +113,12 @@ window.PIANO_SONGS = (() => {
   const zlB = 'G5:2 F5:.5 E5:.5 | F5:3 | F5:2 E5:.5 D5:.5 | E5:3 | E5:2 D5:.5 C5:.5 | D5:3 | D5:2 C5:.5 B4:.5 | C5:3 | ';
   return [
     // ---------------- Star Wars & Movies ----------------
-    { id: 'imperial', title: 'The Imperial March', subtitle: 'Star Wars · right hand', category: M, level: 'Medium', tempo: 104, featured: true, melody:
-      impOpen + ' | ' + impOpen + ' | ' +
-      impA + ' G4:.25 | A#4 G4:.75 A#4:.25 D5:2 | ' + impA + ' A#4:.25 | G4 D#4:.75 A#4:.25 G4:2 | ' + impOpen },
-    { id: 'starwars', title: 'Star Wars Main Theme', subtitle: 'John Williams · in C · A A B A, B A A, finale', category: M, level: 'Medium', tempo: 104, meter: 4, pickup: 1, melody:
-      [swA, swA, swB, swA, swB, swA, swA].join(' ') + ' G4:.33 G4:.33 G4:.34 | C5:.33 C5:.33 C5:.34 C5:3' },
+    { id: 'imperial', title: 'The Imperial March', subtitle: 'Star Wars · A B B, A B B, A B, coda', category: M, level: 'Medium', tempo: 104, featured: true, melody:
+      [1, 2, 3].map(i => impOpen + ' | ' + (i < 3 ? impA + ' G4:.25 | A#4 G4:.75 A#4:.25 D5:2 | ' : '') +
+        impA + ' A#4:.25 | G4 D#4:.75 A#4:.25 G4:2 | ').join('') +
+      'G4 G4 G4 D#4:.75 A#4:.25 | G4 D#4:.75 A#4:.25 G4 D#4:.75 A#4:.25 | G4:4' },
+    { id: 'starwars', title: 'Star Wars Main Theme', subtitle: 'John Williams · in C · A A, B, A A, finale', category: M, level: 'Medium', tempo: 104, meter: 4, pickup: 1, melody:
+      [swA, swA, swB, swA, swA].join(' ') + ' G4 | C6:4 | C6:3 G5:.33 G5:.33 G5:.34 | G5 r:3' },
     { id: 'pirate', title: "He's a Pirate", subtitle: 'Pirates of the Caribbean · A A B, twice', category: M, level: 'Hard', tempo: 140, meter: 3, pickup: 1, melody:
       pirFull + ' E5:2 ' + pirFull + ' E5:2' },
     { id: 'hedwig', title: "Hedwig's Theme", subtitle: 'Harry Potter · transposed to D minor', category: M, level: 'Hard', tempo: 120, transpose: -2, meter: 3, pickup: 1, melody:
@@ -181,6 +182,7 @@ window.PIANO_SONGS = (() => {
     { id: 'megalovania', title: 'Megalovania', subtitle: 'Toby Fox · Undertale riff, four roots, twice · up a tone', category: P, level: 'Hard', tempo: 120, transpose: 2, melody: mgR + mgR },
     { id: 'zelda', title: "Zelda's Lullaby", subtitle: 'Koji Kondo · Ocarina of Time · in G', category: P, level: 'Easy', tempo: 90, transpose: -2, meter: 3, melody: zlA + zlA.replace('D5:2 C5:.5 B4:.5 | A4:3', 'D6:3 | r:3') + zlB + zlA },
     // ---------------- Kids & Folk ----------------
+    { id: 'zaychentseto', title: 'Зайченцето бяло', subtitle: 'The Little White Bunny · Petar Stupel · two verses', category: K, level: 'Easy', tempo: 100, meter: 4, melody: 'G4:.5 G4:.5 E4:.5 G4:.5 C5:.5 B4:.25 A4:.25 G4 | G4:.5 G4:.5 E4:.5 G4:.5 C5:.5 B4:.25 A4:.25 G4 | F4:.5 F4:.5 G4:.5 G4:.5 E4 G4 | F4:.5 F4:.5 G4:.5 G4:.5 E4 G4 | A4:.5 A4:.5 C5:.5 C5:.5 G4 C5 | G4:.5 F4:.5 E4:.5 D4:.5 C4 C4 | G4:.5 G4:.5 E4:.5 G4:.5 C5:.5 B4:.25 A4:.25 G4 | G4:.5 G4:.5 E4:.5 G4:.5 C5:.5 B4:.25 A4:.25 G4 | F4:.5 F4:.5 G4:.5 G4:.5 E4 G4 | F4:.5 F4:.5 G4:.5 G4:.5 E4 G4 | A4:.5 A4:.5 C5:.5 C5:.5 G4 C5 | G4:.5 F4:.5 E4:.5 D4:.5 C4 C4' },
     { id: 'twinkle', title: 'Twinkle Twinkle Little Star', subtitle: 'Traditional · two verses', category: K, level: 'Easy', tempo: 100, melody: twV + ' ' + twV },
     { id: 'birthday', title: 'Happy Birthday', subtitle: 'Traditional · twice', category: K, level: 'Easy', tempo: 100, meter: 3, pickup: 1, melody: hbV + ' C5:2 ' + hbV + ' C5:2' },
     { id: 'mary', title: 'Mary Had a Little Lamb', subtitle: 'Traditional · three verses', category: K, level: 'Easy', tempo: 110, melody: mhV + mhV + mhV },
