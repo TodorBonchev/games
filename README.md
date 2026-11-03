@@ -358,14 +358,36 @@ The arcade browser suites test all twenty phone layouts, local checkpoints and c
 
 ### Upside Nib
 
-A crisp, original 2D pixel-art side-scroller (Canvas 2D, 16px tiles, integer scaling, smoothing off) with a gravity twist. Nib the lantern can flip between the **floor world** and the **ceiling world**: the screen never rotates, Nib flips upside down. Flipping is free on the ground; one mid-air flip is refilled on landing or stomping.
+A gravity-flipping pixel platformer built with Canvas 2D. Nib runs, jumps, stomps and flips between the floor and ceiling across four worlds. Each world now has three optional lantern stars and clear, collector (all three stars), and clean-run (no deaths or retries) medals. Desktop, touch portrait/landscape, and standard gamepads are supported.
 
-- **Blocks:** bricks (break when big), `?` blocks (coins), power-up blocks, pipes, hard blocks. Blocks can be bumped from either gravity side.
-- **Enemies:** Grumblebug (stomp it), Shellback (stomp into a shell, kick it into other enemies).
-- **Power-ups:** Glow Cap (grow / take one extra hit), Ember Bloom (throw bouncing embers with RUN).
-- **Goal:** flagpole with a height bonus plus a time bonus; checkpoints mid-level; 4 levels: Meadow Morning, Brickwork Breeze, Twin Skies, Lantern Keep.
-- **Feel:** run momentum and skidding, variable jump height, coyote time, jump buffer.
-- **Controls:** phone landscape d-pad + JUMP / FLIP / RUN·FIRE (safe-area aware); keyboard arrows/A-D, Space/Z/W jump, X/Shift run & fire, C/S/Down flip, P/Esc pause, M mute.
-- **Audio:** Web Audio chiptune effects and an original looping tune with mute.
-- **Save:** unlocked levels and best score in `localStorage` (`games:progress:upside`, `games:best:upside`).
-- **Tests:** `tests/upside.test.mjs` (logic, including a search bot that proves every level is completable — `tests/upside-bot.mjs`) and `tests/upside-browser.mjs` (touch, keyboard, pause, pixel scale, no console errors; `npm run test:upside`).
+- **Controls:** arrows/A-D move; Space/Z/W jump (hold for height); X/Shift run and fire; C/S/Down flip; P/Esc pause; M mute. Touch has a dedicated control deck in portrait. Gamepads use stick/d-pad, A jump, B flip, X/trigger run, and Start pause.
+- **Checkpoints:** light a flag by landing near it. Retrying restores saved blocks, coins, stars, enemies and power; one life is spent in Classic. Elapsed time and deaths stay on the run record. Respawn includes brief protection.
+- **Assist:** unlimited checkpoint retries and a slower countdown. Assisted records are kept separately from Classic records. Change Assist before starting a new run.
+- **Settings:** separate effects/music, reduced motion (respects the OS preference), auto-run, and Assist. Available on the title and pause screens.
+- **Save:** unlocks, best score, per-world records and preferences stay in localStorage. Unavailable or corrupt storage does not prevent play.
+- **Verification:** `npm test`, `UPSIDE_SKIP_CAPTURE=1 npm run test:upside`, and `npm run test:upside:quality`. The replay tests search for a route, then replay its inputs from a fresh simulation without rewinds. Browser checks cover real controls, responsive layout, accessibility, settings, and an accelerated campaign replay.
+
+The twenty improvements in this pass:
+
+| # | Improvement | Player benefit |
+|---|---|---|
+| 1 | Grounded checkpoint activation and world snapshots | Safe recovery without duplicating coins or score. |
+| 2 | Faster respawn, temporary protection and checkpoint retry | Less waiting and fairer recovery. |
+| 3 | Three optional lantern stars in every world | Reasons to explore and master the gravity routes. |
+| 4 | Clear, collector and clean-run medals | Distinct challenges beyond reaching the flag. |
+| 5 | Per-world score, time and star records | Persistent goals, separated by Classic and Assist. |
+| 6 | Assist mode | Unlimited retries and a gentler countdown. |
+| 7 | Physics edge-case repairs | Safe simulation steps, better corner correction and deferred growth. |
+| 8 | Contextual teaching hints | Learn blocks, stomps and air-flip recharge while playing. |
+| 9 | Gap signs | Read where to leap or transfer between worlds. |
+| 10 | Four world palettes and layered scenery | Meadow, sunset, twilight and lantern-night identities. |
+| 11 | Gravity destination guide | See the opposite landing surface before flipping. |
+| 12 | Landing squash, dust and lantern trails | Clearer movement feedback, with reduced-motion support. |
+| 13 | Progress, checkpoint, star and gravity HUD | Understand the route and available flip at a glance. |
+| 14 | Detailed results with retry/next actions | Review performance and immediately try another run. |
+| 15 | Chapter cards with saved records and medals | Choose a world and a personal challenge. |
+| 16 | Portrait control deck and width-aware pixel scaling | At least twenty tiles of look-ahead with separated controls. |
+| 17 | Reliable keyboard and multi-touch input | Aliases, cancelled touches and pause cannot leave controls stuck. |
+| 18 | Standard gamepad support | Play with sticks, d-pad and face buttons. |
+| 19 | Persistent sound, music, motion and auto-run preferences | Tune the experience to the player. |
+| 20 | Accessible help, settings and pause dialogs | Keyboard focus stays in menus; status and controls have readable labels. |

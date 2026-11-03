@@ -2,32 +2,36 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#5c94fc">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101b2a">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="description" content="Upside Nib — a retro 2D side-scrolling platformer where a little lantern sprite flips gravity between a floor world and a ceiling world. Four levels, touch and keyboard.">
+<meta name="description" content="A little lantern. Two sides to every sky. Flip gravity through four pixel-art worlds, collect hidden stars, and light every checkpoint. Play with keyboard, touch or controller.">
 <title>Upside Nib — Games</title>
 <link rel="icon" href="assets/games-icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="upside.css?v2">
+<link rel="stylesheet" href="upside.css?v3">
 </head>
 <body>
-<div id="stage" class="stage"><canvas id="screen" aria-label="Upside Nib game screen"></canvas></div>
+<div id="stage" class="stage"><canvas id="screen" tabindex="-1" aria-label="Upside Nib game screen" aria-describedby="gameInstructions"></canvas></div>
 <div id="safe" class="safe" aria-hidden="true"></div>
-<nav class="sys">
-  <a class="home" href="./" aria-label="All games">◀</a>
+<p id="gameInstructions" class="sr-only">Move with arrow keys or A and D. Space or Z jumps; hold for a higher jump. C flips gravity. Shift or X runs and fires. P or Escape pauses. M mutes. Collect three stars in each world and reach the flag. Controls and Assist mode are available in Settings.</p>
+<p id="status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+<div id="hint" class="hint" hidden></div>
+<nav class="sys" aria-label="Game tools">
+  <a class="home" href="./" aria-label="All games" title="All games">‹</a>
   <span class="spacer"></span>
-  <button id="muteBtn" aria-label="Toggle sound">♪</button>
-  <button id="pauseBtn" aria-label="Pause">II</button>
+  <button id="muteBtn" aria-label="Sound on. Mute sound" aria-pressed="false" title="Sound (M)">♪</button>
+  <button id="settingsBtn" aria-label="Settings" title="Settings">⚙</button>
+  <button id="pauseBtn" aria-label="Pause adventure" title="Pause (P)">Ⅱ</button>
 </nav>
-<div id="dpad" class="dpad" aria-hidden="true"><span class="arrow l">◀</span><span class="arrow r">▶</span></div>
-<div class="buttons" aria-hidden="true">
-  <button id="flipBtn" class="flip">FLIP</button>
-  <button id="runBtn" class="run">RUN<small>FIRE</small></button>
-  <button id="jumpBtn" class="jump">JUMP</button>
+<div id="dpad" class="dpad" role="group" aria-label="Movement"><button class="arrow l" aria-label="Move left">◀</button><button class="arrow r" aria-label="Move right">▶</button></div>
+<div class="buttons" role="group" aria-label="Adventure actions">
+  <button id="flipBtn" class="flip" aria-label="Flip gravity">FLIP</button>
+  <button id="runBtn" class="run" aria-label="Run and throw an ember">RUN<small>FIRE</small></button>
+  <button id="jumpBtn" class="jump" aria-label="Jump. Hold for a higher jump">JUMP</button>
 </div>
 <div id="overlay" class="overlay" hidden><section id="panel" class="panel" role="dialog" aria-modal="true"></section></div>
 <div id="loading" class="loading">LIGHTING NIB'S LANTERN…</div>
 <noscript><div class="loading">JavaScript is needed to play. <a href="./">All games</a></div></noscript>
-<script type="module" src="upside-main.js?v2"></script>
+<script type="module" src="upside-main.js?v3"></script>
 </body>
 </html>

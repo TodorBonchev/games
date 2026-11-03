@@ -10,11 +10,14 @@ export function makePlans() {
 const PLANS = makePlans();
 export const inputAt = (pl, t, dt) => ({ right: pl.dir > 0, left: pl.dir < 0, run: true, jump: pl.re && t < dt * 1.5 ? false : t < pl.jd, flip: pl.fa !== null && t >= pl.fa && t < pl.fa + dt * 3 });
 const live = m => m === 'playing' || m === 'dying' || m === 'flag';
-export function botPlay(g, { dt = 1 / 60, horizon = 1.4, every = .2, maxBacktracks = 400 } = {}) {
-  const S = g.state, steps = Math.round(every / dt), stack = [];
+export function botPlay(g, { dt = 1 / 60, horizon = 1.4, every = .2, maxBacktracks = 400, record = false } = {}) {
+  const S = g.state, steps = Math.round(every / dt), stack = [], replay = [];
+  // Record only committed inputs. Speculative search steps are never in this tape;
+  // rewinding a decision also removes its abandoned inputs.
+  const commit = input => { if (record) replay.push({ ...input }); g.step(dt, input); };
   let backtracks = 0, guard = 0;
   while (live(S.mode) && guard++ < 20000) {
-    if (S.mode !== 'playing') { g.step(dt, {}); continue; }
+    if (S.mode !== 'playing') { commit({}); continue; }
     const top = stack.at(-1), pending = top?.pending, snap = pending ? top.snap : g.snapshot(), banned = pending ? top.banned : new Set();
     let best = -1, bestScore = -Infinity;
     PLANS.forEach((pl, idx) => {
@@ -30,12 +33,13 @@ export function botPlay(g, { dt = 1 / 60, horizon = 1.4, every = .2, maxBacktrac
       // every option dies: rewind one decision (deeper each time that one is exhausted) and ban its choice
       backtracks++; if (pending) stack.pop();
       let entry = stack.pop(); while (entry.banned.size >= PLANS.length - 1 && stack.length) entry = stack.pop();
-      entry.banned.add(entry.choice); g.restore(entry.snap); stack.push({ snap: entry.snap, banned: entry.banned, pending: true }); continue;
+      entry.banned.add(entry.choice); g.restore(entry.snap); replay.length = entry.replayLength;
+      stack.push({ snap: entry.snap, banned: entry.banned, replayLength: entry.replayLength, pending: true }); continue;
     }
     if (pending) stack.pop();
-    stack.push({ snap, banned, choice: best }); if (stack.length > 12) stack.shift();
+    stack.push({ snap, banned, choice: best, replayLength: replay.length }); if (stack.length > 12) stack.shift();
     const pl = PLANS[best];
-    for (let i = 0; i < steps && S.mode === 'playing'; i++) g.step(dt, inputAt(pl, i * dt, dt));
+    for (let i = 0; i < steps && S.mode === 'playing'; i++) commit(inputAt(pl, i * dt, dt));
   }
-  return { mode: S.mode, backtracks };
+  return { mode: S.mode, backtracks, ...(record ? { replay, dt } : {}) };
 }

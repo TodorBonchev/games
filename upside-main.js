@@ -1,23 +1,32 @@
 // Upside Nib — 2D canvas renderer, input, chiptune audio. All art is drawn procedurally at 16px/tile.
-import { createUpside, LEVELS, ROWS, TILE, FLOOR_Y, CEIL_Y } from './upside-game.js?v2';
+import { createUpside, LEVELS, ROWS, TILE, FLOOR_Y, CEIL_Y } from './upside-game.js?v3';
+import { createUI } from './upside-ui.js?v3';
 
 const $ = id => document.getElementById(id);
 let storage = null; try { storage = window.localStorage; storage.getItem('x'); } catch { storage = null; }
 const game = createUpside({ storage }), S = game.state;
 const cv = $('screen'), ctx = cv.getContext('2d', { alpha: false });
 let VW = 400, VH = 240, OY = 0, scale = 1, safe = { t: 0, r: 0, b: 0, l: 0 };
+let prefs = { effects: true, music: true, reducedMotion: false }, ui;
+const active = () => ['playing', 'dying', 'flag'].includes(S.mode);
 
 // ---------- crisp integer scaling ----------
 function resize() {
-  const dpr = devicePixelRatio || 1, wd = Math.round(innerWidth * dpr), hd = Math.round(innerHeight * dpr);
-  scale = Math.max(1, Math.floor(hd / 240));
-  VW = Math.ceil(wd / scale); VH = Math.ceil(hd / scale); OY = Math.floor((VH - 240) / 2);
+  const bounds = $('stage').getBoundingClientRect();
+  const dpr = devicePixelRatio || 1, wd = Math.round(bounds.width * dpr), hd = Math.round(bounds.height * dpr);
+  // Preserve at least twenty tiles of look-ahead, including portrait phones.
+  scale = Math.max(1, Math.floor(Math.min(hd / 240, wd / 320)));
+  VW = Math.ceil(wd / scale); VH = Math.min(288, Math.ceil(hd / scale)); OY = Math.max(16, Math.floor((VH - 240) / 2));
   cv.width = VW; cv.height = VH; cv.style.width = `${VW * scale / dpr}px`; cv.style.height = `${VH * scale / dpr}px`;
   ctx.imageSmoothingEnabled = false;
   const cs = getComputedStyle($('safe')), px = v => (parseFloat(v) || 0) * dpr / scale;
   safe = { t: px(cs.paddingTop), r: px(cs.paddingRight), b: px(cs.paddingBottom), l: px(cs.paddingLeft) };
+  const canvasTop = bounds.top + (bounds.height - VH * scale / dpr) / 2;
+  // Use portrait letterboxing for hints; otherwise keep them below both HUD rows.
+  $('hint').style.top = `${canvasTop > 90 ? Math.max(54, bounds.top + safe.t * scale / dpr + 12) : canvasTop + 45 * scale / dpr + 8}px`;
 }
 addEventListener('resize', resize);
+new ResizeObserver(resize).observe($('stage'));
 
 // ---------- pixel art ----------
 const mk = (w, h, f) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; f((X, Y, W, H, col) => { x.fillStyle = col; x.fillRect(X, Y, W, H); }, x); return c; };
@@ -138,20 +147,92 @@ function puff(x, y, n, fill, line, down) { for (let i = 0; i < n + 2; i++) blob(
 
 // ---------- particles / camera ----------
 const parts = [], pops = [];
-let camX = 0, last = performance.now(), acc = 0, frame = 0;
+let camX = 0, last = performance.now(), acc = 0, frame = 0, visualDT = 0, squash = 0, trailT = 0;
+const THEMES = [
+  { sky: '#69b9d5', low: '#d0ecbf', far: '#75a997', hill: '#579b65', bush: '#9acb67', line: '#295b57', cloud: '#f9efd5', label: 'MEADOW MORNING' },
+  { sky: '#b2819c', low: '#ffd2a3', far: '#a87984', hill: '#a66e6a', bush: '#d4a56e', line: '#684b69', cloud: '#ffe6cd', label: 'BRICKWORK BREEZE' },
+  { sky: '#444e91', low: '#9cb9d4', far: '#5a72a0', hill: '#467b91', bush: '#7cb6b2', line: '#263b68', cloud: '#d1d9f0', label: 'TWIN SKIES' },
+  { sky: '#141b38', low: '#444571', far: '#303452', hill: '#424c70', bush: '#6a7392', line: '#20253f', cloud: '#737d9e', label: 'LANTERN KEEP' },
+];
+const theme = () => THEMES[S.levelIndex] || THEMES[0];
 const W2S = (x, y) => [Math.round(x * TILE - camX * TILE), Math.round(OY + y * TILE)];
 
+function drawDistantWorld() {
+  const th = theme(), px = camX * TILE;
+  // Three quiet depth layers frame the collision silhouettes without obscuring them.
+  ctx.fillStyle = th.far;
+  for (let i = -1; i < Math.ceil(VW / 80) + 2; i++) {
+    const x = Math.round(i * 80 - (px * .18 % 80));
+    ctx.beginPath(); ctx.moveTo(x - 25, OY + 214); ctx.lineTo(x + 37, OY + 116 + (i % 3) * 11); ctx.lineTo(x + 116, OY + 214); ctx.fill();
+  }
+  if (S.levelIndex >= 2) {
+    for (let i = 0; i < 32; i++) {
+      const x = ((i * 83 - px * .08) % (VW + 10) + VW + 10) % (VW + 10);
+      const y = OY + 35 + (i * 47 % 135);
+      ctx.fillStyle = i % 4 ? '#d7e9e885' : '#fff2cc'; ctx.fillRect(Math.round(x), y, i % 4 ? 1 : 2, 1);
+    }
+    const moonX = VW - 62, moonY = OY + 62;
+    ctx.fillStyle = '#eae4ce'; ctx.fillRect(moonX, moonY, 17, 17); ctx.fillRect(moonX - 3, moonY + 4, 23, 9);
+    ctx.fillStyle = th.sky; ctx.fillRect(moonX - 3, moonY - 2, 13, 14);
+  } else {
+    ctx.fillStyle = '#fff0bf'; ctx.fillRect(VW - 77, OY + 47, 21, 19); ctx.fillRect(VW - 80, OY + 51, 27, 11);
+  }
+}
+function drawStars() {
+  for (const star of S.stars || []) {
+    if (star.collected) continue;
+    const [x, base] = W2S(star.x, star.y), y = base + (prefs.reducedMotion ? 0 : Math.round(Math.sin(frame / 12 + star.id) * 2));
+    if (x < -20 || x > VW + 20) continue;
+    ctx.fillStyle = '#18314666'; ctx.fillRect(x - 2, y - 2, 17, 17);
+    ctx.fillStyle = '#fff1b5'; ctx.fillRect(x + 5, y, 3, 13); ctx.fillRect(x, y + 5, 13, 3);
+    ctx.fillStyle = '#f7b75c'; ctx.fillRect(x + 3, y + 3, 7, 7); ctx.fillStyle = '#fff7da'; ctx.fillRect(x + 5, y + 4, 3, 3);
+    ctx.fillStyle = '#b87b40'; ctx.fillRect(x + 5, y + 9, 3, 1);
+  }
+}
+function drawGuides() {
+  const P = S.player, lv = game.level;
+  // Hand-placed geometry supplies the signs: each gap has an explicit leap/flip cue.
+  for (const g of [1, -1]) {
+    const row = g > 0 ? 13 : 1, other = g > 0 ? 1 : 13;
+    const lo = Math.max(2, Math.floor(camX) - 2), hi = Math.min(lv.flagX, Math.ceil(camX + VW / TILE));
+    for (let x = lo; x < hi; x++) {
+      if (lv.rows[row][x] !== '#' || lv.rows[row][x + 1] === '#') continue;
+      const canFlip = lv.rows[other].slice(Math.max(0, x - 2), x + 10).includes('#');
+      const [sx, sy] = W2S(x - 1, g > 0 ? 11 : 3);
+      ctx.fillStyle = '#172b3d'; ctx.fillRect(sx - 3, sy - 1, 27, 11);
+      text(canFlip ? 'FLIP' : 'LEAP', sx, sy + 2, canFlip ? '#9bf0e6' : '#ffe1a0', 1, false);
+      ctx.fillStyle = '#f5cc86'; ctx.fillRect(sx + 10, sy + (g > 0 ? 10 : -14), 2, 14);
+      const arrowY = g > 0 ? sy - 6 : sy + 14;
+      ctx.fillStyle = canFlip ? '#9bf0e6' : '#ffe1a0'; ctx.fillRect(sx + 10, arrowY, 2, 1); ctx.fillRect(sx + 9, arrowY + g, 4, 1); ctx.fillRect(sx + 7, arrowY + g * 2, 8, 1);
+    }
+  }
+  // Preview the surface straight across from Nib. The world never rotates.
+  if (S.mode !== 'playing' || !(P.airFlip || P.ground)) return;
+  const cx = P.x + P.w / 2, tx = Math.floor(cx), from = P.g > 0 ? P.y : P.y + P.h;
+  let target = null;
+  for (let y = Math.floor(from) - P.g; y >= 0 && y < ROWS; y -= P.g) {
+    if (game.solidAt(tx, y)) { target = P.g > 0 ? y + 1 : y; break; }
+  }
+  if (target === null || Math.abs(target - from) < 2) return;
+  const [x, y0] = W2S(cx, from), [, y1] = W2S(cx, target);
+  ctx.fillStyle = '#d2fff04d';
+  for (let y = Math.min(y0, y1) + 6; y < Math.max(y0, y1) - 4; y += 8) ctx.fillRect(x, y, 1, 2);
+  ctx.fillStyle = '#b1fff0'; ctx.fillRect(x - 5, y1 - (P.g < 0 ? 2 : 0), 11, 2);
+}
+
 function draw() {
-  frame++;
+  if (active() && !prefs.reducedMotion) frame += visualDT * 60;
   const lv = game.level, VWt = VW / TILE, P = S.player;
-  ctx.fillStyle = '#5c94fc'; ctx.fillRect(0, 0, VW, VH);
+  const th = theme(), sky = ctx.createLinearGradient(0, 0, 0, VH); sky.addColorStop(0, th.sky); sky.addColorStop(1, th.low);
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, VW, VH);
   if (!P) return;
   const px = Math.round(camX * TILE);
+  drawDistantWorld();
   // clouds (parallax)
-  for (const c of deco.clouds) { const x = Math.round(c.x * TILE - px * .5), y = OY + Math.round(c.y * TILE); if (x > -80 && x < VW + 20) puff(x, y, c.n, '#ffffff', '#3c5cbc'); }
+  for (const c of deco.clouds) { const x = Math.round(c.x * TILE - px * .5), y = OY + Math.round(c.y * TILE); if (x > -80 && x < VW + 20) puff(x, y, c.n, th.cloud, th.far); }
   // hills + bushes (fixed to world like a classic stage)
-  for (const h of deco.hills) { const [x, y] = W2S(h.x, h.side === 'f' ? FLOOR_Y : CEIL_Y); if (x < -100 || x > VW + 10) continue; const w = h.big ? 80 : 48, hh = h.big ? 36 : 20; blob(x, y + (h.side === 'f' ? 0 : -1), w, hh, '#3ca830', '#0c4a0c', h.side === 'c'); ctx.fillStyle = '#0c4a0c'; const sy = h.side === 'f' ? y - hh + 8 : y + hh - 10; ctx.fillRect(x + w / 2 - 6, sy, 2, 3); ctx.fillRect(x + w / 2 + 4, sy, 2, 3); ctx.fillRect(x + w / 2 - 1, sy + (h.side === 'f' ? 8 : -6), 2, 3); }
-  for (const b of deco.bushes) { const [x, y] = W2S(b.x, b.side === 'f' ? FLOOR_Y : CEIL_Y); if (x > -80 && x < VW + 20) puff(x, y + (b.side === 'c' ? 0 : 0), b.n, '#7ad840', '#0c4a0c', b.side === 'c'); }
+  for (const h of deco.hills) { const [x, y] = W2S(h.x, h.side === 'f' ? FLOOR_Y : CEIL_Y); if (x < -100 || x > VW + 10) continue; const w = h.big ? 80 : 48, hh = h.big ? 36 : 20; blob(x, y + (h.side === 'f' ? 0 : -1), w, hh, th.hill, th.line, h.side === 'c'); ctx.fillStyle = '#0c4a0c'; const sy = h.side === 'f' ? y - hh + 8 : y + hh - 10; ctx.fillRect(x + w / 2 - 6, sy, 2, 3); ctx.fillRect(x + w / 2 + 4, sy, 2, 3); ctx.fillRect(x + w / 2 - 1, sy + (h.side === 'f' ? 8 : -6), 2, 3); }
+  for (const b of deco.bushes) { const [x, y] = W2S(b.x, b.side === 'f' ? FLOOR_Y : CEIL_Y); if (x > -80 && x < VW + 20) puff(x, y + (b.side === 'c' ? 0 : 0), b.n, th.bush, th.line, b.side === 'c'); }
   // castles (lantern keeps) after the flag
   for (const side of ['f', 'c']) if (deco.castle[side]) { const [x, y] = W2S(deco.castle.x, side === 'f' ? FLOOR_Y : CEIL_Y); if (x < VW && x > -100) castle(x, y, side === 'c'); }
   // items emerging sit behind blocks
@@ -175,6 +256,8 @@ function draw() {
     }
     else if (c === 'o') ctx.drawImage(coinF[[0, 0, 1, 2, 1, 0][Math.floor(frame / 7) % 6]], sx, sy);
   }
+  drawGuides();
+  drawStars();
   // checkpoints
   lv.checks.forEach((c, i) => { const [x, y] = W2S(c.x, c.g > 0 ? FLOOR_Y : CEIL_Y), on = i <= S.check; ctx.fillStyle = K; if (c.g > 0) { ctx.fillRect(x + 7, y - 32, 2, 32); ctx.fillStyle = on ? '#ff9a1f' : '#a0a0a0'; ctx.fillRect(x + 9, y - 31, 9, 6); ctx.fillRect(x + 9, y - 25, 5, 2); } else { ctx.fillRect(x + 7, y, 2, 32); ctx.fillStyle = on ? '#ff9a1f' : '#a0a0a0'; ctx.fillRect(x + 9, y + 25, 9, 6); ctx.fillRect(x + 9, y + 23, 5, 2); } });
   // flag pole spanning both worlds
@@ -195,22 +278,25 @@ function draw() {
   }
   for (const f of S.fireballs) { const [x, y] = W2S(f.x, f.y); ctx.drawImage(ember[Math.floor(f.t * 12) % 2], x, y); }
   // Nib
-  if (!(P.invuln > 0 && frame % 6 < 3)) {
+  if (!(P.invuln > 0 && !prefs.reducedMotion && active() && frame % 6 < 3)) {
     const big = P.power > 0 && P.h > 1 ? 1 : 0, fire = P.power === 2 ? 1 : 0, air = !P.ground;
     let pose = S.mode === 'dying' ? 'dead' : air ? 'jump' : P.skid ? 'skid' : Math.abs(P.vx) > .3 ? (['walk1', 'stand', 'walk2', 'stand'][Math.floor(S.t * (6 + Math.abs(P.vx) * 1.4)) % 4]) : 'stand';
     if (S.mode === 'flag') pose = 'jump';
     const spr = NIB[`${big}${fire}${pose}`], img = spr[(P.facing < 0 ? 'l' : 'r') + (P.g < 0 ? 'v' : '')];
     const sx = Math.round((P.x + P.w / 2) * TILE - px - 8), sy = P.g > 0 ? Math.round(OY + (P.y + P.h) * TILE - img.height) : Math.round(OY + P.y * TILE);
-    if (S.mode !== 'dying' || frame % 2 === 0 || true) ctx.drawImage(img, sx, sy);
+    if (P.invuln > 0) { ctx.strokeStyle = '#fff1b5'; ctx.lineWidth = 1; ctx.strokeRect(sx - 2.5, sy - 2.5, 21, img.height + 5); }
+    const squeeze = prefs.reducedMotion ? 0 : squash;
+    const sh = Math.round(img.height * (1 - squeeze * .16)), sw = Math.round(16 * (1 + squeeze * .16));
+    ctx.drawImage(img, sx - (sw - 16) / 2, sy + (P.g > 0 ? img.height - sh : 0), sw, sh);
     if (!P.ground && P.airFlip && S.mode === 'playing') { ctx.fillStyle = '#7cf0ff'; const gy = P.g > 0 ? sy - 3 : sy + img.height + 1; ctx.fillRect(sx + 7, gy, 2, 2); }
   }
   // particles
-  for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.t += 1 / 60; p.vy += (p.grav ?? 40) * 1 / 60; p.x += p.vx / 60; p.y += p.vy / 60; if (p.t > p.life) { parts.splice(i, 1); continue; } const [x, y] = W2S(p.x, p.y);
+  for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.t += visualDT; p.vy += (p.grav ?? 40) * visualDT; p.x += p.vx * visualDT; p.y += p.vy * visualDT; if (p.t > p.life) { parts.splice(i, 1); continue; } const [x, y] = W2S(p.x, p.y);
     if (p.kind === 'brick') { ctx.fillStyle = K; ctx.fillRect(x - 1, y - 1, 6, 6); ctx.fillStyle = '#c84c0c'; ctx.fillRect(x, y, 4, 4); }
     else if (p.kind === 'coin') ctx.drawImage(coinF[Math.floor(p.t * 20) % 4], x, y);
     else if (p.kind === 'dust') { ctx.fillStyle = '#ffffff'; const s = p.t < .1 ? 3 : 2; ctx.fillRect(x, y, s, s); }
     else if (p.kind === 'spark') { ctx.fillStyle = p.t % .1 < .05 ? '#fff070' : '#ff9a1f'; ctx.fillRect(x, y, 2, 2); } }
-  for (let i = pops.length - 1; i >= 0; i--) { const p = pops[i]; p.t += 1 / 60; if (p.t > .8) { pops.splice(i, 1); continue; } const [x, y] = W2S(p.x, p.y); text(p.n, x, y - Math.round(p.t * 24 * p.g), '#fff', 1); }
+  for (let i = pops.length - 1; i >= 0; i--) { const p = pops[i]; p.t += visualDT; if (p.t > .8) { pops.splice(i, 1); continue; } const [x, y] = W2S(p.x, p.y); text(p.n, x, y - Math.round(p.t * 24 * p.g), '#fff', 1); }
   hud();
 }
 function castle(x, y, down) {
@@ -220,33 +306,43 @@ function castle(x, y, down) {
 function drawItem(it) { const [x, y] = W2S(it.x - .05, it.y - .05); if (it.kind === 'cap') ctx.drawImage(it.g > 0 ? glowCap.r : glowCap.rv, x, y); else ctx.drawImage(it.g > 0 ? bloom[Math.floor(frame / 8) % 2] : bloomV[Math.floor(frame / 8) % 2], x, y); }
 
 function hud() {
-  const P = S.player, top = Math.max(3, Math.round(safe.t) + 3), left = Math.max(6, Math.round(safe.l) + 6), right = VW - Math.max(6, Math.round(safe.r) + 6), lv = game.level;
-  ctx.fillStyle = '#0008'; ctx.fillRect(0, 0, VW, top + 22);
-  const cols = [['NIB', String(S.score).padStart(6, '0')], [null, '*' + String(S.coins).padStart(2, '0')], ['WORLD', `${lv.id}-1`], ['TIME', String(Math.ceil(S.time)).padStart(3, '0')], [null, 'x' + S.lives]];
-  const span = right - left, step = span / cols.length;
-  cols.forEach(([a, b], i) => { const x = Math.round(left + step * i + (i ? step / 2 - 22 : 0)); if (a) text(a, x, top, '#fff', 2); else { if (i === 1) ctx.drawImage(coinIcon, x, top + 2); else ctx.drawImage(lifeIcon, x - 2, top + 1); }
-    text(b.replace('*', ' ').replace('x', ' '), x + (a ? 0 : 0), a ? top + 12 : top + 12, i === 1 ? '#fcbc3c' : '#fff', 2); if (!a) text(i === 1 ? 'COIN' : 'LIVES', x + 10, top, '#fff', 2); });
-  // flip charge indicator
-  const ok = P.ground || P.airFlip; text(ok ? 'FLIP' : '----', right - 32, top + 24, ok ? '#7cf0ff' : '#808080', 2);
+  const P = S.player, lv = game.level, left = Math.max(9, Math.round(safe.l) + 5), right = VW - Math.max(9, Math.round(safe.r) + 5), top = 5;
+  ctx.fillStyle = '#101b30ed'; ctx.fillRect(0, 0, VW, 31);
+  const cells = [['SCORE', String(S.score).padStart(6, '0')], ['COINS', String(S.coins).padStart(2, '0')], ['WORLD', String(lv.id) + '/4'], ['TIME', String(Math.ceil(S.time)).padStart(3, '0')], ['LIVES', S.assist ? '--' : String(S.lives)]];
+  const step = (right - left) / 5;
+  cells.forEach(([label, value], i) => { const x = Math.round(left + i * step); text(label, x, top, '#91afbc', 1, false); text(value, x, top + 9, i === 3 && S.time < 60 ? '#ffb095' : '#fff2cd', 2, false); });
+  const progress = Math.max(0, Math.min(1, P.x / lv.flagX));
+  ctx.fillStyle = '#31465b'; ctx.fillRect(left, 27, right - left, 2); ctx.fillStyle = '#7ee0d7'; ctx.fillRect(left, 27, Math.round((right - left) * progress), 2);
+  for (const [i, c] of lv.checks.entries()) { const x = left + Math.round(c.x / lv.flagX * (right - left)); ctx.fillStyle = i <= S.check ? '#ffe1a0' : '#718799'; ctx.fillRect(x, 26, 2, 4); }
+  const y = 35, ok = P.ground || P.airFlip;
+  ctx.fillStyle = '#101b30e8'; ctx.fillRect(0, y - 4, VW, 14);
+  text(`${P.g > 0 ? 'DOWN' : 'UP'} / ${ok ? 'FLIP READY' : 'LAND TO REFILL'}`, left, y, ok ? '#a1f0e5' : '#e6c2af', 1, false);
+  const stars = (S.stars || []).filter(s => s.collected).length;
+  text(`STARS ${stars}/3`, Math.round(VW * .52), y, '#ffe1a0', 1, false);
+  const lastLabel = S.assist ? 'ASSIST' : `${Math.round(S.levelStats?.elapsed || 0)}S`;
+  text(lastLabel, right - textW(lastLabel, 1), y, '#e0ebee', 1, false);
 }
 const pop = (n, x, y, g = 1) => pops.push({ n: String(n), x, y, t: 0, g });
-function burst(kind, x, y, n, sp = 6, life = .9, grav = 40) { for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; parts.push({ kind, x, y, vx: Math.cos(a) * sp * (.6 + (i % 3) * .2), vy: Math.sin(a) * sp - 4, t: 0, life, grav }); } }
+function burst(kind, x, y, n, sp = 6, life = .9, grav = 40) { if (prefs.reducedMotion) return; for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; parts.push({ kind, x, y, vx: Math.cos(a) * sp * (.6 + (i % 3) * .2), vy: Math.sin(a) * sp - 4, t: 0, life, grav }); } }
 
 // ---------- audio ----------
-let ac = null, master = null, muted = false; try { muted = storage?.getItem('games:pref:upside:muted') === '1'; } catch { }
-function audio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = .5; master.connect(ac.destination); } catch { ac = null; } } if (ac?.state === 'suspended') ac.resume().catch(() => { }); return ac; }
+let ac = null, master = null, musicBus = null, effectsBus = null, musicVoice = false;
+function audio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = .5; master.connect(ac.destination); musicBus = ac.createGain(); effectsBus = ac.createGain(); musicBus.connect(master); effectsBus.connect(master); syncAudio(); } catch { ac = null; } } if (ac?.state === 'suspended') ac.resume().catch(() => { }); return ac; }
 function tone(f, dur, type = 'square', to = null, vol = .12, delay = 0) {
-  if (muted || !audio()) return; const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  if (!(musicVoice ? prefs.music : prefs.effects) || !audio()) return; const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
   o.type = type; o.frequency.setValueAtTime(f, t); if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
-  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g).connect(master); o.start(t); o.stop(t + dur + .02);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g).connect(musicVoice ? musicBus : effectsBus); o.start(t); o.stop(t + dur + .02);
 }
-function noise(dur, vol = .15, delay = 0) { if (muted || !audio()) return; const b = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length); const s = ac.createBufferSource(), g = ac.createGain(); g.gain.value = vol; s.buffer = b; s.connect(g).connect(master); s.start(ac.currentTime + delay); }
+function noise(dur, vol = .15, delay = 0) { if (!(musicVoice ? prefs.music : prefs.effects) || !audio()) return; const b = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length); const s = ac.createBufferSource(), g = ac.createGain(); g.gain.value = vol; s.buffer = b; s.connect(g).connect(effectsBus); s.start(ac.currentTime + delay); }
 const SFX = {
   jump: e => tone(e.big ? 220 : 300, .16, 'square', e.big ? 520 : 760, .09), coin: () => { tone(988, .06, 'square', null, .08); tone(1319, .25, 'square', null, .08, .06); },
   stomp: () => { tone(260, .1, 'square', 90, .12); }, bump: () => tone(140, .08, 'triangle', 90, .25), thud: () => tone(110, .06, 'triangle', 70, .2), break: () => { noise(.18, .25); tone(180, .1, 'square', 60, .06); },
   sprout: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, .08, 'square', null, .07, i * .06)), grow: () => [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .07, 'square', null, .07, i * .05)),
   shrink: () => [880, 660, 440, 330].forEach((f, i) => tone(f, .08, 'square', null, .08, i * .06)), flip: e => tone(e.g > 0 ? 900 : 260, .18, 'triangle', e.g > 0 ? 260 : 900, .25),
   fire: () => tone(1400, .06, 'square', 300, .06), kick: () => tone(660, .05, 'square', 330, .1), poof: () => noise(.06, .08), oneup: () => [660, 784, 1319, 1047, 1175, 1568].forEach((f, i) => tone(f, .09, 'square', null, .07, i * .08)),
+  star: () => [784, 1047, 1319, 1568].forEach((f, i) => tone(f, .12, 'triangle', null, .18, i * .09)),
+  flipdenied: () => tone(160, .08, 'triangle', 110, .15),
+  lowtime: () => [660, 660, 880].forEach((f, i) => tone(f, .1, 'square', null, .08, i * .16)),
   check: () => { tone(784, .1, 'square', null, .07); tone(1175, .2, 'square', null, .07, .1); },
   die: () => [494, 466, 440, 0, 330, 294, 262].forEach((f, i) => f && tone(f, .14, 'square', null, .09, .3 + i * .14)),
   flagpole: () => tone(220, 1, 'square', 1760, .07), cleared: () => [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, .14, 'square', null, .08, i * .13)),
@@ -256,66 +352,41 @@ const SFX = {
 const N = n => 440 * 2 ** ((n - 69) / 12);
 const LEAD = [[76, 1], [79, 1], [81, 2], [79, 1], [76, 1], [72, 2], [74, 1], [76, 1], [79, 2], [76, 2], [0, 2], [81, 1], [84, 1], [83, 1], [81, 1], [79, 2], [76, 1], [79, 1], [81, 1], [79, 1], [76, 1], [74, 1], [72, 4], [0, 2], [72, 1], [74, 1], [76, 2], [72, 1], [69, 1], [67, 2], [69, 1], [72, 1], [74, 2], [76, 2], [0, 2], [79, 1], [81, 1], [79, 1], [76, 1], [74, 2], [72, 1], [74, 1], [76, 1], [74, 1], [71, 1], [74, 1], [72, 4], [0, 2]];
 const BASS = [48, 55, 57, 53, 48, 55, 53, 55];
-let musicT = 0, leadI = 0, bassI = 0, nextLead = 0, nextBass = 0, musicOn = false;
+let leadI = 0, bassI = 0, nextLead = 0, nextBass = 0, musicOn = false;
 function musicTick() {
-  if (muted || !ac || S.mode !== 'playing') { musicOn = false; return; }
-  const e8 = .15, now = ac.currentTime; if (!musicOn) { musicOn = true; nextLead = nextBass = now + .05; }
+  if (!prefs.music || !ac || S.mode !== 'playing') { musicOn = false; return; }
+  musicVoice = true;
+  const e8 = S.levelIndex === 3 ? .135 : .15, now = ac.currentTime; if (!musicOn) { musicOn = true; nextLead = nextBass = now + .05; }
   while (nextLead < now + .3) { const [n, l] = LEAD[leadI++ % LEAD.length]; if (n) tone(N(n), e8 * l * .9, 'square', null, .035, nextLead - now); nextLead += e8 * l; }
   while (nextBass < now + .3) { const n = BASS[Math.floor(bassI / 4) % BASS.length]; tone(N(bassI % 2 ? n + 7 : n), e8 * 1.8, 'triangle', null, .12, nextBass - now); bassI++; nextBass += e8 * 2; }
+  musicVoice = false;
 }
-function toggleMute() { muted = !muted; try { storage?.setItem('games:pref:upside:muted', muted ? '1' : '0'); } catch { } $('muteBtn').textContent = muted ? '×' : '♪'; if (!muted) audio(); }
-
-// ---------- input ----------
-const keys = new Set(), latch = new Set(), touch = { left: false, right: false, jump: false, flip: false, run: false };
-const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'jump', KeyZ: 'jump', ArrowUp: 'jump', KeyW: 'jump', KeyX: 'run', ShiftLeft: 'run', ShiftRight: 'run', KeyJ: 'run', KeyC: 'flip', ArrowDown: 'flip', KeyS: 'flip', KeyK: 'flip' };
-addEventListener('keydown', e => {
-  audio();
-  if (e.code === 'KeyP' || e.code === 'Escape') { e.preventDefault(); if (S.mode === 'playing') pauseGame(); else if (S.mode === 'paused') resumeGame(); return; }
-  if (e.code === 'KeyM') { toggleMute(); return; }
-  if (e.code === 'Enter' && !$('overlay').hidden) { e.preventDefault(); $('panel').querySelector('[data-primary]')?.click(); return; }
-  const k = KEYMAP[e.code]; if (k) { e.preventDefault(); keys.add(k); latch.add(k); }
-});
-addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys.delete(k); });
-addEventListener('blur', () => { keys.clear(); for (const k in touch) touch[k] = false; if (S.mode === 'playing') pauseGame(); });
-const input = () => { const o = {}; for (const k of ['left', 'right', 'jump', 'flip', 'run']) o[k] = keys.has(k) || touch[k] || latch.has(k); return o; };
-function holdButton(el, k) {
-  const ids = new Set(), set = () => { touch[k] = ids.size > 0; el.classList.toggle('down', touch[k]); };
-  el.addEventListener('pointerdown', e => { e.preventDefault(); audio(); ids.add(e.pointerId); latch.add(k); try { el.setPointerCapture(e.pointerId); } catch { } set(); });
-  for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(t, e => { ids.delete(e.pointerId); set(); });
-  el.addEventListener('contextmenu', e => e.preventDefault());
+function syncAudio() {
+  if (musicBus) musicBus.gain.value = prefs.music && S.mode === 'playing' ? 1 : 0;
+  if (effectsBus) effectsBus.gain.value = prefs.effects ? 1 : 0;
 }
-holdButton($('jumpBtn'), 'jump'); holdButton($('flipBtn'), 'flip'); holdButton($('runBtn'), 'run');
-{ // d-pad: slide a thumb between left and right
-  const el = $('dpad'), ptrs = new Map(), arrows = el.querySelectorAll('.arrow');
-  const upd = () => { let l = false, r = false; for (const x of ptrs.values()) { const b = el.getBoundingClientRect(), d = x - (b.left + b.width / 2); if (d < -8) l = true; else if (d > 8) r = true; } touch.left = l; touch.right = r; arrows[0].classList.toggle('on', l); arrows[1].classList.toggle('on', r); };
-  el.addEventListener('pointerdown', e => { e.preventDefault(); audio(); ptrs.set(e.pointerId, e.clientX); try { el.setPointerCapture(e.pointerId); } catch { } upd(); });
-  el.addEventListener('pointermove', e => { if (ptrs.has(e.pointerId)) { ptrs.set(e.pointerId, e.clientX); upd(); } });
-  for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(t, e => { ptrs.delete(e.pointerId); upd(); });
+function begin(id, options = {}) {
+  ui?.hidePanel(); ui?.resetInput(); parts.length = pops.length = 0; trailT = squash = 0;
+  game.start(id, options); buildDeco(); camX = 0; acc = 0; last = performance.now(); ended = false;
+  hintsSeen.clear(); ui?.showHint(id === 1 ? (matchMedia('(pointer: coarse)').matches ? 'Use the left pad to move. Hold JUMP to leap higher.' : 'Move with arrows or A/D. Hold jump to leap higher.') : game.level.hint);
 }
-$('muteBtn').onclick = toggleMute; $('muteBtn').textContent = muted ? '×' : '♪';
-$('pauseBtn').onclick = () => S.mode === 'playing' ? pauseGame() : S.mode === 'paused' && resumeGame();
-document.addEventListener('visibilitychange', () => { if (document.hidden && S.mode === 'playing') pauseGame(); });
-
-// ---------- screens ----------
-let selected = 1;
-const panel = (html, actions) => { const ov = $('overlay'), p = $('panel'); p.innerHTML = html; ov.hidden = false; for (const b of p.querySelectorAll('[data-action]')) b.onclick = () => { audio(); actions[b.dataset.action]?.(b); }; p.querySelector('[data-primary]')?.focus({ preventScroll: true }); };
-const hidePanel = () => { $('overlay').hidden = true; };
-const bestLine = () => S.best ? `<p class="kicker">BEST ${String(S.best.score).padStart(6, '0')}</p>` : '';
-const keysLine = `<p class="keys">← → move · Z/Space jump · X/Shift run &amp; fire · C/↓ flip gravity · P pause · M mute</p>`;
-function title() {
-  selected = Math.min(selected, S.unlocked);
-  const lv = LEVELS.map(l => `<button data-action="pick" data-level="${l.id}" class="${l.id === selected ? 'sel' : ''}" ${l.id > S.unlocked ? 'disabled' : ''}>${l.id}-1<small>${l.name}</small></button>`).join('');
-  panel(`<p class="kicker">A GRAVITY-FLIP PLATFORMER</p><h1>UPSIDE <span>NIB</span></h1><p>Run, stomp and bump blocks — then FLIP to the ceiling world. One mid-air flip, refilled when you land or stomp.</p><div class="levels">${lv}</div><button class="primary" data-primary data-action="start">START ${selected}-1</button>${bestLine()}${keysLine}`,
-    { pick: b => { selected = +b.dataset.level; title(); }, start: () => begin(selected) });
+function nextWorld() {
+  if (!game.next()) return;
+  ui?.hidePanel(); ui?.resetInput(); buildDeco(); camX = 0; acc = 0;
+  parts.length = pops.length = 0; ended = false; hintsSeen.clear(); ui?.showHint(game.level.hint);
 }
-function begin(id) { hidePanel(); parts.length = pops.length = 0; game.start(id); buildDeco(); camX = 0; flash(); }
-function pauseGame() { if (game.pause()) panel(`<h2>PAUSED</h2><p>${game.level.name} · ${Math.ceil(S.time)} left</p><button class="primary" data-primary data-action="resume">RESUME</button><div class="row"><button data-action="restart">RESTART</button><button data-action="quit">TITLE</button></div>`, { resume: resumeGame, restart: () => begin(game.level.id), quit: () => { S.mode = 'title'; title(); } }); }
-function resumeGame() { if (game.resume()) { hidePanel(); last = performance.now(); } }
-let hintT = 0; function flash() { hintT = 3.5; }
-function onEnd() {
-  if (S.mode === 'cleared') panel(`<p class="kicker">WORLD ${game.level.id}-1 CLEAR</p><h2>${game.level.name}</h2><p class="big">${String(S.score).padStart(6, '0')}</p><p>Flag bonus ${S.flag?.bonus ?? 0} · ★ ${S.coins} coins</p><button class="primary" data-primary data-action="next">NEXT WORLD ▶</button>${bestLine()}`, { next: () => { hidePanel(); game.next(); buildDeco(); camX = 0; parts.length = 0; flash(); } });
-  else if (S.mode === 'won') panel(`<p class="kicker">ALL FOUR WORLDS LIT</p><h1>YOU <span>WIN!</span></h1><p class="big">${String(S.score).padStart(6, '0')}</p><p>${S.newBest ? 'NEW BEST SCORE!' : 'Nib\u2019s lantern glows on both skies.'}</p><button class="primary" data-primary data-action="again">PLAY AGAIN</button><button data-action="title">TITLE</button>${bestLine()}`, { again: () => begin(1), title });
-  else if (S.mode === 'lost') panel(`<h2>GAME OVER</h2><p class="big">${String(S.score).padStart(6, '0')}</p><p>${S.newBest ? 'NEW BEST SCORE!' : 'The lantern flickers… but never goes out.'}</p><button class="primary" data-primary data-action="retry">TRY ${game.level.id}-1 AGAIN</button><button data-action="title">TITLE</button>${bestLine()}`, { retry: () => begin(game.level.id), title });
+const hintsSeen = new Set();
+function contextualHints() {
+  if (S.mode !== 'playing') return;
+  const P = S.player, candidates = [];
+  if (S.levelIndex === 0) {
+    if (P.x > 8 && P.x < 17) candidates.push(['blocks', 'Jump into glowing blocks from below. Hold jump for extra height.']);
+    if (P.x > 18 && P.x < 28) candidates.push(['stomp', 'Land on a Grumblebug to bounce. Hold jump for a higher stomp.']);
+    if (P.x > 88 && P.x < 102) candidates.push(['flip', 'The path continues above! C / Down or FLIP changes gravity.']);
+  }
+  if (!P.airFlip && !P.ground) candidates.push(['refill', 'Air flip spent. Landing or stomping refills your flip.']);
+  const chosen = candidates.find(([id]) => !hintsSeen.has(id));
+  if (chosen) { hintsSeen.add(chosen[0]); ui?.showHint(chosen[1]); }
 }
 
 // ---------- loop ----------
@@ -330,28 +401,40 @@ function handleEvents() {
     else if (e.type === 'poof') burst('spark', e.x, e.y, 5, 4, .25, 0);
     else if (e.type === 'flip') burst('spark', P.x + P.w / 2, P.y + P.h / 2, 8, 5, .35, 0);
     else if (e.type === 'oneup') pop('1UP', P.x, P.y, P.g);
-    else if (e.type === 'respawn') { buildDeco(); camX = Math.max(0, P.x - VW / TILE * .35); flash(); }
+    else if (e.type === 'respawn') { buildDeco(); camX = Math.max(0, P.x - VW / TILE * .35); ui?.resetInput(); ui?.showHint('Lantern relit. Your checkpoint is safe.'); }
+    else if (e.type === 'land') { squash = 1; burst('dust', P.x + .3, P.g > 0 ? P.y + P.h : P.y, 5, 1.5, .2, 0); }
+    else if (e.type === 'check') { pop('SAVED', P.x, P.y - P.g, P.g); ui?.announce('Checkpoint lit'); ui?.showHint('Checkpoint lit! Your coins, stars and power are saved.'); }
+    else if (e.type === 'star') { burst('spark', e.x ?? P.x, e.y ?? P.y, 14, 4, .7, 0); pop('STAR!', P.x, P.y - P.g, P.g); ui?.announce('Lantern star collected'); }
+    else if (e.type === 'flipdenied') ui?.showHint('Land or stomp to recharge your air flip.');
+    else if (e.type === 'lowtime') ui?.showHint('Time is running low. Head for the lantern flag!');
   }
   S.events.length = 0;
 }
 let ended = false;
 function loop(now) {
-  const dt = Math.min(.1, (now - last) / 1000); last = now;
-  if (['playing', 'dying', 'flag'].includes(S.mode)) { acc += dt; const inp = input(); let n = 0; while (acc >= 1 / 60 && n++ < 6) { game.step(1 / 60, n === 1 ? inp : input()); latch.clear(); acc -= 1 / 60; } if (acc > .1) acc = 0; ended = false; }
+  const dt = Math.max(0, Math.min(.1, (now - last) / 1000)); last = now;
+  ui.update(dt); visualDT = active() ? dt : 0;
+  squash = Math.max(0, squash - visualDT * 7);
+  if (['playing', 'dying', 'flag'].includes(S.mode)) { acc += dt; const inp = ui.input(); let n = 0; while (acc >= 1 / 60 && n++ < 6) { game.step(1 / 60, n === 1 ? inp : ui.input()); ui.clearLatch(); acc -= 1 / 60; } if (acc > .1) acc = 0; ended = false; }
   handleEvents();
-  if (!ended && ['cleared', 'won', 'lost'].includes(S.mode)) { ended = true; onEnd(); }
+  if (!ended && ['cleared', 'won', 'lost'].includes(S.mode)) { ended = true; ui.onEnd(); }
   const P = S.player;
-  if (P) { const VWt = VW / TILE, target = Math.max(0, Math.min(game.level.w - VWt, P.x + P.w / 2 - VWt * .4 + P.facing * 1.5 + P.vx * .15)); camX += (target - camX) * Math.min(1, dt * 5); camX = Math.max(0, Math.min(game.level.w - VWt, camX)); }
+  if (P && active()) { const VWt = VW / TILE, target = Math.max(0, Math.min(game.level.w - VWt, P.x + P.w / 2 - VWt * .4 + P.facing * 1.5 + P.vx * .15)); camX += (target - camX) * Math.min(1, dt * 5); camX = Math.max(0, Math.min(game.level.w - VWt, camX)); }
   if (deco) draw(); else { ctx.fillStyle = '#5c94fc'; ctx.fillRect(0, 0, VW, VH); }
-  if (hintT > 0 && S.mode === 'playing') { hintT -= dt; const h = game.level.hint.toUpperCase().replace(/[^A-Z0-9 .!\-:]/g, ''), s = VW > 500 ? 2 : 1, w = textW(h, s); ctx.fillStyle = '#000a'; ctx.fillRect(Math.round(VW / 2 - w / 2 - 6), OY + 52, w + 12, 6 * s + 8); text(h, Math.round(VW / 2 - w / 2), OY + 56, '#fcbc3c', s, false); const name = `WORLD ${game.level.id}-1  ${game.level.name}`; text(name, Math.round(VW / 2 - textW(name) / 2), OY + 34, '#fff', 2); }
-  $('flipBtn').classList.toggle('spent', !!(P && !P.ground && !P.airFlip));
+  contextualHints();
+  if (active() && !prefs.reducedMotion && P && !P.ground && Math.abs(P.vy) > 3) {
+    trailT += dt; if (trailT > .055) { trailT = 0; parts.push({kind:'spark', x:P.x + .35, y:P.y + P.h / 2, vx:0, vy:0, grav:0, t:0, life:.22}); }
+  }
+  syncAudio();
   musicTick();
   requestAnimationFrame(loop);
 }
 resize();
 // attract mode: show level 1 behind the title
 game.start(1); S.mode = 'title'; buildDeco(); S.events.length = 0;
-title();
-if (new URLSearchParams(location.search).has('debug')) window.__upside = { game, begin, get camX() { return camX; } };
+ui = createUI({ game, begin, next: nextWorld, titlePreview: () => { S.mode = 'title'; },
+  onSettings: settings => { prefs = settings; syncAudio(); }, onAction: audio });
+ui.showTitle();
+if (new URLSearchParams(location.search).has('debug')) window.__upside = { game, begin, ui, get camX() { return camX; } };
 $('loading').remove(); document.body.dataset.ready = 'true';
 requestAnimationFrame(t => { last = t; loop(t); });

@@ -3,14 +3,14 @@
 // rows 0-1 are the ceiling world's ground. Nib may flip gravity (g = 1 down, -1 up).
 export const ROWS = 15, TILE = 16, FLOOR_Y = 13, CEIL_Y = 2;
 export const TUNE = { walk: 5.6, run: 9.6, accel: 14, runAccel: 20, airAccel: 12, skid: 34, friction: 18, gravity: 95, jumpGravity: 36, jump: 16.5, runJumpBonus: .25, cut: .5, coyote: .1, buffer: .12, maxFall: 17, flipKick: 2, timeRate: 2.5 };
-export const BEST_KEY = 'games:best:upside', UNLOCK_KEY = 'games:progress:upside';
+export const BEST_KEY = 'games:best:upside', UNLOCK_KEY = 'games:progress:upside', RECORDS_KEY = 'games:records:upside:v1';
 export const SIZE = { w: .75, small: .9, big: 1.75 };
 const SOLID = new Set(['#', 'B', '?', 'M', 'U', 'X', 'P', 'R']);
 export const isSolidChar = c => SOLID.has(c);
 
 function makeLevel(id, name, hint, w, build) {
   const g = Array.from({ length: ROWS }, () => Array(w).fill('.'));
-  const enemies = [], checks = [];
+  const enemies = [], checks = [], stars = [];
   let flagX = w - 14;
   const rowOf = (side, h) => side === 'f' ? FLOOR_Y - h : CEIL_Y - 1 + h;
   const set = (x, r, c) => { if (x >= 0 && x < w && r >= 0 && r < ROWS) g[r][x] = c; };
@@ -24,11 +24,12 @@ function makeLevel(id, name, hint, w, build) {
     walker(side, x) { enemies.push({ type: 'walker', x, side }); },
     shell(side, x) { enemies.push({ type: 'shell', x, side }); },
     check(side, x) { checks.push({ x, g: side === 'f' ? 1 : -1 }); },
+    star(x, y) { stars.push({ id: stars.length + 1, x, y, w: .8, h: .8 }); },
     flag(x) { flagX = x; },
   };
   build(b);
   checks.sort((a, z) => a.x - z.x);
-  return { id, name, hint, w, time: 300, rows: g.map(r => r.join('')), enemies, checks, flagX, length: w };
+  return { id, name, hint, w, time: 300, rows: g.map(r => r.join('')), enemies, checks, stars, flagX, length: w };
 }
 
 export const LEVELS = [
@@ -39,6 +40,7 @@ export const LEVELS = [
     b.floor(74, 101); b.check('f', 76); b.put('f', 80, 4, '?B?'); b.shell('f', 88); b.coins('f', 93, 2, 5);
     b.ceil(94, 142); b.coins('c', 104, 2, 6); b.put('c', 110, 4, 'B?MB'); b.walker('c', 118); b.pipe('c', 124, 2); b.shell('c', 130); b.coins('c', 134, 1, 4);
     b.floor(137, 184); b.walker('f', 146); b.put('f', 148, 4, '?'); b.stairs('f', 156, 7); b.flag(168);
+    b.star(16, 9.2); b.star(106, 5.2); b.star(159, 5.2);
   }),
   makeLevel(2, 'Brickwork Breeze', 'Shells can be kicked. Ceiling pipes hang down — jump up and over them.', 214, b => {
     b.floor(0, 42); b.put('f', 11, 4, 'BMB?B'); b.walker('f', 17); b.walker('f', 19); b.pipe('f', 26, 3); b.pipe('f', 34, 4); b.walker('f', 38);
@@ -47,6 +49,7 @@ export const LEVELS = [
     b.floor(86, 142); b.coins('f', 96, 3, 8); b.shell('f', 126); b.walker('f', 130); b.walker('f', 134);
     b.floor(146, 214); b.check('f', 148); b.pipe('f', 154, 2); b.walker('f', 158); b.pipe('f', 162, 4); b.put('f', 167, 4, '?B?'); b.walker('f', 172);
     b.stairs('f', 180, 6); b.flag(194);
+    b.star(21, 9.2); b.star(87, 5.2); b.star(174, 9.2);
   }),
   makeLevel(3, 'Twin Skies', 'The worlds take turns. Jump, then FLIP at the top of your arc.', 244, b => {
     b.floor(0, 32); b.put('f', 10, 4, '?M?'); b.walker('f', 20); b.pipe('f', 25, 3);
@@ -56,6 +59,7 @@ export const LEVELS = [
     b.floor(118, 146); b.put('f', 122, 4, 'BMB'); b.shell('f', 130); b.walker('f', 136); b.pipe('f', 140, 4);
     b.ceil(150, 178); b.check('c', 152); b.walker('c', 158); b.walker('c', 160); b.put('c', 164, 4, '?B?B'); b.shell('c', 172);
     b.floor(174, 244); b.walker('f', 186); b.pipe('f', 190, 3); b.walker('f', 196); b.put('f', 200, 4, '??'); b.stairs('f', 206, 8); b.flag(222);
+    b.star(36, 5.2); b.star(91, 5.2); b.star(193, 9.2);
   }),
   makeLevel(4, 'Lantern Keep', 'Everything at once. Read ahead, flip fast, stomp with style.', 278, b => {
     b.floor(0, 26); b.put('f', 8, 4, 'BMB'); b.walker('f', 16); b.shell('f', 20);
@@ -68,16 +72,29 @@ export const LEVELS = [
     b.ceil(164, 190); b.walker('c', 170); b.pipe('c', 176, 4); b.walker('c', 182); b.walker('c', 185);
     b.floor(186, 200); b.walker('f', 194);
     b.floor(204, 278); b.check('f', 205); b.put('f', 210, 4, '?M?'); b.shell('f', 216); b.walker('f', 222); b.walker('f', 224); b.pipe('f', 230, 3); b.stairs('f', 238, 8); b.flag(254);
+    b.star(27, 5.2); b.star(116, 5.2); b.star(232, 8.2);
   }),
 ];
 
 const store = s => s ?? globalThis.localStorage;
 export function readBest(storage) { try { const v = JSON.parse(store(storage)?.getItem(BEST_KEY)); return Number.isFinite(v?.score) && v.score >= 0 ? v : null; } catch { return null; } }
-export function readUnlocked(storage) { try { return Math.max(1, Math.min(LEVELS.length, +store(storage)?.getItem(UNLOCK_KEY) || 1)); } catch { return 1; } }
+export function readUnlocked(storage) { try { const n = Number(store(storage)?.getItem(UNLOCK_KEY)); return Number.isFinite(n) ? Math.max(1, Math.min(LEVELS.length, Math.floor(n))) : 1; } catch { return 1; } }
+export function readRecords(storage) {
+  const records = {};
+  try {
+    const saved = JSON.parse(store(storage)?.getItem(RECORDS_KEY));
+    for (const level of LEVELS) for (const mode of ['normal', 'assist']) {
+      const r = saved?.[level.id]?.[mode];
+      if (!r || !Number.isFinite(r.score) || r.score < 0 || !Number.isFinite(r.time) || r.time < 0 || !Number.isInteger(r.stars) || r.stars < 0 || r.stars > 3) continue;
+      (records[level.id] ??= {})[mode] = { score: r.score, time: r.time, stars: r.stars, medals: { clear: r.medals?.clear === true, collector: r.medals?.collector === true, clean: r.medals?.clean === true } };
+    }
+  } catch { /* Corrupt or unavailable storage should never prevent play. */ }
+  return records;
+}
 const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
 export function createUpside({ storage, god = false } = {}) {
-  const state = { mode: 'title', levelIndex: 0, lives: 3, score: 0, coins: 0, time: 0, t: 0, events: [], best: readBest(storage), unlocked: readUnlocked(storage), check: -1, combo: 0 };
+  const state = { mode: 'title', levelIndex: 0, lives: 3, score: 0, coins: 0, time: 0, t: 0, events: [], best: readBest(storage), records: readRecords(storage), unlocked: readUnlocked(storage), check: -1, combo: 0, assist: false, earnedLives: 0, result: null };
   const ev = (type, extra = {}) => { state.events.push({ type, ...extra }); if (state.events.length > 48) state.events.splice(0, state.events.length - 48); };
   const L = () => LEVELS[state.levelIndex];
   const tile = (x, y) => { if (x < 0) return '#'; if (y < 0 || y >= ROWS || x >= L().w) return '.'; return String.fromCharCode(state.grid[y * L().w + x]); };
@@ -89,19 +106,36 @@ export function createUpside({ storage, god = false } = {}) {
     state.grid = new Uint8Array(lv.w * ROWS); lv.rows.forEach((r, y) => { for (let x = 0; x < lv.w; x++) state.grid[y * lv.w + x] = r.charCodeAt(x); });
     state.enemies = lv.enemies.map(e => { const g = e.side === 'f' ? 1 : -1, h = .9; return { type: e.type, x: e.x + .05, y: g > 0 ? FLOOR_Y - h : CEIL_Y, w: .9, h, vx: 0, vy: 0, g, dir: -1, mode: 'walk', t: 0, alive: true, active: false }; });
     state.items = []; state.fireballs = []; state.bumps = []; state.time = lv.time; state.flag = null; state.combo = 0;
+    state.stars = lv.stars.map(s => ({ ...s, collected: false }));
+    state.levelStats = { elapsed: 0, deaths: 0, coins: 0, stomps: 0, flips: 0, stars: [] };
+    state.levelStartScore = state.score; state.result = null; state.lowTime = false;
     const c = lv.checks[state.check], g = c ? c.g : 1, x = c ? c.x : 2.5, h = SIZE.small;
-    const prev = state.player;
-    state.player = { x, y: g > 0 ? FLOOR_Y - h : CEIL_Y, w: SIZE.w, h, vx: 0, vy: 0, g, power: 0, ground: true, coyote: 0, buffer: 0, airFlip: true, jumping: false, facing: 1, invuln: 0, pj: prev?.pj ?? false, pf: prev?.pf ?? false, pr: prev?.pr ?? false, deathT: 0, flips: 0 };
+    state.player = { x, y: g > 0 ? FLOOR_Y - h : CEIL_Y, w: SIZE.w, h, vx: 0, vy: 0, g, power: 0, ground: true, coyote: 0, buffer: 0, airFlip: true, jumping: false, facing: 1, invuln: 0, pj: false, pf: false, pr: false, pfire: false, deathT: 0, flips: 0 };
+    saveCheckpoint();
   }
-  function start(id = 1) { state.levelIndex = Math.max(0, LEVELS.findIndex(l => l.id === id)); state.lives = 3; state.score = 0; state.coins = 0; state.check = -1; state.newBest = false; loadLevel(); state.mode = 'playing'; ev('start', { level: id }); return state; }
-  function next() { if (state.levelIndex >= LEVELS.length - 1) return false; state.levelIndex++; state.check = -1; loadLevel(); state.mode = 'playing'; ev('start', { level: L().id }); return true; }
+  // Store only the recoverable world, so simulation snapshots never contain a recursive checkpoint.
+  function saveCheckpoint() {
+    const { grid, enemies, items, stars, score, coins, time, player, earnedLives, levelStats } = state;
+    state.checkpoint = structuredClone({ grid, enemies, items, stars, score, coins, time, player, earnedLives, levelStats });
+  }
+  function restoreCheckpoint() {
+    const elapsed = state.levelStats.elapsed, deaths = state.levelStats.deaths;
+    Object.assign(state, structuredClone(state.checkpoint));
+    Object.assign(state.levelStats, { elapsed, deaths });
+    Object.assign(state.player, { vx: 0, vy: 0, ground: true, airFlip: true, coyote: 0, buffer: 0, jumping: false, invuln: 1.5, deathT: 0, pj: false, pf: false, pr: false, pfire: false });
+    state.fireballs = []; state.bumps = []; state.flag = null; state.combo = 0; state.lowTime = state.time <= 50;
+    state.mode = 'playing'; ev('respawn');
+  }
+  function start(id = 1, { assist = false } = {}) { state.levelIndex = Math.max(0, LEVELS.findIndex(l => l.id === id)); state.lives = 3; state.score = 0; state.coins = 0; state.check = -1; state.newBest = false; state.assist = !!assist; state.earnedLives = 0; state.events.length = 0; loadLevel(); state.mode = 'playing'; ev('start', { level: L().id }); return state; }
+  function next() { if (state.mode !== 'cleared' || state.levelIndex >= LEVELS.length - 1) return false; state.levelIndex++; state.check = -1; state.events.length = 0; loadLevel(); state.mode = 'playing'; ev('start', { level: L().id }); return true; }
   function saveBest() {
+    if (state.assist) return;
     const run = { score: state.score, level: L().id, at: Date.now() };
     if (run.score > (state.best?.score ?? -1)) { state.best = run; state.newBest = true; try { store(storage)?.setItem(BEST_KEY, JSON.stringify(run)); } catch { } }
   }
   function unlock(n) { if (n > state.unlocked) { state.unlocked = Math.min(LEVELS.length, n); try { store(storage)?.setItem(UNLOCK_KEY, String(state.unlocked)); } catch { } } }
   const addScore = (n, x, y) => { state.score += n; if (x !== undefined) ev('points', { n, x, y }); };
-  const addCoin = () => { state.coins++; addScore(200); ev('coin'); if (state.coins >= 100) { state.coins -= 100; state.lives = Math.min(9, state.lives + 1); ev('oneup'); } };
+  const addCoin = () => { state.coins++; state.levelStats.coins++; addScore(200); ev('coin'); if (state.coins >= 100) { state.coins -= 100; if (!state.assist && state.lives < 9) { state.lives++; state.earnedLives++; } ev('oneup'); } };
 
   function setSize(P, big) {
     const h = big ? SIZE.big : SIZE.small, d = h - P.h; if (!d) return;
@@ -138,17 +172,40 @@ export function createUpside({ storage, god = false } = {}) {
     if (god || P.invuln > 0 || state.mode !== 'playing') return;
     if (P.power > 0) { P.power = 0; setSize(P, false); P.invuln = 2; ev('shrink'); } else die();
   }
-  function die() { if (state.mode !== 'playing') return; const P = state.player; state.mode = 'dying'; P.deathT = 2.2; P.vy = -P.g * 13; P.vx = 0; ev('die'); }
+  function die() { if (state.mode !== 'playing') return; const P = state.player; state.levelStats.deaths++; state.mode = 'dying'; P.deathT = 1.1; P.vy = -P.g * 13; P.vx = 0; ev('die'); }
   function loseLife() {
-    state.lives--;
+    // Extra lives earned after this checkpoint roll back with their coins; they cannot be farmed.
+    if (!state.assist) state.lives -= 1 + state.earnedLives - state.checkpoint.earnedLives;
     if (state.lives <= 0) { state.mode = 'lost'; saveBest(); ev('gameover'); return; }
-    loadLevel(); state.mode = 'playing'; ev('respawn');
+    restoreCheckpoint();
   }
-  function finish() { state.score += Math.ceil(state.time) * 50; unlock(state.levelIndex + 2); saveBest(); state.mode = state.levelIndex >= LEVELS.length - 1 ? 'won' : 'cleared'; ev(state.mode); }
+  function retryCheckpoint() {
+    if (!['playing', 'paused', 'dying'].includes(state.mode)) return false;
+    if (state.mode !== 'dying') state.levelStats.deaths++;
+    state.events.length = 0; loseLife(); return true;
+  }
+  function finish() {
+    state.score += Math.ceil(state.time) * 50;
+    const stats = state.levelStats, stars = stats.stars.length;
+    const medals = { clear: true, collector: stars === L().stars.length, clean: stats.deaths === 0 };
+    const score = state.score - state.levelStartScore, mode = state.assist ? 'assist' : 'normal';
+    const old = state.records[L().id]?.[mode];
+    state.result = { elapsed: stats.elapsed, score, stars, deaths: stats.deaths, coins: stats.coins, stomps: stats.stomps, flips: stats.flips, medals, newRecord: !old || score > old.score || stats.elapsed < old.time || stars > old.stars, assisted: state.assist };
+    (state.records[L().id] ??= {})[mode] = {
+      score: Math.max(old?.score ?? 0, score), time: Math.min(old?.time ?? Infinity, stats.elapsed), stars: Math.max(old?.stars ?? 0, stars),
+      medals: Object.fromEntries(Object.entries(medals).map(([name, earned]) => [name, earned || !!old?.medals?.[name]])),
+    };
+    try { store(storage)?.setItem(RECORDS_KEY, JSON.stringify(state.records)); } catch { }
+    unlock(state.levelIndex + 2); saveBest(); state.mode = state.levelIndex >= LEVELS.length - 1 ? 'won' : 'cleared'; ev(state.mode);
+  }
 
   function stepPlayer(dt, input) {
     const P = state.player, T = TUNE;
-    const jp = !!input.jump && !P.pj, fp = !!input.flip && !P.pf, rp = !!input.run && !P.pr;
+    if (P.power && P.h < SIZE.big) setSize(P, true);
+    const jp = !!input.jump && !P.pj, fp = !!input.flip && !P.pf;
+    // Auto-run must not swallow a deliberate press of the RUN/FIRE button.
+    const rp = (!!input.run && !P.pr) || (!!input.fire && !P.pfire);
+    P.pfire = !!input.fire;
     P.pj = !!input.jump; P.pf = !!input.flip; P.pr = !!input.run;
     const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0), max = input.run ? T.run : T.walk;
     if (dir) {
@@ -162,7 +219,8 @@ export function createUpside({ storage, god = false } = {}) {
     if (!input.jump && P.jumping && P.vy * P.g < 0) { P.vy *= T.cut; P.jumping = false; }
     if (fp) {
       const free = P.ground || P.coyote > 0;
-      if (free || P.airFlip) { if (!free) P.airFlip = false; if (P.power) { /* keep feet anchored to the new floor side */ } P.g = -P.g; P.vy = P.g * T.flipKick; P.ground = false; P.coyote = 0; P.jumping = false; P.flips++; ev('flip', { g: P.g }); }
+      if (free || P.airFlip) { if (!free) P.airFlip = false; P.g = -P.g; P.vy = P.g * T.flipKick; P.ground = false; P.coyote = 0; P.jumping = false; P.flips++; state.levelStats.flips++; ev('flip', { g: P.g }); }
+      else ev('flipdenied');
     }
     if (rp && P.power === 2 && state.fireballs.length < 2) { state.fireballs.push({ x: P.x + (P.facing > 0 ? P.w : -.5), y: P.y + P.h / 2 - .25, w: .5, h: .5, vx: P.facing * 13, vy: P.g * 4, g: P.g, t: 0 }); ev('fire'); }
     const rising = P.vy * P.g < 0, grav = rising && P.jumping && input.jump ? T.jumpGravity : T.gravity;
@@ -170,19 +228,28 @@ export function createUpside({ storage, god = false } = {}) {
     const hx = moveAxis(P, 'x', P.vx * dt); if (hx) P.vx = 0;
     if (P.x > L().w - 1) P.x = L().w - 1;
     const wasGround = P.ground; P.ground = false;
-    const hy = moveAxis(P, 'y', P.vy * dt);
+    const previousY = P.y, hy = moveAxis(P, 'y', P.vy * dt);
     if (hy) {
       if (Math.sign(P.vy) === P.g) { P.ground = true; P.airFlip = true; P.jumping = false; P.vy = 0; state.combo = 0; if (!wasGround) ev('land'); }
       else {
         // corner correction: barely clipped a block edge? slide past instead of bonking
         const cx = P.x + P.w / 2, ov = hy.map(h => Math.min(P.x + P.w, h.x + 1) - Math.max(P.x, h.x));
-        if (hy.length === 1 && ov[0] < .3) { P.y -= P.vy * dt * 0; P.x += cx < hy[0].x + .5 ? -ov[0] - .01 : ov[0] + .01; if (P.vy) P.y += 0; }
-        else { const t = hy.reduce((b, h) => Math.abs(h.x + .5 - cx) < Math.abs(b.x + .5 - cx) ? h : b); P.vy = P.g * 1; P.jumping = false; bump(t.x, t.y, P); }
+        let corrected = false;
+        if (hy.length === 1 && ov[0] < .3) {
+          const oldX = P.x, resolvedY = P.y;
+          P.x += cx < hy[0].x + .5 ? -ov[0] - .01 : ov[0] + .01; P.y = previousY + P.vy * dt;
+          corrected = !boxSolid(P);
+          if (!corrected) { P.x = oldX; P.y = resolvedY; }
+        }
+        if (!corrected) { const t = hy.reduce((b, h) => Math.abs(h.x + .5 - cx) < Math.abs(b.x + .5 - cx) ? h : b); P.vy = P.g * 1; P.jumping = false; bump(t.x, t.y, P); }
       }
     }
     if (P.invuln > 0) P.invuln -= dt;
     // coins in the grid
     for (let y = Math.floor(P.y); y <= Math.floor(P.y + P.h - 1e-4); y++) for (let x = Math.floor(P.x); x <= Math.floor(P.x + P.w - 1e-4); x++) if (tile(x, y) === 'o') { setTile(x, y, '.'); addCoin(); }
+    for (const star of state.stars) if (!star.collected && overlap(P, star)) {
+      star.collected = true; state.levelStats.stars.push(star.id); addScore(1000, star.x, star.y); ev('star', { id: star.id, x: star.x, y: star.y, count: state.levelStats.stars.length });
+    }
   }
 
   function stepEnemies(dt) {
@@ -204,6 +271,7 @@ export function createUpside({ storage, god = false } = {}) {
       if (!overlap(P, e)) continue;
       const feet = P.g > 0 ? P.y + P.h - e.y : e.y + e.h - P.y, falling = P.vy * P.g > 0;
       if ((falling || !P.ground) && feet < .55 && P.vy * P.g > -1) {
+        state.levelStats.stomps++;
         const pts = [100, 200, 400, 800, 1000, 2000, 4000, 8000][Math.min(7, state.combo++)];
         if (e.type === 'walker') { e.mode = 'squish'; e.t = 0; }
         else if (e.mode === 'walk' || e.mode === 'slide') { e.mode = 'shell'; e.t = 0; }
@@ -242,10 +310,10 @@ export function createUpside({ storage, god = false } = {}) {
     for (const b of state.bumps) b.t -= dt; state.bumps = state.bumps.filter(b => b.t > 0);
   }
 
-  function step(dt, input = {}) {
+  function advance(dt, input) {
     if (!['playing', 'dying', 'flag'].includes(state.mode)) return state;
     state.t += dt; const P = state.player;
-    if (state.mode === 'dying') { P.deathT -= dt; if (P.deathT < 1.8) { P.vy += P.g * 40 * dt; P.y += P.vy * dt; } if (P.deathT <= 0) loseLife(); return state; }
+    if (state.mode === 'dying') { state.levelStats.elapsed += dt; P.deathT -= dt; if (P.deathT < .9) { P.vy += P.g * 40 * dt; P.y += P.vy * dt; } if (P.deathT <= 0) loseLife(); return state; }
     if (state.mode === 'flag') {
       const F = state.flag; F.t += dt;
       const target = P.g > 0 ? FLOOR_Y - P.h : CEIL_Y; P.vx = 0; P.vy = 0;
@@ -253,21 +321,35 @@ export function createUpside({ storage, god = false } = {}) {
       if (F.t > 1.6) finish();
       return state;
     }
-    state.time -= dt * TUNE.timeRate; if (state.time <= 0) { state.time = 0; die(); return state; }
+    state.levelStats.elapsed += dt;
+    state.time -= dt * TUNE.timeRate * (state.assist ? .5 : 1); if (state.time <= 0) { state.time = 0; die(); return state; }
+    if (!state.lowTime && state.time <= 50) { state.lowTime = true; ev('lowtime'); }
     stepPlayer(dt, input); stepItems(dt); stepEnemies(dt);
     if (state.mode !== 'playing') return state;
     const lv = L();
-    lv.checks.forEach((c, i) => { if (i > state.check && P.x >= c.x && P.g === c.g) { state.check = i; ev('check', { x: c.x }); } });
+    lv.checks.forEach((c, i) => {
+      const feet = P.g > 0 ? P.y + P.h : P.y, surface = P.g > 0 ? FLOOR_Y : CEIL_Y;
+      if (i > state.check && Math.abs(P.x + P.w / 2 - c.x) < 1.5 && P.g === c.g && P.ground && Math.abs(feet - surface) < .1 && !boxSolid(P)) {
+        state.check = i; saveCheckpoint(); ev('check', { x: c.x, index: i });
+      }
+    });
+    if ((P.g > 0 && P.y > ROWS + .5) || (P.g < 0 && P.y + P.h < -.5)) { P.invuln = 0; die(); return state; }
     if (P.x + P.w >= lv.flagX + .4) {
       const d = P.g > 0 ? FLOOR_Y - (P.y + P.h) : P.y - CEIL_Y, bonus = d >= 8.5 ? 5000 : d >= 6.5 ? 2000 : d >= 4.5 ? 800 : d >= 2.5 ? 400 : 100;
       state.mode = 'flag'; state.flag = { t: 0, bonus, drop: 0, y: P.y }; P.x = lv.flagX + .4 - P.w; addScore(bonus, lv.flagX, P.y); ev('flagpole', { bonus });
       return state;
     }
-    if ((P.g > 0 && P.y > ROWS + .5) || (P.g < 0 && P.y + P.h < -.5)) { P.invuln = 0; die(); }
+    return state;
+  }
+  function step(dt, input = {}) {
+    if (!Number.isFinite(dt) || dt <= 0) return state;
+    // Bound catch-up after a suspended tab and keep every collision step smaller than one tile.
+    let remaining = Math.min(dt, .25);
+    while (remaining > 1e-9) { const slice = Math.min(remaining, 1 / 60); advance(slice, input ?? {}); remaining -= slice; }
     return state;
   }
   const pause = () => { if (state.mode !== 'playing') return false; state.mode = 'paused'; ev('pause'); return true; };
   const resume = () => { if (state.mode !== 'paused') return false; state.mode = 'playing'; return true; };
   const snapshot = () => structuredClone(state), restore = s => { for (const k of Object.keys(state)) delete state[k]; Object.assign(state, structuredClone(s)); };
-  return { state, start, next, step, pause, resume, tile, solidAt, snapshot, restore, get level() { return L(); } };
+  return { state, start, next, step, pause, resume, retryCheckpoint, tile, solidAt, snapshot, restore, get level() { return L(); } };
 }

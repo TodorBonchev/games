@@ -34,7 +34,8 @@
     "test:lantern:space": "node tests/lantern-space-browser.mjs",
     "test:upside": "node tests/upside-browser.mjs",
     "test:piano": "node tests/piano-wait-browser.mjs",
-    "test:lantern:expedition": "node tests/lantern-expedition-browser.mjs"
+    "test:lantern:expedition": "node tests/lantern-expedition-browser.mjs",
+    "test:upside:quality": "node tests/upside-quality-browser.mjs"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
