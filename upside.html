@@ -3,34 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#2b1b5e">
+<meta name="theme-color" content="#5c94fc">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="description" content="Upside Nib — a 3D platformer where a little lantern sprite flips gravity to run on floors and ceilings. Four levels, touch and keyboard.">
+<meta name="description" content="Upside Nib — a retro 2D side-scrolling platformer where a little lantern sprite flips gravity between a floor world and a ceiling world. Four levels, touch and keyboard.">
 <title>Upside Nib — Games</title>
 <link rel="icon" href="assets/games-icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="upside.css?v1">
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
+<link rel="stylesheet" href="upside.css?v2">
 </head>
 <body>
-<div id="stage" class="stage"></div>
-<header class="hud">
-  <a class="home" href="./" aria-label="All games">←</a>
-  <div class="stat"><small>SCORE</small><strong id="score">000000</strong></div>
-  <div class="stat"><small>GLIMMERS</small><strong>✦ <span id="coins">0</span></strong></div>
-  <div class="stat"><small>LANTERNS</small><strong id="lives" class="lives">◆◆◆</strong></div>
-  <div class="stat grow"><small id="levelName">01</small><div class="bar"><i id="progress"></i></div></div>
-  <div class="stat"><small>TIME</small><strong id="time">90</strong></div>
-  <div class="stat hide-sm"><small>BEST</small><strong id="best">------</strong></div>
-  <button id="muteBtn" aria-label="Toggle sound">🔊</button>
-  <button id="pauseBtn" aria-label="Pause">Ⅱ</button>
-</header>
-<div id="flash" class="flash" role="status"></div>
-<div id="touchZone" class="touch-zone" aria-hidden="true"></div>
-<div id="joystick" class="joystick" aria-hidden="true"><i id="knob"></i></div>
-<div class="buttons" aria-hidden="true"><button id="flipBtn" class="flip">FLIP<small>⇅</small></button><button id="jumpBtn" class="jump">JUMP</button></div>
+<div id="stage" class="stage"><canvas id="screen" aria-label="Upside Nib game screen"></canvas></div>
+<div id="safe" class="safe" aria-hidden="true"></div>
+<nav class="sys">
+  <a class="home" href="./" aria-label="All games">◀</a>
+  <span class="spacer"></span>
+  <button id="muteBtn" aria-label="Toggle sound">♪</button>
+  <button id="pauseBtn" aria-label="Pause">II</button>
+</nav>
+<div id="dpad" class="dpad" aria-hidden="true"><span class="arrow l">◀</span><span class="arrow r">▶</span></div>
+<div class="buttons" aria-hidden="true">
+  <button id="flipBtn" class="flip">FLIP</button>
+  <button id="runBtn" class="run">RUN<small>FIRE</small></button>
+  <button id="jumpBtn" class="jump">JUMP</button>
+</div>
 <div id="overlay" class="overlay" hidden><section id="panel" class="panel" role="dialog" aria-modal="true"></section></div>
-<div id="loading" class="loading">✦ Lighting Nib's lantern…</div>
+<div id="loading" class="loading">LIGHTING NIB'S LANTERN…</div>
 <noscript><div class="loading">JavaScript is needed to play. <a href="./">All games</a></div></noscript>
-<script type="module" src="upside-main.js?v1"></script>
+<script type="module" src="upside-main.js?v2"></script>
 </body>
 </html>

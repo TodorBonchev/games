@@ -12,7 +12,7 @@ A collection of **seven Three.js browser games**, made for phones and computers.
 | **Borrowed Tomorrow** | [Launch the time sail](https://todorbonchev.github.io/games/borrowed.html) | Six clockworld chambers where your two recorded past selves steer a triangular weapon. Flow and Rift difficulties, clockblooms, crosswinds, armor, and a final boss. |
 | **Prism Orchard** | [Launch Prism Orchard](https://todorbonchev.github.io/games/prism.html) | Turn crystal mirrors, split colored light, and combine beams to bloom eight night gardens. |
 | **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Explore three Blender-built islands by spaceship: a lantern village, a moonlit garden, and a celestial observatory. |
-| **Upside Nib** | [Launch Upside Nib](https://todorbonchev.github.io/games/upside.html) | A gravity-flipping 3D platformer: run, jump, stomp Grumblebugs and collect glimmers across four levels, flipping between a mossy floor world and a crystal ceiling world. Local best score. |
+| **Upside Nib** | [Launch Upside Nib](https://todorbonchev.github.io/games/upside.html) | A gravity-flipping 2D pixel platformer: bump ?-blocks, stomp Grumblebugs, kick Shellbacks, grow with Glow Caps, throw embers, and flip between a floor world and a ceiling world across four levels to reach the flagpole. Local save and best score. |
 
 ## Wonderwake
 
@@ -358,4 +358,14 @@ The arcade browser suites test all twenty phone layouts, local checkpoints and c
 
 ### Upside Nib
 
-Upside Nib uses `upside.html`, `upside.css`, `upside-main.js` (Three.js rendering, input, Web Audio) and `upside-game.js` (pure, Node-testable physics with coyote time, jump buffering, variable jump height and gravity flipping). `npm test` includes `tests/upside.test.mjs`, which drives an autopilot through all four levels; `npm run test:upside` checks phone-landscape touch controls and desktop keyboard in Chromium and regenerates the hub preview art. `/upside.html?debug=1` exposes `window.__upside`. Best score is stored in `games:best:upside`; unlocked levels in `games:progress:upside`.
+A crisp, original 2D pixel-art side-scroller (Canvas 2D, 16px tiles, integer scaling, smoothing off) with a gravity twist. Nib the lantern can flip between the **floor world** and the **ceiling world**: the screen never rotates, Nib flips upside down. Flipping is free on the ground; one mid-air flip is refilled on landing or stomping.
+
+- **Blocks:** bricks (break when big), `?` blocks (coins), power-up blocks, pipes, hard blocks. Blocks can be bumped from either gravity side.
+- **Enemies:** Grumblebug (stomp it), Shellback (stomp into a shell, kick it into other enemies).
+- **Power-ups:** Glow Cap (grow / take one extra hit), Ember Bloom (throw bouncing embers with RUN).
+- **Goal:** flagpole with a height bonus plus a time bonus; checkpoints mid-level; 4 levels: Meadow Morning, Brickwork Breeze, Twin Skies, Lantern Keep.
+- **Feel:** run momentum and skidding, variable jump height, coyote time, jump buffer.
+- **Controls:** phone landscape d-pad + JUMP / FLIP / RUN·FIRE (safe-area aware); keyboard arrows/A-D, Space/Z/W jump, X/Shift run & fire, C/S/Down flip, P/Esc pause, M mute.
+- **Audio:** Web Audio chiptune effects and an original looping tune with mute.
+- **Save:** unlocked levels and best score in `localStorage` (`games:progress:upside`, `games:best:upside`).
+- **Tests:** `tests/upside.test.mjs` (logic, including a search bot that proves every level is completable — `tests/upside-bot.mjs`) and `tests/upside-browser.mjs` (touch, keyboard, pause, pixel scale, no console errors; `npm run test:upside`).

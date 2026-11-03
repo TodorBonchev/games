@@ -1,204 +1,273 @@
-// Upside Nib — pure platformer logic (no DOM, no Three.js) so it can be tested in Node.
-// Twist: Nib can flip gravity. Every level has a floor world and a ceiling world;
-// enemies, spikes and coins live on both sides, and you stomp "down" relative to your gravity.
-export const H = 10;            // distance between floor top (y=0) and ceiling underside (y=H)
-export const PLAYER = { w: .8, h: 1.2 };
-export const TUNE = { run: 7.5, accel: 55, airAccel: 30, friction: 40, gravity: 34, jump: 12.5, cut: .45, coyote: .11, buffer: .13, maxFall: 24, flipBoost: 3 };
+// Upside Nib — pure 2D platformer logic (no DOM) so it can be tested and bot-played in Node.
+// Tile units: 1 = one 16px tile. y grows downward. Rows 13-14 are the floor world's ground,
+// rows 0-1 are the ceiling world's ground. Nib may flip gravity (g = 1 down, -1 up).
+export const ROWS = 15, TILE = 16, FLOOR_Y = 13, CEIL_Y = 2;
+export const TUNE = { walk: 5.6, run: 9.6, accel: 14, runAccel: 20, airAccel: 12, skid: 34, friction: 18, gravity: 95, jumpGravity: 36, jump: 16.5, runJumpBonus: .25, cut: .5, coyote: .1, buffer: .12, maxFall: 17, flipKick: 2, timeRate: 2.5 };
+export const BEST_KEY = 'games:best:upside', UNLOCK_KEY = 'games:progress:upside';
+export const SIZE = { w: .75, small: .9, big: 1.75 };
+const SOLID = new Set(['#', 'B', '?', 'M', 'U', 'X', 'P', 'R']);
+export const isSolidChar = c => SOLID.has(c);
 
-// Authoring helpers. d = distance along the course (world z = -d), side = 'f' floor or 'c' ceiling.
-const floor = (d0, d1, x = 0, w = 6) => ({ kind: 'solid', x, y: -.5, z: -(d0 + d1) / 2, w, h: 1, d: d1 - d0, side: 'f' });
-const ceil = (d0, d1, x = 0, w = 6) => ({ kind: 'solid', x, y: H + .5, z: -(d0 + d1) / 2, w, h: 1, d: d1 - d0, side: 'c' });
-const block = (d, x, y, s = 1.4) => ({ kind: 'solid', x, y, z: -d, w: s, h: s, d: s, side: y < H / 2 ? 'f' : 'c' });
-const pillar = (d, x, side, h) => ({ kind: 'solid', x, y: side === 'f' ? h / 2 : H - h / 2, z: -d, w: 1.6, h, d: 1.6, side });
-
-function level(id, name, hint, time, parts) {
-  const solids = [], spikes = [], enemies = [], coins = [], movers = [], checkpoints = [];
-  let goal = null, length = 0;
-  for (const p of parts) {
-    if (p.kind === 'solid') { solids.push(p); length = Math.max(length, -p.z + p.d / 2); }
-    else if (p.kind === 'spike') spikes.push({ x: p.x ?? 0, y: p.side === 'f' ? .3 : H - .3, z: -(p.d0 + p.d1) / 2, w: p.w ?? 6, h: .6, d: p.d1 - p.d0, side: p.side });
-    else if (p.kind === 'enemy') enemies.push({ ...p });
-    else if (p.kind === 'coins') for (let i = 0; i < p.n; i++) coins.push({ x: p.x ?? 0, y: p.side === 'f' ? (p.y ?? 1) : H - (p.y ?? 1), z: -(p.d + i * (p.gap ?? 1.5)) });
-    else if (p.kind === 'mover') movers.push({ ...p });
-    else if (p.kind === 'check') checkpoints.push({ d: p.d, side: p.side });
-    else if (p.kind === 'goal') goal = { d: p.d, side: p.side };
-  }
-  return { id, name, hint, time, solids, spikes, enemies, coins, movers, checkpoints, goal, length };
+function makeLevel(id, name, hint, w, build) {
+  const g = Array.from({ length: ROWS }, () => Array(w).fill('.'));
+  const enemies = [], checks = [];
+  let flagX = w - 14;
+  const rowOf = (side, h) => side === 'f' ? FLOOR_Y - h : CEIL_Y - 1 + h;
+  const set = (x, r, c) => { if (x >= 0 && x < w && r >= 0 && r < ROWS) g[r][x] = c; };
+  const b = {
+    floor(a, z) { for (let x = a; x < z; x++) { set(x, 13, '#'); set(x, 14, '#'); } },
+    ceil(a, z) { for (let x = a; x < z; x++) { set(x, 0, '#'); set(x, 1, '#'); } },
+    put(side, x, h, str) { [...str].forEach((c, i) => { if (c !== ' ') set(x + i, rowOf(side, h), c); }); },
+    pipe(side, x, h) { for (let k = 1; k <= h; k++) { set(x, rowOf(side, k), 'P'); set(x + 1, rowOf(side, k), 'R'); } },
+    stairs(side, x, n, dir = 1) { for (let i = 0; i < n; i++) { const hh = dir > 0 ? i + 1 : n - i; for (let k = 1; k <= hh; k++) set(x + i, rowOf(side, k), 'X'); } },
+    coins(side, x, h, n, gap = 1) { for (let i = 0; i < n; i++) set(x + i * gap, rowOf(side, h), 'o'); },
+    walker(side, x) { enemies.push({ type: 'walker', x, side }); },
+    shell(side, x) { enemies.push({ type: 'shell', x, side }); },
+    check(side, x) { checks.push({ x, g: side === 'f' ? 1 : -1 }); },
+    flag(x) { flagX = x; },
+  };
+  build(b);
+  checks.sort((a, z) => a.x - z.x);
+  return { id, name, hint, w, time: 300, rows: g.map(r => r.join('')), enemies, checks, flagX, length: w };
 }
-const E = (d, side, range = 2.5, x = 0, speed = 2) => ({ kind: 'enemy', d, side, range, x, speed });
-const C = (d, side, n = 3, y = 1, x = 0, gap = 1.5) => ({ kind: 'coins', d, side, n, y, x, gap });
-const S = (d0, d1, side, x = 0, w = 6) => ({ kind: 'spike', d0, d1, side, x, w });
-const M = (d, side, axis, amp, period, w = 3.4, len = 3.4) => ({ kind: 'mover', d, side, axis, amp, period, w, len });
 
 export const LEVELS = [
-  level(1, 'Sprout Steps', 'Press FLIP to fall to the ceiling. The floor ends — the sky does not.', 90, [
-    floor(-4, 22), C(4, 'f', 4), E(16, 'f', 3), C(10, 'f', 3, 2.6), block(12, 0, 1.8),
-    ceil(18, 44), C(26, 'c', 5), E(34, 'c', 3),
-    { kind: 'check', d: 40, side: 'c' }, floor(40, 62), C(46, 'f', 4), E(53, 'f', 2.5), block(50, -1.5, 1.8), C(50, 'f', 1, 3.2, -1.5),
-    { kind: 'goal', d: 60, side: 'f' },
-  ]),
-  level(2, 'Lantern Loft', 'Spikes grow on both sides. Flip mid-air to dodge them.', 100, [
-    floor(-4, 14), C(3, 'f', 4), ceil(10, 30), S(20, 24, 'c'), C(13, 'c', 4), E(27, 'c', 1.8),
-    floor(22, 40), S(32, 35, 'f'), C(24, 'f', 3), E(37, 'f', 2), { kind: 'check', d: 38, side: 'f' },
-    ceil(36, 52), C(41, 'c', 4), pillar(46, -1.5, 'c', 2.4), pillar(46, 1.5, 'c', 2.4), C(46, 'c', 1, 3.4),
-    floor(50, 58), S(54, 55.5, 'f', 0, 6), ceil(56, 72), E(62, 'c', 3, -1), E(66, 'c', 3, 1, 2.6), C(60, 'c', 6),
-    floor(70, 80), { kind: 'goal', d: 78, side: 'f' },
-  ]),
-  level(3, 'Drifting Gardens', 'Moving petals carry you. Ride them — and flip between them.', 110, [
-    floor(-4, 10), C(2, 'f', 4), M(15, 'f', 'x', 1.2, 3.2), C(15, 'f', 1, 1.2), M(21, 'c', 'x', -1.2, 3.2), C(21, 'c', 1, 1.2),
-    floor(25, 36), E(31, 'f', 3, 0, 2.6), { kind: 'check', d: 27, side: 'f' }, C(28, 'f', 4, 2.4),
-    M(41, 'c', 'z', 2.5, 3.8), ceil(46, 58), S(50, 52, 'c', -1.5, 3), C(48, 'c', 6), E(55, 'c', 2.2, 1.5),
-    M(62, 'f', 'x', 1.2, 2.6), M(68, 'c', 'x', -1.2, 2.6), M(74, 'f', 'x', 1.2, 2.4),
-    { kind: 'check', d: 79, side: 'f' }, floor(78, 98), S(84, 86, 'f', -1.5, 3), S(89, 91, 'f', 1.5, 3), E(94, 'f', 2, 0, 3), C(82, 'f', 8, 2.2),
-    ceil(84, 98), C(86, 'c', 6), { kind: 'goal', d: 97, side: 'f' },
-  ]),
-  level(4, 'The Inverted Spire', 'Everything at once. Read ahead, flip fast, stomp with style.', 130, [
-    floor(-4, 8), C(2, 'f', 3), ceil(6, 18, 0, 4), S(10, 12, 'c', 0, 4), E(15, 'c', 1.5, 0, 3), C(8, 'c', 3),
-    floor(16, 26, 0, 4), S(20, 21.5, 'f', 0, 4), E(24, 'f', 1.5, 0, 3), M(30, 'c', 'x', 1.6, 2.2, 3),
-    { kind: 'check', d: 36, side: 'f' }, floor(34, 48, 0, 5), pillar(40, -1.7, 'f', 2), C(40, 'f', 1, 3, -1.7), S(43, 46, 'f', 1, 3),
-    ceil(44, 60, 0, 5), S(48, 50, 'c', -1, 3), S(53, 55, 'c', 1, 3), E(57, 'c', 2, 0, 3.4), C(47, 'c', 8, 1, 0, 1.4),
-    M(65, 'f', 'z', 1.5, 2.6, 3.4, 4), M(71, 'c', 'x', 1.6, 2), { kind: 'check', d: 77, side: 'c' },
-    ceil(76, 92, 0, 4), E(82, 'c', 2, 0, 3.6), E(88, 'c', 2, 0, 3.6), C(80, 'c', 6),
-    floor(88, 104, 0, 4), S(92, 94, 'f', 0, 4), C(96, 'f', 5), E(100, 'f', 1.5, 0, 3.6), { kind: 'goal', d: 103, side: 'f' },
-  ]),
+  makeLevel(1, 'Meadow Morning', 'Bump blocks from below. When the floor runs out, FLIP to the sky world.', 184, b => {
+    b.floor(0, 70); b.put('f', 14, 4, '?'); b.put('f', 19, 4, 'B?BMB'); b.put('f', 21, 8, '?'); b.coins('f', 9, 1, 3);
+    b.walker('f', 24); b.pipe('f', 29, 2); b.pipe('f', 38, 3); b.walker('f', 43); b.walker('f', 45); b.pipe('f', 52, 3);
+    b.put('f', 58, 4, 'BBB'); b.coins('f', 58, 6, 3); b.walker('f', 66);
+    b.floor(74, 101); b.check('f', 76); b.put('f', 80, 4, '?B?'); b.shell('f', 88); b.coins('f', 93, 2, 5);
+    b.ceil(94, 142); b.coins('c', 104, 2, 6); b.put('c', 110, 4, 'B?MB'); b.walker('c', 118); b.pipe('c', 124, 2); b.shell('c', 130); b.coins('c', 134, 1, 4);
+    b.floor(137, 184); b.walker('f', 146); b.put('f', 148, 4, '?'); b.stairs('f', 156, 7); b.flag(168);
+  }),
+  makeLevel(2, 'Brickwork Breeze', 'Shells can be kicked. Ceiling pipes hang down — jump up and over them.', 214, b => {
+    b.floor(0, 42); b.put('f', 11, 4, 'BMB?B'); b.walker('f', 17); b.walker('f', 19); b.pipe('f', 26, 3); b.pipe('f', 34, 4); b.walker('f', 38);
+    b.ceil(32, 78); b.coins('c', 44, 2, 6); b.pipe('c', 50, 3); b.walker('c', 55); b.pipe('c', 60, 2); b.shell('c', 66); b.put('c', 69, 4, 'B?B?B');
+    b.ceil(81, 122); b.check('c', 83); b.walker('c', 90); b.walker('c', 92); b.put('c', 96, 4, '?M?'); b.pipe('c', 104, 3); b.shell('c', 112);
+    b.floor(86, 142); b.coins('f', 96, 3, 8); b.shell('f', 126); b.walker('f', 130); b.walker('f', 134);
+    b.floor(146, 214); b.check('f', 148); b.pipe('f', 154, 2); b.walker('f', 158); b.pipe('f', 162, 4); b.put('f', 167, 4, '?B?'); b.walker('f', 172);
+    b.stairs('f', 180, 6); b.flag(194);
+  }),
+  makeLevel(3, 'Twin Skies', 'The worlds take turns. Jump, then FLIP at the top of your arc.', 244, b => {
+    b.floor(0, 32); b.put('f', 10, 4, '?M?'); b.walker('f', 20); b.pipe('f', 25, 3);
+    b.ceil(28, 56); b.walker('c', 38); b.put('c', 42, 4, 'B?B'); b.shell('c', 48); b.coins('c', 34, 2, 4);
+    b.floor(52, 78); b.walker('f', 60); b.walker('f', 66); b.pipe('f', 68, 3); b.coins('f', 56, 5, 4);
+    b.ceil(85, 112); b.check('c', 88); b.walker('c', 96); b.pipe('c', 101, 3); b.walker('c', 106); b.coins('c', 90, 3, 5);
+    b.floor(118, 146); b.put('f', 122, 4, 'BMB'); b.shell('f', 130); b.walker('f', 136); b.pipe('f', 140, 4);
+    b.ceil(150, 178); b.check('c', 152); b.walker('c', 158); b.walker('c', 160); b.put('c', 164, 4, '?B?B'); b.shell('c', 172);
+    b.floor(174, 244); b.walker('f', 186); b.pipe('f', 190, 3); b.walker('f', 196); b.put('f', 200, 4, '??'); b.stairs('f', 206, 8); b.flag(222);
+  }),
+  makeLevel(4, 'Lantern Keep', 'Everything at once. Read ahead, flip fast, stomp with style.', 278, b => {
+    b.floor(0, 26); b.put('f', 8, 4, 'BMB'); b.walker('f', 16); b.shell('f', 20);
+    b.ceil(22, 50); b.pipe('c', 30, 4); b.walker('c', 36); b.shell('c', 40); b.walker('c', 44); b.coins('c', 26, 3, 3);
+    b.floor(46, 64); b.walker('f', 52); b.pipe('f', 56, 4); b.walker('f', 60);
+    b.floor(68, 84); b.check('f', 69); b.put('f', 72, 4, '?M?'); b.shell('f', 78); b.walker('f', 81);
+    b.ceil(92, 120); b.walker('c', 98); b.walker('c', 100); b.pipe('c', 106, 3); b.shell('c', 112); b.coins('c', 94, 2, 4);
+    b.ceil(124, 140); b.walker('c', 130); b.walker('c', 134);
+    b.floor(136, 160); b.check('f', 140); b.put('f', 144, 4, 'B?B'); b.pipe('f', 150, 4); b.shell('f', 156);
+    b.ceil(164, 190); b.walker('c', 170); b.pipe('c', 176, 4); b.walker('c', 182); b.walker('c', 185);
+    b.floor(186, 200); b.walker('f', 194);
+    b.floor(204, 278); b.check('f', 205); b.put('f', 210, 4, '?M?'); b.shell('f', 216); b.walker('f', 222); b.walker('f', 224); b.pipe('f', 230, 3); b.stairs('f', 238, 8); b.flag(254);
+  }),
 ];
 
-const overlap = (a, b) => Math.abs(a.x - b.x) * 2 < a.w + b.w && Math.abs(a.y - b.y) * 2 < a.h + b.h && Math.abs(a.z - b.z) * 2 < a.d + b.d;
-
-export function moverBox(m, t) {
-  const s = Math.sin(t * Math.PI * 2 / m.period) * m.amp;
-  return { kind: 'solid', x: m.axis === 'x' ? s : 0, y: m.side === 'f' ? -.3 : H + .3, z: -m.d + (m.axis === 'z' ? s : 0), w: m.w, h: .6, d: m.len, side: m.side };
-}
-export function enemyPos(e, t) {
-  const s = Math.sin(t * e.speed / Math.max(e.range, .5)) * e.range;
-  return { x: e.x, y: e.side === 'f' ? .45 : H - .45, z: -e.d + s, w: .9, h: .9, d: .9 };
-}
+const store = s => s ?? globalThis.localStorage;
+export function readBest(storage) { try { const v = JSON.parse(store(storage)?.getItem(BEST_KEY)); return Number.isFinite(v?.score) && v.score >= 0 ? v : null; } catch { return null; } }
+export function readUnlocked(storage) { try { return Math.max(1, Math.min(LEVELS.length, +store(storage)?.getItem(UNLOCK_KEY) || 1)); } catch { return 1; } }
+const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
 export function createUpside({ storage, god = false } = {}) {
-  const state = { mode: 'title', levelIndex: 0, lives: 3, score: 0, coins: 0, stomps: 0, time: 0, t: 0, events: [], best: readBest(storage) };
-  let lvl, p, dead, coinTaken, check;
+  const state = { mode: 'title', levelIndex: 0, lives: 3, score: 0, coins: 0, time: 0, t: 0, events: [], best: readBest(storage), unlocked: readUnlocked(storage), check: -1, combo: 0 };
+  const ev = (type, extra = {}) => { state.events.push({ type, ...extra }); if (state.events.length > 48) state.events.splice(0, state.events.length - 48); };
+  const L = () => LEVELS[state.levelIndex];
+  const tile = (x, y) => { if (x < 0) return '#'; if (y < 0 || y >= ROWS || x >= L().w) return '.'; return String.fromCharCode(state.grid[y * L().w + x]); };
+  const setTile = (x, y, c) => { state.grid[y * L().w + x] = c.charCodeAt(0); };
+  const solidAt = (x, y) => SOLID.has(tile(x, y));
 
-  function push(type, data = {}) { state.events.push({ type, ...data }); if (state.events.length > 48) state.events.shift(); }
-  function spawnAt(cp) {
-    const up = cp.side === 'c';
-    p = { x: 0, y: up ? H - PLAYER.h / 2 : PLAYER.h / 2, z: -cp.d, vx: 0, vy: 0, vz: 0, flipped: up, grounded: true, coyote: TUNE.coyote, buffer: 0, airFlip: true, jumping: false, facing: Math.PI, invuln: 1.2, wasJump: false, wasFlip: false };
-    state.player = p;
+  function loadLevel() {
+    const lv = L();
+    state.grid = new Uint8Array(lv.w * ROWS); lv.rows.forEach((r, y) => { for (let x = 0; x < lv.w; x++) state.grid[y * lv.w + x] = r.charCodeAt(x); });
+    state.enemies = lv.enemies.map(e => { const g = e.side === 'f' ? 1 : -1, h = .9; return { type: e.type, x: e.x + .05, y: g > 0 ? FLOOR_Y - h : CEIL_Y, w: .9, h, vx: 0, vy: 0, g, dir: -1, mode: 'walk', t: 0, alive: true, active: false }; });
+    state.items = []; state.fireballs = []; state.bumps = []; state.time = lv.time; state.flag = null; state.combo = 0;
+    const c = lv.checks[state.check], g = c ? c.g : 1, x = c ? c.x : 2.5, h = SIZE.small;
+    const prev = state.player;
+    state.player = { x, y: g > 0 ? FLOOR_Y - h : CEIL_Y, w: SIZE.w, h, vx: 0, vy: 0, g, power: 0, ground: true, coyote: 0, buffer: 0, airFlip: true, jumping: false, facing: 1, invuln: 0, pj: prev?.pj ?? false, pf: prev?.pf ?? false, pr: prev?.pr ?? false, deathT: 0, flips: 0 };
   }
-  function start(n = 1, keepRun = false) {
-    state.levelIndex = Math.max(0, Math.min(LEVELS.length - 1, n - 1));
-    lvl = LEVELS[state.levelIndex]; state.level = lvl;
-    if (!keepRun) { state.lives = 3; state.score = 0; state.coins = 0; state.stomps = 0; }
-    state.time = 0; state.t = 0; dead = new Set(); coinTaken = new Set(); check = { d: 0, side: 'f' };
-    state.dead = dead; state.coinTaken = coinTaken;
-    spawnAt(check); state.mode = 'playing'; push('start', { level: lvl.id });
-    return true;
-  }
-  function solidsAt(t) { return lvl.solids.concat(lvl.movers.map(m => moverBox(m, t))); }
-  function hurt(fell = false) {
-    if (p.invuln > 0 || (god && !fell)) return;
-    state.lives--; push('hurt');
-    if (state.lives <= 0) { state.mode = 'lost'; saveBest(); push('lost'); return; }
-    spawnAt(check);
-  }
-  function step(dt, input = {}) {
-    if (state.mode !== 'playing') return;
-    dt = Math.min(dt, 1 / 30);
-    const t0 = state.t; state.t += dt; state.time += dt; p.invuln = Math.max(0, p.invuln - dt);
-    const down = p.flipped ? 1 : -1;
-    // input edges
-    const jumpHeld = !!input.jump, jumpPressed = jumpHeld && !p.wasJump, flipPressed = !!input.flip && !p.wasFlip;
-    p.wasJump = jumpHeld; p.wasFlip = !!input.flip;
-    if (jumpPressed) p.buffer = TUNE.buffer; else p.buffer = Math.max(0, p.buffer - dt);
-    // horizontal
-    let mx = +input.x || 0, mz = +input.z || 0; const len = Math.hypot(mx, mz); if (len > 1) { mx /= len; mz /= len; }
-    const acc = p.grounded ? TUNE.accel : TUNE.airAccel;
-    for (const [k, m] of [['vx', mx], ['vz', mz]]) {
-      const target = m * TUNE.run, dv = target - p[k], lim = (m ? acc : (p.grounded ? TUNE.friction : TUNE.airAccel * .4)) * dt;
-      p[k] += Math.max(-lim, Math.min(lim, dv));
-    }
-    if (len > .1) p.facing = Math.atan2(mx, mz);
-    // flip
-    if (flipPressed && (p.grounded || p.coyote > 0 || p.airFlip)) {
-      if (!p.grounded && p.coyote <= 0) p.airFlip = false;
-      p.flipped = !p.flipped; p.grounded = false; p.coyote = 0; p.jumping = false;
-      p.vy = (p.flipped ? 1 : -1) * TUNE.flipBoost; push('flip', { flipped: p.flipped });
-    }
-    const dn = p.flipped ? 1 : -1;
-    // jump with coyote + buffer
-    if (p.buffer > 0 && (p.grounded || p.coyote > 0)) {
-      p.vy = -dn * TUNE.jump; p.grounded = false; p.coyote = 0; p.buffer = 0; p.jumping = true; push('jump');
-    }
-    if (p.jumping && !jumpHeld && p.vy * -dn > 0) { p.vy *= TUNE.cut; p.jumping = false; }
-    p.vy += dn * TUNE.gravity * dt;
-    if (p.vy * dn > TUNE.maxFall) p.vy = dn * TUNE.maxFall;
-    // ride movers
-    const wasGrounded = p.grounded;
-    if (p.grounded && p.ride) { const a = moverBox(p.ride, t0), b = moverBox(p.ride, state.t); p.x += b.x - a.x; p.z += b.z - a.z; }
-    // integrate per axis
-    const solids = solidsAt(state.t), box = { x: p.x, y: p.y, z: p.z, w: PLAYER.w, h: PLAYER.h, d: PLAYER.w };
-    p.grounded = false; p.ride = null;
-    for (const axis of ['x', 'z', 'y']) {
-      const v = axis === 'x' ? p.vx : axis === 'z' ? p.vz : p.vy, size = axis === 'y' ? PLAYER.h : PLAYER.w;
-      box[axis] += v * dt;
-      for (let i = 0; i < solids.length; i++) {
-        const s = solids[i]; if (!overlap(box, s)) continue;
-        const half = (axis === 'y' ? s.h : axis === 'x' ? s.w : s.d) / 2 + size / 2;
-        // y-step: when moving horizontally onto a lip ≤ .35, let y resolution handle it
-        if (axis !== 'y') {
-          const feet = dn < 0 ? box.y - PLAYER.h / 2 : box.y + PLAYER.h / 2, lip = dn < 0 ? s.y + s.h / 2 : s.y - s.h / 2;
-          if (Math.abs(feet - lip) < .3) continue;
-        }
-        box[axis] = s[axis] + (box[axis] > s[axis] ? half : -half);
-        if (axis === 'x') p.vx = 0; else if (axis === 'z') p.vz = 0;
-        else if (p.vy * dn >= 0 || (box.y - s.y) * dn < 0) {
-          box.y = s.y - dn * half; p.vy = 0; p.grounded = true; if (i >= lvl.solids.length) p.ride = lvl.movers[i - lvl.solids.length];
-        } else { box.y = s.y + dn * half; p.vy = 0; p.jumping = false; push('bonk'); }
-      }
-    }
-    p.x = box.x; p.y = box.y; p.z = box.z;
-    if (p.grounded) { if (!wasGrounded) push('land', { flipped: p.flipped }); p.coyote = TUNE.coyote; p.airFlip = true; p.jumping = false; }
-    else p.coyote = Math.max(0, p.coyote - dt);
-    // hazards
-    box.x = p.x; box.y = p.y; box.z = p.z;
-    if (p.y < -12 || p.y > H + 12) { p.invuln = 0; state.falls = (state.falls || 0) + 1; hurt(true); return; }
-    for (const s of lvl.spikes) if (overlap(box, { ...s, h: s.h * .8 })) { hurt(); if (state.mode !== 'playing') return; return; }
-    // enemies: stomp if travelling with gravity and above them relative to gravity
-    lvl.enemies.forEach((e, i) => {
-      if (dead.has(i)) return; const q = enemyPos(e, state.t);
-      if (!overlap(box, q)) return;
-      const rel = (p.y - q.y) * -dn; // >0 means player is "above" relative to its own gravity
-      if (rel > .35 && (p.vy * dn >= -1)) {
-        dead.add(i); state.stomps++; state.score += 200; p.vy = -dn * TUNE.jump * (jumpHeld ? .95 : .6); p.jumping = jumpHeld; p.airFlip = true;
-        push('stomp', { x: q.x, y: q.y, z: q.z });
-      } else hurt();
-    });
-    if (state.mode !== 'playing') return;
-    lvl.coins.forEach((c, i) => {
-      if (coinTaken.has(i)) return;
-      if (Math.abs(c.x - p.x) < .9 && Math.abs(c.y - p.y) < 1.1 && Math.abs(c.z - p.z) < .9) {
-        coinTaken.add(i); state.coins++; state.score += 100; push('coin', { x: c.x, y: c.y, z: c.z });
-        if (state.coins % 50 === 0) { state.lives++; push('life'); }
-      }
-    });
-    for (const cp of lvl.checkpoints) if (cp.d > check.d && -p.z >= cp.d - .5) { check = cp; push('checkpoint', { d: cp.d }); }
-    const g = lvl.goal; if (g && Math.abs(-p.z - g.d) < 1.2 && Math.abs(p.x) < 1.6 && (g.side === 'f' ? p.y < 3.5 : p.y > H - 3.5)) {
-      const bonus = Math.max(0, Math.round((lvl.time - state.time) * 10)) + (coinTaken.size === lvl.coins.length ? 1000 : 0);
-      state.score += bonus; state.lastBonus = bonus; push('goal', { bonus });
-      if (state.levelIndex === LEVELS.length - 1) { state.mode = 'won'; saveBest(); push('won'); }
-      else state.mode = 'cleared';
-    }
-  }
-  function next() { if (state.mode !== 'cleared') return false; const lives = state.lives; start(state.levelIndex + 2, true); state.lives = lives; return true; }
-  function pause() { if (state.mode !== 'playing') return false; state.mode = 'paused'; return true; }
-  function resume() { if (state.mode !== 'paused') return false; state.mode = 'playing'; p.wasJump = true; p.wasFlip = true; return true; }
+  function start(id = 1) { state.levelIndex = Math.max(0, LEVELS.findIndex(l => l.id === id)); state.lives = 3; state.score = 0; state.coins = 0; state.check = -1; state.newBest = false; loadLevel(); state.mode = 'playing'; ev('start', { level: id }); return state; }
+  function next() { if (state.levelIndex >= LEVELS.length - 1) return false; state.levelIndex++; state.check = -1; loadLevel(); state.mode = 'playing'; ev('start', { level: L().id }); return true; }
   function saveBest() {
-    const run = { score: state.score, level: state.levelIndex + 1, won: state.mode === 'won' };
-    if (run.score > (state.best?.score ?? -1)) { state.best = run; state.newBest = true; try { (storage ?? globalThis.localStorage)?.setItem(BEST_KEY, JSON.stringify(run)); } catch { } }
-    else state.newBest = false;
+    const run = { score: state.score, level: L().id, at: Date.now() };
+    if (run.score > (state.best?.score ?? -1)) { state.best = run; state.newBest = true; try { store(storage)?.setItem(BEST_KEY, JSON.stringify(run)); } catch { } }
   }
-  return { state, start, step, next, pause, resume, get level() { return lvl; } };
-}
-export const BEST_KEY = 'games:best:upside';
-export function readBest(storage) {
-  try { const v = JSON.parse((storage ?? globalThis.localStorage)?.getItem(BEST_KEY)); return Number.isFinite(v?.score) && v.score >= 0 ? v : null; } catch { return null; }
+  function unlock(n) { if (n > state.unlocked) { state.unlocked = Math.min(LEVELS.length, n); try { store(storage)?.setItem(UNLOCK_KEY, String(state.unlocked)); } catch { } } }
+  const addScore = (n, x, y) => { state.score += n; if (x !== undefined) ev('points', { n, x, y }); };
+  const addCoin = () => { state.coins++; addScore(200); ev('coin'); if (state.coins >= 100) { state.coins -= 100; state.lives = Math.min(9, state.lives + 1); ev('oneup'); } };
+
+  function setSize(P, big) {
+    const h = big ? SIZE.big : SIZE.small, d = h - P.h; if (!d) return;
+    if (P.g > 0) P.y -= d; P.h = h;
+    if (d > 0 && boxSolid(P)) { if (P.g > 0) P.y += d; P.h = h - d; } // no room: stay small-bodied this frame
+  }
+  function boxSolid(e) { for (let y = Math.floor(e.y); y <= Math.floor(e.y + e.h - 1e-4); y++) for (let x = Math.floor(e.x); x <= Math.floor(e.x + e.w - 1e-4); x++) if (solidAt(x, y)) return true; return false; }
+  // move entity on one axis and resolve against tiles; returns list of hit tiles or null
+  function moveAxis(e, axis, d) {
+    if (!d) return null;
+    if (axis === 'x') e.x += d; else e.y += d;
+    const hits = [];
+    for (let y = Math.floor(e.y); y <= Math.floor(e.y + e.h - 1e-4); y++) for (let x = Math.floor(e.x); x <= Math.floor(e.x + e.w - 1e-4); x++) if (solidAt(x, y)) hits.push({ x, y });
+    if (!hits.length) return null;
+    if (axis === 'x') { if (d > 0) e.x = Math.min(...hits.map(h => h.x)) - e.w; else e.x = Math.max(...hits.map(h => h.x)) + 1; }
+    else { if (d > 0) e.y = Math.min(...hits.map(h => h.y)) - e.h; else e.y = Math.max(...hits.map(h => h.y)) + 1; }
+    return hits;
+  }
+
+  function bump(tx, ty, P) {
+    const c = tile(tx, ty), g = P.g;
+    if (c === '?') { setTile(tx, ty, 'U'); addCoin(); ev('coinpop', { x: tx, y: ty, g }); }
+    else if (c === 'M') { setTile(tx, ty, 'U'); const kind = P.power ? 'bloom' : 'cap'; state.items.push({ kind, x: tx + .05, y: ty, w: .9, h: .9, vx: 0, vy: 0, g, dir: 1, emerge: .6, sy: ty - g }); ev('sprout', { x: tx, y: ty }); }
+    else if (c === 'B' && P.power) { setTile(tx, ty, '.'); addScore(50); ev('break', { x: tx, y: ty }); }
+    else if (c === 'B') ev('bump', { x: tx, y: ty });
+    else { ev('thud'); return; }
+    state.bumps.push({ x: tx, y: ty, t: .18, g });
+    const zone = { x: tx, y: ty - g, w: 1, h: 1 }; // tile on the far side of the block
+    for (const e of state.enemies) if (e.alive && e.mode !== 'dead' && overlap(e, zone)) knock(e, 200);
+    for (const it of state.items) if (overlap(it, zone)) { it.vy = -it.g * 9; it.dir = it.x + .45 < tx + .5 ? -1 : 1; }
+  }
+  function knock(e, pts) { e.mode = 'dead'; e.vy = -e.g * 9; e.t = 0; addScore(pts, e.x, e.y); ev('kick'); }
+  function hurt(P) {
+    if (god || P.invuln > 0 || state.mode !== 'playing') return;
+    if (P.power > 0) { P.power = 0; setSize(P, false); P.invuln = 2; ev('shrink'); } else die();
+  }
+  function die() { if (state.mode !== 'playing') return; const P = state.player; state.mode = 'dying'; P.deathT = 2.2; P.vy = -P.g * 13; P.vx = 0; ev('die'); }
+  function loseLife() {
+    state.lives--;
+    if (state.lives <= 0) { state.mode = 'lost'; saveBest(); ev('gameover'); return; }
+    loadLevel(); state.mode = 'playing'; ev('respawn');
+  }
+  function finish() { state.score += Math.ceil(state.time) * 50; unlock(state.levelIndex + 2); saveBest(); state.mode = state.levelIndex >= LEVELS.length - 1 ? 'won' : 'cleared'; ev(state.mode); }
+
+  function stepPlayer(dt, input) {
+    const P = state.player, T = TUNE;
+    const jp = !!input.jump && !P.pj, fp = !!input.flip && !P.pf, rp = !!input.run && !P.pr;
+    P.pj = !!input.jump; P.pf = !!input.flip; P.pr = !!input.run;
+    const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0), max = input.run ? T.run : T.walk;
+    if (dir) {
+      P.facing = dir;
+      if (P.ground && P.vx * dir < 0) { P.vx += dir * T.skid * dt; if (P.vx * dir < -0.5) P.skid = true; }
+      else { P.skid = false; const a = P.ground ? (input.run ? T.runAccel : T.accel) : T.airAccel; const v = P.vx * dir; P.vx = dir * (v < max ? Math.min(max, v + a * dt) : Math.max(max, v - T.friction * dt)); }
+    } else { P.skid = false; const f = (P.ground ? T.friction : T.friction * .3) * dt; P.vx = Math.sign(P.vx) * Math.max(0, Math.abs(P.vx) - f); }
+    P.buffer = jp ? T.buffer : Math.max(0, P.buffer - dt);
+    P.coyote = P.ground ? T.coyote : Math.max(0, P.coyote - dt);
+    if (P.buffer > 0 && P.coyote > 0) { P.vy = -P.g * (T.jump + Math.abs(P.vx) * T.runJumpBonus); P.ground = false; P.coyote = 0; P.buffer = 0; P.jumping = true; ev('jump', { big: P.power > 0 }); }
+    if (!input.jump && P.jumping && P.vy * P.g < 0) { P.vy *= T.cut; P.jumping = false; }
+    if (fp) {
+      const free = P.ground || P.coyote > 0;
+      if (free || P.airFlip) { if (!free) P.airFlip = false; if (P.power) { /* keep feet anchored to the new floor side */ } P.g = -P.g; P.vy = P.g * T.flipKick; P.ground = false; P.coyote = 0; P.jumping = false; P.flips++; ev('flip', { g: P.g }); }
+    }
+    if (rp && P.power === 2 && state.fireballs.length < 2) { state.fireballs.push({ x: P.x + (P.facing > 0 ? P.w : -.5), y: P.y + P.h / 2 - .25, w: .5, h: .5, vx: P.facing * 13, vy: P.g * 4, g: P.g, t: 0 }); ev('fire'); }
+    const rising = P.vy * P.g < 0, grav = rising && P.jumping && input.jump ? T.jumpGravity : T.gravity;
+    P.vy += P.g * grav * dt; if (P.vy * P.g > T.maxFall) P.vy = P.g * T.maxFall;
+    const hx = moveAxis(P, 'x', P.vx * dt); if (hx) P.vx = 0;
+    if (P.x > L().w - 1) P.x = L().w - 1;
+    const wasGround = P.ground; P.ground = false;
+    const hy = moveAxis(P, 'y', P.vy * dt);
+    if (hy) {
+      if (Math.sign(P.vy) === P.g) { P.ground = true; P.airFlip = true; P.jumping = false; P.vy = 0; state.combo = 0; if (!wasGround) ev('land'); }
+      else {
+        // corner correction: barely clipped a block edge? slide past instead of bonking
+        const cx = P.x + P.w / 2, ov = hy.map(h => Math.min(P.x + P.w, h.x + 1) - Math.max(P.x, h.x));
+        if (hy.length === 1 && ov[0] < .3) { P.y -= P.vy * dt * 0; P.x += cx < hy[0].x + .5 ? -ov[0] - .01 : ov[0] + .01; if (P.vy) P.y += 0; }
+        else { const t = hy.reduce((b, h) => Math.abs(h.x + .5 - cx) < Math.abs(b.x + .5 - cx) ? h : b); P.vy = P.g * 1; P.jumping = false; bump(t.x, t.y, P); }
+      }
+    }
+    if (P.invuln > 0) P.invuln -= dt;
+    // coins in the grid
+    for (let y = Math.floor(P.y); y <= Math.floor(P.y + P.h - 1e-4); y++) for (let x = Math.floor(P.x); x <= Math.floor(P.x + P.w - 1e-4); x++) if (tile(x, y) === 'o') { setTile(x, y, '.'); addCoin(); }
+  }
+
+  function stepEnemies(dt) {
+    const P = state.player;
+    for (const e of state.enemies) {
+      if (!e.alive) continue;
+      if (!e.active) { if (e.x < P.x + 17) e.active = true; else continue; }
+      e.t += dt;
+      if (e.mode === 'squish') { if (e.t > .5) e.alive = false; continue; }
+      if (e.mode === 'dead') { e.vy += e.g * 40 * dt; e.y += e.vy * dt; if (e.y > ROWS + 2 || e.y < -3) e.alive = false; continue; }
+      if (e.mode === 'shell' && e.t > 7) { e.mode = 'walk'; e.t = 0; }
+      e.vx = e.mode === 'walk' ? e.dir * 1.7 : e.mode === 'slide' ? e.dir * 11 : 0;
+      e.vy += e.g * 60 * dt; if (e.vy * e.g > 16) e.vy = e.g * 16;
+      if (moveAxis(e, 'x', e.vx * dt)) { e.dir *= -1; if (e.mode === 'slide') ev('thud'); }
+      if (moveAxis(e, 'y', e.vy * dt)) e.vy = 0;
+      if (e.y > ROWS + 2 || e.y + e.h < -2 || e.x < P.x - 30) { e.alive = false; continue; }
+      if (e.mode === 'slide') for (const o of state.enemies) if (o !== e && o.alive && o.active && o.mode !== 'dead' && o.mode !== 'squish' && overlap(e, o)) knock(o, 500);
+      if (state.mode !== 'playing' || e.mode === 'dead') continue;
+      if (!overlap(P, e)) continue;
+      const feet = P.g > 0 ? P.y + P.h - e.y : e.y + e.h - P.y, falling = P.vy * P.g > 0;
+      if ((falling || !P.ground) && feet < .55 && P.vy * P.g > -1) {
+        const pts = [100, 200, 400, 800, 1000, 2000, 4000, 8000][Math.min(7, state.combo++)];
+        if (e.type === 'walker') { e.mode = 'squish'; e.t = 0; }
+        else if (e.mode === 'walk' || e.mode === 'slide') { e.mode = 'shell'; e.t = 0; }
+        else { e.mode = 'slide'; e.dir = P.x + P.w / 2 < e.x + e.w / 2 ? 1 : -1; e.t = 0; e.grace = .25; }
+        addScore(pts, e.x, e.y); P.vy = -P.g * (P.pj ? 15 : 10); P.jumping = !!P.pj; P.airFlip = true; P.ground = false; ev('stomp', { x: e.x, y: e.y });
+        if (P.g > 0) P.y = Math.min(P.y, e.y - P.h); else P.y = Math.max(P.y, e.y + e.h);
+      } else if (e.mode === 'shell') { e.mode = 'slide'; e.dir = P.x + P.w / 2 < e.x + e.w / 2 ? 1 : -1; e.t = 0; e.grace = .25; addScore(400, e.x, e.y); ev('kick'); e.x += e.dir * .3; }
+      else if (!(e.mode === 'slide' && e.t < (e.grace || 0))) hurt(P);
+    }
+  }
+  function stepItems(dt) {
+    const P = state.player;
+    for (const it of state.items) {
+      if (it.emerge > 0) { it.emerge -= dt; it.y += (it.sy - it.y) * Math.min(1, dt * 6); if (it.emerge <= 0) { it.y = it.sy; it.dir = 1; } }
+      else if (it.kind === 'cap') {
+        it.vy += it.g * 50 * dt; if (it.vy * it.g > 14) it.vy = it.g * 14;
+        if (moveAxis(it, 'x', it.dir * 3.2 * dt)) it.dir *= -1;
+        if (moveAxis(it, 'y', it.vy * dt)) it.vy = 0;
+        if (it.y > ROWS + 2 || it.y < -3) it.gone = true;
+      }
+      if (!it.gone && it.emerge < .3 && overlap(P, it) && state.mode === 'playing') {
+        it.gone = true; addScore(1000, it.x, it.y);
+        if (it.kind === 'cap') { if (!P.power) { P.power = 1; setSize(P, true); } ev('grow'); }
+        else { if (!P.power) setSize(P, true); P.power = 2; ev('grow', { fire: true }); }
+      }
+    }
+    state.items = state.items.filter(i => !i.gone);
+    for (const f of state.fireballs) {
+      f.t += dt; f.vy += f.g * 55 * dt;
+      if (moveAxis(f, 'x', f.vx * dt)) { f.gone = true; ev('poof', { x: f.x, y: f.y }); }
+      if (moveAxis(f, 'y', f.vy * dt)) f.vy = Math.sign(f.vy) === f.g ? -f.g * 8 : f.g * 2;
+      if (f.t > 2.5 || f.y > ROWS + 1 || f.y < -2) f.gone = true;
+      for (const e of state.enemies) if (!f.gone && e.alive && e.active && e.mode !== 'dead' && e.mode !== 'squish' && overlap(f, e)) { knock(e, 200); f.gone = true; }
+    }
+    state.fireballs = state.fireballs.filter(f => !f.gone);
+    for (const b of state.bumps) b.t -= dt; state.bumps = state.bumps.filter(b => b.t > 0);
+  }
+
+  function step(dt, input = {}) {
+    if (!['playing', 'dying', 'flag'].includes(state.mode)) return state;
+    state.t += dt; const P = state.player;
+    if (state.mode === 'dying') { P.deathT -= dt; if (P.deathT < 1.8) { P.vy += P.g * 40 * dt; P.y += P.vy * dt; } if (P.deathT <= 0) loseLife(); return state; }
+    if (state.mode === 'flag') {
+      const F = state.flag; F.t += dt;
+      const target = P.g > 0 ? FLOOR_Y - P.h : CEIL_Y; P.vx = 0; P.vy = 0;
+      P.y += Math.sign(target - P.y) * Math.min(Math.abs(target - P.y), 9 * dt); F.drop = Math.min(1, F.t / 1.1);
+      if (F.t > 1.6) finish();
+      return state;
+    }
+    state.time -= dt * TUNE.timeRate; if (state.time <= 0) { state.time = 0; die(); return state; }
+    stepPlayer(dt, input); stepItems(dt); stepEnemies(dt);
+    if (state.mode !== 'playing') return state;
+    const lv = L();
+    lv.checks.forEach((c, i) => { if (i > state.check && P.x >= c.x && P.g === c.g) { state.check = i; ev('check', { x: c.x }); } });
+    if (P.x + P.w >= lv.flagX + .4) {
+      const d = P.g > 0 ? FLOOR_Y - (P.y + P.h) : P.y - CEIL_Y, bonus = d >= 8.5 ? 5000 : d >= 6.5 ? 2000 : d >= 4.5 ? 800 : d >= 2.5 ? 400 : 100;
+      state.mode = 'flag'; state.flag = { t: 0, bonus, drop: 0, y: P.y }; P.x = lv.flagX + .4 - P.w; addScore(bonus, lv.flagX, P.y); ev('flagpole', { bonus });
+      return state;
+    }
+    if ((P.g > 0 && P.y > ROWS + .5) || (P.g < 0 && P.y + P.h < -.5)) { P.invuln = 0; die(); }
+    return state;
+  }
+  const pause = () => { if (state.mode !== 'playing') return false; state.mode = 'paused'; ev('pause'); return true; };
+  const resume = () => { if (state.mode !== 'paused') return false; state.mode = 'playing'; return true; };
+  const snapshot = () => structuredClone(state), restore = s => { for (const k of Object.keys(state)) delete state[k]; Object.assign(state, structuredClone(s)); };
+  return { state, start, next, step, pause, resume, tile, solidAt, snapshot, restore, get level() { return L(); } };
 }
