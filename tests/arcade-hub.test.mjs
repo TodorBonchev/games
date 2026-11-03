@@ -5,11 +5,11 @@ import { JSDOM } from 'jsdom';
 import { CHAPTERS, MISSIONS } from '../voyage/progress.js';
 import { arcadeGames } from '../arcade/catalog.js';
 
-test('the home page exposes exactly six games, with one unified adventure first', async () => {
+test('the home page exposes exactly seven games, with one unified adventure first', async () => {
   const dom = new JSDOM(await readFile(new URL('../index.html', import.meta.url), 'utf8'));
   try {
     const { document } = dom.window;
-    const expected = ['wonderwake', 'soldier', 'garden', 'borrowed', 'prism', 'lantern'];
+    const expected = ['wonderwake', 'soldier', 'garden', 'borrowed', 'prism', 'lantern', 'upside'];
     assert.deepEqual([...document.querySelectorAll('.game-card')].map(card => card.dataset.gameLink), expected);
     assert.deepEqual([...document.querySelectorAll('.quick-play a')].map(card => card.dataset.gameLink), expected);
     assert.equal(document.querySelectorAll('.arcade-card, #arcade-grid, #arcade-search').length, 0);

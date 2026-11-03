@@ -22,7 +22,7 @@ async function hub() {
   return { dom, run: () => entry.evaluate(), refresh: () => dom.window.dispatchEvent(new dom.window.Event('storage')) };
 }
 
-test('the six-game collection resumes each retained game independently', async () => {
+test('the seven-game collection resumes each retained game independently', async () => {
   const { dom, run, refresh } = await hub(), { document, localStorage } = dom.window;
   try {
     const world = JSON.parse(await readFile(new URL('../assets/lantern-world.json', import.meta.url), 'utf8'));
@@ -35,7 +35,7 @@ test('the six-game collection resumes each retained game independently', async (
       ['borrowed', { schema: 1, level: 4, loop: 2, mode: 'between' }],
     ]) assert.ok(writeGameSave(slug, data, localStorage));
     await run();
-    assert.equal(document.querySelectorAll('.game-card').length, 6);
+    assert.equal(document.querySelectorAll('.game-card').length, 7);
     for (const [slug, level] of [['soldier', 2], ['garden', 3], ['borrowed', 4], ['prism', 2], ['lantern', 1]]) {
       const card = document.querySelector(`.${slug}-card`), url = new URL(card.href);
       assert.equal(card.querySelector('[data-play-label]').textContent, 'CONTINUE RUN');

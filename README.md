@@ -2,7 +2,7 @@
 
 [Play online](https://todorbonchev.github.io/games/)
 
-A collection of **six Three.js browser games**, made for phones and computers. Wonderwake combines 25 former games into a single adventure with one campaign, five islands, and a growing crew. The other five games keep their own worlds and progress. Everything needed to play is bundled locally.
+A collection of **seven Three.js browser games**, made for phones and computers. Wonderwake combines 25 former games into a single adventure with one campaign, five islands, and a growing crew. The other six games keep their own worlds and progress. Everything needed to play is bundled locally.
 
 | Game | Play | What's included |
 | --- | --- | --- |
@@ -12,6 +12,7 @@ A collection of **six Three.js browser games**, made for phones and computers. W
 | **Borrowed Tomorrow** | [Launch the time sail](https://todorbonchev.github.io/games/borrowed.html) | Six clockworld chambers where your two recorded past selves steer a triangular weapon. Flow and Rift difficulties, clockblooms, crosswinds, armor, and a final boss. |
 | **Prism Orchard** | [Launch Prism Orchard](https://todorbonchev.github.io/games/prism.html) | Turn crystal mirrors, split colored light, and combine beams to bloom eight night gardens. |
 | **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Explore three Blender-built islands by spaceship: a lantern village, a moonlit garden, and a celestial observatory. |
+| **Upside Nib** | [Launch Upside Nib](https://todorbonchev.github.io/games/upside.html) | A gravity-flipping 3D platformer: run, jump, stomp Grumblebugs and collect glimmers across four levels, flipping between a mossy floor world and a crystal ceiling world. Local best score. |
 
 ## Wonderwake
 
@@ -52,7 +53,7 @@ With Node.js installed, run:
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173** to choose a game. The six entries are `/wonderwake.html`, `/soldier.html`, `/garden.html`, `/borrowed.html`, `/prism.html`, and `/lantern.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
+Open **http://127.0.0.1:5173** to choose a game. The seven entries are `/wonderwake.html`, `/soldier.html`, `/garden.html`, `/borrowed.html`, `/prism.html`, `/lantern.html`, and `/upside.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
 
 To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Both portrait and landscape have dedicated menus, camera framing, and thumb controls. Rotate during a run without losing progress; lift and place your thumbs again after rotating.
 
@@ -353,3 +354,8 @@ The collection browser suite checks all six homepage choices, independent standa
 The 20 character mission engines are defined in `arcade/action-games.js`, `arcade/puzzle-games.js`, and `arcade/skill-games.js`. Wonderwake combines them with five original engines through the `voyage/` modules. Its campaign data lives under `games:wonderwake:v1`. The previous `games:save:arcade:<game-id>` checkpoints are preserved; the six-card home page reads campaign progress without loading any 3D engine.
 
 The arcade browser suites test all twenty phone layouts, local checkpoints and complete real-touch play-throughs. Run `node scripts/capture-arcade-art.mjs` to refresh the character previews from the real 3D scenes.
+
+
+### Upside Nib
+
+Upside Nib uses `upside.html`, `upside.css`, `upside-main.js` (Three.js rendering, input, Web Audio) and `upside-game.js` (pure, Node-testable physics with coyote time, jump buffering, variable jump height and gravity flipping). `npm test` includes `tests/upside.test.mjs`, which drives an autopilot through all four levels; `npm run test:upside` checks phone-landscape touch controls and desktop keyboard in Chromium and regenerates the hub preview art. `/upside.html?debug=1` exposes `window.__upside`. Best score is stored in `games:best:upside`; unlocked levels in `games:progress:upside`.
