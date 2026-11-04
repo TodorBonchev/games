@@ -263,7 +263,11 @@ export function createGardenScene(container, { onLost, onRestored, onResize } = 
   hover.position.y = 0.15;
   scene.add(hover);
   let hoverRow = -1, hoverCol = -1;
-  function setHover(row = -1, col = -1) { hoverRow = row; hoverCol = col; }
+  function setHover(row = -1, col = -1, valid = null) {
+    hoverRow = row; hoverCol = col;
+    hover.material.color.set(valid === false ? '#ff767e' : valid === true ? '#a6f5a4' : '#f6e6a4');
+    hover.material.opacity = valid === false ? .5 : .38;
+  }
   const vector = new THREE.Vector3();
   let width = 1, height = 1;
   function project(col, row, elevation = 0.15) {

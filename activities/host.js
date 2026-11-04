@@ -20,7 +20,11 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
   let active = false, phase = 'closed', current = null, controller = null, level = 1, seed = 1, generation = 0, elapsed = 0, saveClock = 0, finished = false, previousFocus = null, selectedDistrict = 'all', lost = false;
   const gamepad=createActivityGamepad();
   const keyboardPointer=createKeyboardPointer({stage,onPointer:(...args)=>controller?.pointer?.(...args)});
-  let actionSignature='',worldLayout='';
+  let actionSignature='',worldLayout='', routeSignature='',suppressTouchClickUntil=0;
+  const activationTouches=new WeakMap();
+  const route = document.createElement('div'); route.id = 'activityRoute'; route.className = 'activity-route'; route.hidden = true;
+  route.setAttribute('role','progressbar'); route.setAttribute('aria-valuemin','0'); route.setAttribute('aria-valuemax','100');
+  root.querySelector('.activity-live').append(route);
   const held = {}, pressed = {}, actionPointers = new Map(), directions = new Set(); let pointer = null, audio = null, nearest = null, hudCache = '';
   const refresh = () => { world.refresh(progress); document.getElementById('expeditionCount').textContent = `${progress.completed.length} / 30 restored`; };
   const persist = () => { const saved = writeProgress(progress); $('activitySaveWarning').hidden = saved; return saved; };
@@ -35,6 +39,7 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
     actionPointers.clear();
     for (const action of controller?.actions || []) if (action.hold) controller.action?.(action.id, false);
     root.querySelectorAll('.held').forEach(button => button.classList.remove('held'));
+    root.querySelectorAll('button').forEach(button=>activationTouches.get(button)?.clear());
   }
   function checkpoint() {
     if (controller && current && !finished && !lost) {
@@ -52,9 +57,23 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
     if (!active) return;
     checkpoint(); generation++; disposeController(); active = false; current = null; root.hidden = true; setPhase('closed'); document.body.classList.remove('activity-open'); audio?.suspend?.(); refresh(); onExit(); if (previousFocus?.isConnected) previousFocus.blur?.();
   }
-  function instructions(activity) { return activity.instructions + (activity.inputMode === 'pointer' ? '\n\nKeyboard: arrows or WASD move the cursor. Hold Space or Enter to drag; release to act. Tab reaches the action buttons.' : activity.id === 'borrowed' ? '\n\nSpace: Snap · Shift: Dash · E: Borrow echo. Tab reaches Bank route.' : '') + (activity.inputMode==='native' ? '\n\nController: left stick / D-pad to move. ' + (activity.id==='upside'?'A jumps, B flips, X / trigger runs.':activity.id==='lantern'?'A rises, B descends, X / trigger boosts.':'A snaps, B borrows, X / trigger dashes.') + ' Start pauses.' : ''); }
+  function instructions(activity) { return activity.instructions + (activity.inputMode === 'pointer' ? '\n\nKeyboard: arrows or WASD move the cursor. Hold Space or Enter to drag; release to act. Tab reaches the action buttons.' : activity.id === 'borrowed' ? '\n\nSpace: Snap · Shift: Dash · E: Borrow echo · B: Bank route.' : activity.id==='lantern'?'\n\nHold G for precision flight near a destination.':'') + (activity.inputMode==='native' ? '\n\nController: left stick / D-pad to move. ' + (activity.id==='upside'?'A jumps, B flips, X / trigger runs.':activity.id==='lantern'?'A rises, B descends, X / trigger boosts.':'A snaps, B borrows, X / trigger dashes.') + ' Start pauses.' : ''); }
   function heading(activity) { $('activityTitle').textContent = activity?.title || 'A home worth rebuilding'; $('activityDistrict').textContent = activity ? DISTRICTS.find(d => d.id === activity.district).title : 'ISLAND FIELD GUIDE · 30 OUTPOSTS'; root.style.setProperty('--activity-accent', activity?.color || '#a4d6ab'); }
-  function makeButton(label, fn, className = '') { const button = document.createElement('button'); button.textContent = label; button.className = className; button.addEventListener('click', fn); return button; }
+  function bindActivation(button, fn) {
+    const touches=new Map();activationTouches.set(button,touches);
+    button.addEventListener('pointerdown',event=>{if(event.pointerType==='touch'&&!button.disabled)touches.set(event.pointerId,{x:event.clientX,y:event.clientY});});
+    button.addEventListener('pointercancel',event=>touches.delete(event.pointerId));
+    button.addEventListener('pointerup',event=>{
+      const start=touches.get(event.pointerId);touches.delete(event.pointerId);if(!start||button.disabled)return;
+      const rect=button.getBoundingClientRect();
+      if(Math.hypot(event.clientX-start.x,event.clientY-start.y)>20||event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)return;
+      // Browsers can omit click for a second finger while the first steers.
+      // Activate on release, then consume the compatibility click if emitted.
+      event.preventDefault();suppressTouchClickUntil=performance.now()+700;fn(event);
+    });
+    button.addEventListener('click',fn);
+  }
+  function makeButton(label, fn, className = '') { const button = document.createElement('button'); button.textContent = label; button.className = className; bindActivation(button,fn); return button; }
   function showCard(eyebrow, title, description, buttons = []) {
     card.replaceChildren(); const small = document.createElement('small'), h = document.createElement('h3'), p = document.createElement('p'), row = document.createElement('div'); small.textContent = eyebrow; h.textContent = title; p.textContent = description; row.className = 'activity-card-actions'; row.append(...buttons); card.append(small, h, p, row); buttons[0]?.focus();
   }
@@ -109,20 +128,65 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
     showCard(won ? `${progress.completed.length} / 30 OUTPOSTS RESTORED` : 'YOUR SURVIVAL RUN IS SAFE', won ? first ? 'A little more hope.' : 'Good work, survivor.' : 'Every attempt helps.', won ? `${current.task} — complete. ${first ? '+300 score · +20 health · +10 armor. The outpost beacon now shines green.' : 'Keep exploring the remaining stages, or head back to the island.'}${progress.completed.length === 30 ? ' All 30 outposts are restored. The settlement is alive again.' : ''}` : 'Retry this activity at no cost, or return to your exact spot on the island.', buttons);
   }
   function setupControls() {
-    actionSignature=JSON.stringify(controller?.actions||[]);
+    actionSignature=''; hudCache=''; routeSignature=''; route.hidden=true;
     const controls = $('activityControls'); controls.replaceChildren();
     if (controller.inputMode === 'native') {
       const dpad = document.createElement('div'); dpad.className = 'activity-dpad';
       for (const [id, label] of [['up','↑'],['left','←'],['down','↓'],['right','→']]) { const b = makeButton(label, () => {}); b.dataset.direction = id; b.setAttribute('aria-label', `Move ${id}`); bindHold(b, () => directions.add(id), () => directions.delete(id)); dpad.append(b); } controls.append(dpad);
     }
     const actions = document.createElement('div'); actions.className = 'activity-actions';
-    for (const action of controller.actions || []) { const b = makeButton(action.label, () => { if (!action.hold && phase === 'playing') controller?.action?.(action.id, true); }); if (action.hold) bindHold(b, e => { actionPointers.set(e.pointerId ?? action.id, action.id); controller?.action?.(action.id, true); }, e => { actionPointers.delete(e.pointerId ?? action.id); controller?.action?.(action.id, false); }); actions.append(b); } controls.append(actions);
+    controls.append(actions); syncActions();
   }
-  function bindHold(button, down, up) {
+  function pressAction(id, key) {
+    actionPointers.set(key,id);controller?.action?.(id,true);
+    for(const button of root.querySelectorAll('[data-action]'))if(button.dataset.action===id)button.classList.add('held');
+  }
+  function releaseAction(key, id=actionPointers.get(key)) {
+    if(!id)return;
+    const wasHeld=actionPointers.delete(key),stillHeld=[...actionPointers.values()].includes(id);
+    for(const button of root.querySelectorAll('[data-action]'))if(button.dataset.action===id)button.classList.toggle('held',stillHeld);
+    if(wasHeld&&!stillHeld)controller?.action?.(id,false);
+  }
+  function syncActions() {
+    const definitions=controller?.actions||[], actions=root.querySelector('.activity-actions');
+    actionSignature=JSON.stringify(definitions);
+    // Keep existing buttons and the D-pad alive while cooldowns or labels change.
+    // Replacing them would steal focus and cancel a held touch gesture.
+    for(const button of [...actions.children])if(!definitions.some(a=>a.id===button.dataset.action)){
+      for(const [key,id] of actionPointers)if(id===button.dataset.action){controller.action?.(id,false);actionPointers.delete(key);}
+      button.remove();
+    }
+    definitions.forEach((definition,index)=>{
+      let button=[...actions.children].find(b=>b.dataset.action===definition.id);
+      if(!button){
+        const id=definition.id, currentAction=()=>controller?.actions?.find(a=>a.id===id);
+        button=makeButton('',()=>{const a=currentAction();if(a&&!a.hold&&!a.disabled&&phase==='playing')controller.action?.(id,true);});
+        button.dataset.action=id;
+        bindHold(button,e=>{const a=currentAction();if(a?.hold&&!a.disabled)pressAction(id,e.pointerId??id);},e=>releaseAction(e.pointerId??id,id),()=>!!currentAction()?.hold);
+      }
+      if(definition.disabled){for(const [key,id] of actionPointers)if(id===definition.id){controller.action?.(id,false);actionPointers.delete(key);}button.classList.remove('held');}
+      button.textContent=definition.label;button.disabled=!!definition.disabled;button.title=definition.description||'';
+      if(definition.selected!==undefined)button.setAttribute('aria-pressed',String(!!definition.selected));else button.removeAttribute('aria-pressed');
+      if(definition.shortcut)button.setAttribute('aria-keyshortcuts',definition.shortcut.replace(/^Key/,''));else button.removeAttribute('aria-keyshortcuts');
+      button.classList.toggle('unavailable',!!definition.unavailable);
+      if(actions.children[index]!==button)actions.insertBefore(button,actions.children[index]||null);
+    });
+  }
+  function syncRoute(info) {
+    route.hidden=!info;
+    if(!info)return;
+    const percent=Math.round(info.value*100);
+    route.setAttribute('aria-label','World route');route.setAttribute('aria-valuenow',String(percent));
+    route.setAttribute('aria-valuetext',`${info.label}. ${info.markers.filter(m=>m.complete).length} of ${info.markers.length} stars collected.`);
+    route.style.setProperty('--route-progress',`${percent}%`);
+    const signature=JSON.stringify(info.markers);
+    if(signature!==routeSignature){routeSignature=signature;route.replaceChildren();for(const marker of info.markers){const pip=document.createElement('i');pip.textContent=marker.complete?'★':'☆';pip.style.left=`${marker.position*100}%`;pip.className=marker.complete?'collected':marker.missed?'missed':'';pip.setAttribute('aria-hidden','true');route.append(pip);}}
+  }
+  function bindHold(button, down, up, enabled=()=>true) {
     const release = e => { button.classList.remove('held'); up(e); };
-    button.addEventListener('pointerdown', e => { if (phase !== 'playing') return; e.preventDefault(); button.setPointerCapture?.(e.pointerId); button.classList.add('held'); down(e); });
+    button.addEventListener('pointerdown', e => { if (phase !== 'playing'||button.disabled||!enabled()) return; e.preventDefault(); button.setPointerCapture?.(e.pointerId); button.classList.add('held'); down(e); });
     for (const name of ['pointerup','pointercancel','lostpointercapture','blur']) button.addEventListener(name, release);
-    button.addEventListener('keydown', e => { if (['Space','Enter'].includes(e.code) && !e.repeat && phase === 'playing') { e.preventDefault(); down(e); } }); button.addEventListener('keyup', e => { if (['Space','Enter'].includes(e.code)) { e.preventDefault(); release(e); } });
+    button.addEventListener('keydown', e => { if (['Space','Enter'].includes(e.code) && !e.repeat && phase === 'playing'&&!button.disabled&&enabled()) { e.preventDefault();button.classList.add('held'); down(e); } }); button.addEventListener('keyup', e => { if (['Space','Enter'].includes(e.code)&&enabled()) { e.preventDefault(); release(e); } });
   }
   function setTarget(id) { if (!byId.has(id)) return false; progress.target = id; world.setTarget(id); persist(); return true; }
   function journal() {
@@ -163,22 +227,31 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
       const input = { left:!!(sampled.KeyA||sampled.ArrowLeft||directions.has('left')),right:!!(sampled.KeyD||sampled.ArrowRight||directions.has('right')),up:!!(sampled.KeyW||sampled.ArrowUp||directions.has('up')),down:!!(sampled.KeyS||sampled.ArrowDown||directions.has('down')),jump:!!sampled.Space,run:!!(sampled.ShiftLeft||sampled.ShiftRight),flip:!!(sampled.KeyW||sampled.ArrowUp||directions.has('up')),fire:!!(sampled.ShiftLeft||sampled.ShiftRight),action:!!sampled.Space,secondary:!!sampled.KeyE,boost:!!(sampled.ShiftLeft||sampled.ShiftRight) };
       for(const key of ['left','right','up','down','jump','flip','run','fire','action','secondary','boost'])input[key]=input[key]||!!pad[key];
       if(controller.inputMode==='pointer')keyboardPointer.update(dt);
-      controller.update(dt,input); if(JSON.stringify(controller.actions||[])!==actionSignature)setupControls(); elapsed+=dt; saveClock+=dt;
-      const info=controller.hud(), cache=JSON.stringify(info); if(cache!==hudCache){hudCache=cache;$('activityPrimary').textContent=info.primary||'';$('activitySecondary').textContent=info.secondary||'';$('activityHint').textContent=info.hint||current.instructions;}
+      controller.update(dt,input); if(JSON.stringify(controller.actions||[])!==actionSignature)syncActions(); elapsed+=dt; saveClock+=dt;
+      const info=controller.hud(), cache=JSON.stringify(info); if(cache!==hudCache){hudCache=cache;$('activityPrimary').textContent=info.primary||'';$('activitySecondary').textContent=info.secondary||'';$('activityHint').textContent=info.hint||current.instructions;syncRoute(info.route);}
       if(controller.state.mode==='won'||controller.state.mode==='lost') finish(controller.state.mode==='won'); else if(saveClock>5){saveClock=0;checkpoint();}
     }
     if(!lost)controller.render(elapsed);
   }
   for (const name of ['pointerdown','pointermove','pointerup','pointercancel','lostpointercapture']) stage.addEventListener(name,e=>{
     if(phase!=='playing'||!controller)return;
+    if(name==='pointermove'&&pointer===null&&current.id==='garden'){controller.pointer?.('move',e.clientX,e.clientY);return;}
     if(name==='pointerdown'){if(pointer!==null||e.button!==0)return;pointer=e.pointerId;stage.setPointerCapture?.(e.pointerId);}
     if(pointer!==e.pointerId)return;e.preventDefault();controller.pointer?.(name==='pointerdown'?'down':name==='pointermove'?'move':name==='pointerup'?'up':'cancel',e.clientX,e.clientY);
     if(['pointerup','pointercancel','lostpointercapture'].includes(name))pointer=null;
   });
+  stage.addEventListener('pointerleave',()=>{if(phase==='playing'&&pointer===null&&current.id==='garden')controller?.pointer?.('cancel',0,0);});
+  // Closing a dialog on touch release may retarget its compatibility click to
+  // the island underneath. Consume that click even after the shell is hidden.
+  // A new physical press always starts a new gesture and remains responsive.
+  addEventListener('pointerdown',()=>{suppressTouchClickUntil=0;},true);
+  addEventListener('click',event=>{if(performance.now()<suppressTouchClickUntil&&event.detail!==0&&event.pointerType!=='mouse'){suppressTouchClickUntil=0;event.preventDefault();event.stopImmediatePropagation();}},true);
   addEventListener('keydown',e=>{
     if(!active)return;
     if(e.code==='Tab'){clearInput();const nodes=[...root.querySelectorAll('button,a,select,[tabindex="0"]')].filter(n=>!n.disabled&&!n.hidden&&n.getClientRects().length);if(nodes.length){const i=nodes.indexOf(document.activeElement);nodes[(i+(e.shiftKey?-1:1)+nodes.length)%nodes.length].focus();}e.preventDefault();e.stopImmediatePropagation();return;}
     if(e.target.matches?.('select')||(e.target.closest?.('button,a')&&['Space','Enter'].includes(e.code)))return;
+    const action=phase==='playing'&&controller?.actions?.find(a=>a.shortcut===e.code);
+    if(action){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat&&!action.disabled){if(action.hold)pressAction(action.id,e.code);else controller.action?.(action.id,true);}return;}
     if(phase==='playing'&&controller?.inputMode==='pointer'&&keyboardPointer.keydown(e)){e.stopImmediatePropagation();return;}
     e.stopImmediatePropagation();if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Escape','KeyP','KeyW','KeyA','KeyS','KeyD','KeyE'].includes(e.code))e.preventDefault();
     if(e.repeat)return;
@@ -187,9 +260,9 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
     if(e.code==='KeyP'){phase==='playing'?pause():resume();return;}
     if(phase==='playing'){held[e.code]=true;pressed[e.code]=true;}
   },true);
-  addEventListener('keyup',e=>{if(active){delete held[e.code];if(e.target.closest?.('button,a,select')&&['Space','Enter'].includes(e.code))return;if(phase==='playing'&&controller?.inputMode==='pointer')keyboardPointer.keyup(e);e.stopImmediatePropagation();}},true);
+  addEventListener('keyup',e=>{if(active){delete held[e.code];releaseAction(e.code);if(e.target.closest?.('button,a,select')&&['Space','Enter'].includes(e.code))return;if(phase==='playing'&&controller?.inputMode==='pointer')keyboardPointer.keyup(e);e.stopImmediatePropagation();}},true);
   addEventListener('blur',()=>{clearInput();pause();});addEventListener('resize',clearInput);document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInput();pause();checkpoint();}});addEventListener('pagehide',checkpoint);
-  $('activityLeave').addEventListener('click',close);$('activityPause').addEventListener('click',()=>phase==='playing'?pause():resume());$('activityHelp').addEventListener('click',()=>pause(current&&instructions(current)));root.querySelector('.activity-brand').addEventListener('click',e=>{e.preventDefault();close();});document.getElementById('expeditionJournal').addEventListener('click',journal);prompt.addEventListener('click',()=>nearest&&open(nearest.id));
+  bindActivation($('activityLeave'),close);bindActivation($('activityPause'),()=>phase==='playing'?pause():resume());bindActivation($('activityHelp'),()=>pause(current&&instructions(current)));root.querySelector('.activity-brand').addEventListener('click',e=>{e.preventDefault();close();});document.getElementById('expeditionJournal').addEventListener('click',journal);prompt.addEventListener('click',()=>nearest&&open(nearest.id));
   refresh();if(progress.target)world.setTarget(progress.target);
   return { get active(){return active;},get phase(){return phase;},get current(){return current;},get controller(){return controller;},get level(){return level;},progress,open,close,pause,resume,journal,setTarget,update,updateWorld,checkpoint,interact:()=>nearest?open(nearest.id):false };
 }

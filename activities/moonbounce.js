@@ -69,16 +69,18 @@ export function createMoonbounceController({ container, view, seed = 82941, soun
   return {
     state, inputMode: 'pointer', update, pointer, snapshot, restore,
     get engine() { return engine; }, get renderer() { return view.renderer; }, get camera() { return view.camera; },
-    get actions() { return engine.state.mode === 'upgrade' ? engine.state.choices.map(choice => ({ id: `upgrade:${choice.id}`, label: choice.name, description: choice.description })) : []; },
+    get actions() { return engine.state.mode === 'upgrade' ? engine.state.choices.map(choice => ({ id: `upgrade:${choice.id}`, label: choice.name, description: choice.description })) : [{id:'launch',label:engine.state.orbits.length>=6?'Launch Moonstorm · L':'Launch moons · L',shortcut:'KeyL',disabled:engine.state.mode!=='playing'||engine.state.orbits.length===0}]; },
     action(name, pressed = true) {
-      if (disposed || !pressed || typeof name !== 'string' || !name.startsWith('upgrade:')) return false;
+      if (disposed || !pressed || typeof name !== 'string') return false;
+      if(name==='launch'){const fired=engine.burst();if(fired)sound?.(360,.1);return fired;}
+      if(!name.startsWith('upgrade:'))return false;
       cancel(); const changed = engine.chooseUpgrade(name.slice(8)); if (changed) sound?.(640, .15); return changed;
     },
     hud() {
       const s = engine.state, wave = WAVES[s.wave - 1];
       return { primary: `WAVE ${s.wave}/${WAVES.length} · ${Math.min(s.waveKills, wave.goal)}/${wave.goal} CLEARED`,
         secondary: `${Math.ceil(s.player.hp)} health · ${s.orbits.length} moons${s.bossSpawned && !s.bossDefeated ? ' · BOSS APPROACHING' : ''}`,
-        hint: s.mode === 'upgrade' ? `Choose an upgrade: ${s.choices.map(choice => `${choice.name}: ${choice.description}`).join(' ')}` : s.reason || 'Drag to steer and collect moons. Release to launch. Clear five waves and the final boss.',
+        hint: s.mode === 'upgrade' ? `Choose an upgrade: ${s.choices.map(choice => `${choice.name}: ${choice.description}`).join(' ')}` : s.reason || (s.orbits.length>=6 ? 'Moonstorm ready! Launch six or more moons for extra damage and a bonus bounce.' : s.orbits.length ? `${6-s.orbits.length} more moons for a Moonstorm. Release your drag or press Launch / L.` : 'Orbit empty — steer toward loose moons to gather your next volley.'),
       };
     },
     project(x, z) { const point = view.project(x, z), rect = container.getBoundingClientRect(); return { x: rect.left + point.x, y: rect.top + point.y }; },

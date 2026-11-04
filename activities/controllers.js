@@ -1,8 +1,9 @@
 import { byId } from './catalog.js';
 import { createGarden, PLANTS, ROWS, COLS } from '../garden-game.js';
 import { createBorrowed } from '../borrowed-game.js';
-import { createPrism } from '../prism-game.js';
+import { createPrism, parsePrismSave } from '../prism-game.js';
 import { createLantern } from '../lantern-game.js';
+import { flightGuidance } from './guidance.js';
 
 const LEGACY = new Set(['moonbounce', 'popwake', 'pondpost', 'ribbon', 'dewfall']);
 const STANDALONE = new Set(['garden', 'borrowed', 'prism', 'lantern']);
@@ -32,16 +33,12 @@ export async function createActivity(id, options = {}) {
     const { createLegacy } = await import('../voyage/legacy.js');
     const controller = await createLegacy(id, settings);
     controller.inputMode = 'pointer';
-    controller.actions = id === 'popwake' ? [{ id: 'hint', label: 'Show path hint' }, { id: 'reset', label: 'Reset puzzle' }] : [];
-    controller.action = name => name === 'hint' ? controller.hint?.() : name === 'reset' ? controller.resetLevel?.() : false;
     return controller;
   }
   if (!STANDALONE.has(id)) {
     const { createArcade } = await import('../voyage/arcade.js');
     const controller = createArcade(id, settings);
     controller.inputMode = 'pointer';
-    controller.actions = controller.resetLevel ? [{ id: 'reset', label: 'Reset puzzle' }] : [];
-    controller.action = name => name === 'reset' ? controller.resetLevel?.() : false;
     return controller;
   }
   // A disposed scene must never reopen the host's graphics recovery dialog.
@@ -88,7 +85,7 @@ export function createStandaloneController(id, { container, view, world, level =
   let engine = makeEngine(selectedLevel, random);
   engine.start(id === 'lantern' ? undefined : selectedLevel);
   let disposed = false, selected = 'bloom', message = '', messageTime = 0, ending = null;
-  let down = null, pointerX = 0, pointerZ = 0, focus = null;
+  let down = null, pointerX = 0, pointerZ = 0, focus = null, hoverCell = null, prismHistory = [];
   let held = {}, previous = {};
   const completeLantern = game => game.state.lit.length === world.beacons.length && (world.satellites || []).every(island => game.state.expedition.awakened.includes(island.id));
   const modeOf = game => id === 'lantern' ? completeLantern(game) ? 'won' : 'playing' : ['won', 'lost'].includes(game.state.mode) ? game.state.mode : 'playing';
@@ -107,23 +104,38 @@ export function createStandaloneController(id, { container, view, world, level =
     }
   }
   function cancel() {
-    down = null; pointerX = pointerZ = 0; held = {}; previous = {}; focus = null;
+    down = null; pointerX = pointerZ = 0; held = {}; previous = {}; focus = null; hoverCell = null;
     view.setHover?.(-1, -1);
   }
-  const actions = id === 'garden' ? [
-    { id: 'bloom', label: 'Sun bloom · 50' }, { id: 'pea', label: 'Pea pod · 100' },
-    { id: 'nut', label: 'Shellnut · 75' }, { id: 'shovel', label: 'Shovel' },
-    { id: 'collect', label: 'Collect sun' },
-  ] : id === 'borrowed' ? [
-    { id: 'snap', label: 'Snap', hold: true }, { id: 'dash', label: 'Dash' },
-    { id: 'borrow', label: 'Borrow echo' }, { id: 'bank', label: 'Bank route' },
-  ] : id === 'prism' ? [{ id: 'hint', label: 'Hint' }, { id: 'reset', label: 'Reset mirrors' }] : [
-    { id: 'rise', label: 'Rise', hold: true }, { id: 'descend', label: 'Descend', hold: true },
-    { id: 'boost', label: 'Boost', hold: true }, { id: 'destination', label: 'Change destination' },
-  ];
+  function actions() {
+    const s = engine.state;
+    if (id === 'garden') return [
+      ...Object.entries(PLANTS).map(([type, plant]) => ({ id: type, selected: selected === type, unavailable: s.cooldowns[type] > 0 || s.sun < plant.cost,
+        // Unavailable seeds remain selectable, so the next planting can be planned.
+        label: `${plant.name} · ${plant.cost} sun · ${s.cooldowns[type] > 0 ? `${Math.ceil(s.cooldowns[type])}s` : s.sun < plant.cost ? `need ${plant.cost - s.sun}` : 'ready'}` })),
+      { id: 'shovel', label: 'Shovel · half sun back', selected: selected === 'shovel' },
+      { id: 'collect', label: s.suns.length ? `Collect ${s.suns.reduce((sum, sun) => sum + sun.value, 0)} sun` : 'Collect sun', disabled: !s.suns.length },
+    ];
+    if (id === 'borrowed') return [
+      { id: 'snap', label: 'Snap', hold: true },
+      { id: 'dash', label: s.dashCooldown > 0 ? `Dash · ${Math.ceil(s.dashCooldown)}s` : 'Dash · ready', disabled: s.dashCooldown > 0 },
+      { id: 'borrow', label: !s.memories.length ? 'Borrow · bank a route first' : s.borrowCooldown > 0 ? `Borrow · ${Math.ceil(s.borrowCooldown)}s` : 'Borrow echo · ready', disabled: !s.memories.length || s.borrowCooldown > 0 },
+      { id: 'bank', label: s.loop >= s.maxLoops ? 'Final loop · keep weaving' : s.loopTicks < 120 ? `Bank route · B · ${Math.ceil((120 - s.loopTicks) / 60)}s` : 'Bank route · B · ready', disabled: s.loopTicks < 120 || s.loop >= s.maxLoops, shortcut: 'KeyB' },
+    ];
+    if (id === 'prism') return [
+      { id: 'undo', label: 'Undo turn · Z', disabled: !prismHistory.length, shortcut: 'KeyZ' },
+      { id: 'hint', label: 'Hint' }, { id: 'reset', label: 'Reset mirrors' },
+    ];
+    return [
+      { id: 'rise', label: 'Rise', hold: true }, { id: 'descend', label: 'Descend', hold: true },
+      { id: 'boost', label: held.precision ? 'Boost · release precision' : 'Boost', hold: true, disabled: !!held.precision },
+      { id: 'precision', label: 'Precision flight · G', hold: true, selected: !!held.precision, shortcut: 'KeyG' },
+      { id: 'destination', label: 'Change destination' },
+    ];
+  }
   function action(name, pressed = true) {
     if (disposed) return false;
-    const entry = actions.find(item => item.id === name);
+    const entry = actions().find(item => item.id === name);
     if (!entry) return false;
     if (entry.hold) {
       held[name] = !!pressed;
@@ -138,7 +150,7 @@ export function createStandaloneController(id, { container, view, world, level =
         sound?.(660, .08); return true;
       }
       selected = name; message = name === 'shovel' ? 'Tap a plant to recover half its sun cost.' : `${PLANTS[name].name}: ${PLANTS[name].description}`;
-      messageTime = 4; return true;
+      messageTime = 4; refreshGardenHover(); return true;
     }
     if (id === 'borrowed') {
       const before = name === 'bank' ? engine.snapshot() : null;
@@ -148,12 +160,32 @@ export function createStandaloneController(id, { container, view, world, level =
       progress(); return !!result;
     }
     if (id === 'prism') {
-      if (name === 'reset') { cancel(); engine.start(selectedLevel); ending = null; return true; }
+      if (name === 'reset') { cancel(); engine.start(selectedLevel); ending = null; prismHistory = []; messageTime = 0; return true; }
+      if (name === 'undo') {
+        if (!prismHistory.length) return false;
+        const before = { ...prismHistory.at(-1), hintUsed: engine.state.hintUsed || prismHistory.at(-1).hintUsed };
+        if (!engine.restore(before)) return false;
+        engine.resume(); prismHistory.pop(); cancel();
+        message = 'Last turn undone. Try another path.'; messageTime = 2; sound?.(300, .08); return true;
+      }
       return engine.hint();
     }
     const destinations = [null, 'vale', ...world.satellites.map(island => island.id)];
     const next = destinations[(destinations.indexOf(engine.state.expedition.destination) + 1) % destinations.length];
     engine.setDestination(next); return true;
+  }
+  function gardenPreview() {
+    if (!hoverCell) return null;
+    const s = engine.state, planted = s.plants.some(plant => plant.row === hoverCell.row && plant.col === hoverCell.col);
+    if (selected === 'shovel') return { valid: planted, label: planted ? 'Remove here · recover half the sun cost' : 'Choose a planted patch to use the shovel' };
+    const plant = PLANTS[selected];
+    if (planted) return { valid: false, label: 'Already planted · choose another patch or the shovel' };
+    if (s.sun < plant.cost) return { valid: false, label: `Need ${plant.cost - s.sun} more sun to plant here` };
+    if (s.cooldowns[selected] > 0) return { valid: false, label: `Seed recharging · ${Math.ceil(s.cooldowns[selected])}s remaining` };
+    return { valid: true, label: `Plant ${plant.name} here · ${plant.cost} sun` };
+  }
+  function refreshGardenHover() {
+    if (id === 'garden') view.setHover?.(hoverCell?.row ?? -1, hoverCell?.col ?? -1, gardenPreview()?.valid ?? null);
   }
   function gardenCell(clientX, clientY) {
     const rect = container.getBoundingClientRect(), x = clientX - rect.left, y = clientY - rect.top;
@@ -184,9 +216,9 @@ export function createStandaloneController(id, { container, view, world, level =
     if (type === 'cancel') { cancel(); return; }
     if (state.mode !== 'playing' || !['down', 'move', 'up'].includes(type) || !Number.isFinite(x) || !Number.isFinite(y)) return;
     if (id === 'garden') {
-      const cell = gardenCell(x, y); view.setHover?.(cell?.row ?? -1, cell?.col ?? -1);
+      hoverCell = gardenCell(x, y); refreshGardenHover();
       if (type === 'down') down = { x, y };
-      if (type === 'up') { if (down && Math.hypot(x - down.x, y - down.y) < 18) gardenTap(x, y); down = null; }
+      if (type === 'up') { if (down && Math.hypot(x - down.x, y - down.y) < 18) gardenTap(x, y); down = null; refreshGardenHover(); }
       return;
     }
     if (id === 'prism') {
@@ -194,7 +226,11 @@ export function createStandaloneController(id, { container, view, world, level =
       if (type === 'down') down = { x, y, index: focus };
       if (type === 'up') {
         if (down && down.index !== null && down.index !== undefined && focus === down.index && Math.hypot(x - down.x, y - down.y) < 18) {
-          if (engine.rotate(focus)) sound?.(420 + focus * 30, .09);
+          const before = engine.snapshot();
+          if (engine.rotate(focus)) {
+            prismHistory.push(before); if (prismHistory.length > 32) prismHistory.shift();
+            messageTime = 0; sound?.(420 + focus * 30, .09);
+          }
         }
         down = null;
       }
@@ -215,15 +251,16 @@ export function createStandaloneController(id, { container, view, world, level =
       if ((input.run || input.boost) && !(previous.run || previous.boost)) engine.dash();
       if (input.secondary && !previous.secondary) engine.borrow();
     }
+    const precision = held.precision ? .35 : 1;
     const control = id === 'borrowed' ? {
       x: clamp(axis(input.right, input.left) + pointerX, -1, 1),
       z: clamp(axis(input.down, input.up) + pointerZ, -1, 1),
       pulse: !!(input.action || input.fire || held.snap),
     } : id === 'lantern' ? {
-      throttle: input.up || input.down ? axis(input.up, input.down) : down ? 1 : 0,
-      turn: clamp(axis(input.right, input.left) + pointerX, -1, 1),
-      lift: clamp(axis(input.jump || input.action || held.rise, input.secondary || held.descend) - pointerZ, -1, 1),
-      boost: !!(input.run || input.boost || held.boost),
+      throttle: (input.up || input.down ? axis(input.up, input.down) : down ? 1 : 0) * precision,
+      turn: clamp(axis(input.right, input.left) + pointerX, -1, 1) * precision,
+      lift: clamp(axis(input.jump || input.action || held.rise, input.secondary || held.descend) - pointerZ, -1, 1) * precision,
+      boost: !held.precision && !!(input.run || input.boost || held.boost),
     } : null;
     // These two original engines omit defeated saves. Retain the exact legal
     // state and final step so a result survives interruption without a restart.
@@ -235,13 +272,15 @@ export function createStandaloneController(id, { container, view, world, level =
       finish: { seconds: id === 'borrowed' ? (engine.state.ticks - ticksBefore) / 60 : seconds, control },
     };
     previous = { ...input }; progress();
+    refreshGardenHover();
     if (state.mode !== 'playing') cancel();
   }
   function snapshot() {
     const data = engine.snapshot();
     if (!data && !ending) return null;
     return clone({ schema: 1, id, level: selectedLevel, mode: state.mode, engine: data || ending.engine,
-      selected, random: data ? random.value : ending.random, finish: data ? null : ending.finish });
+      selected, random: data ? random.value : ending.random, finish: data ? null : ending.finish,
+      ...(id === 'prism' ? { history: prismHistory } : {}) });
   }
   function restore(saved) {
     try {
@@ -257,6 +296,18 @@ export function createStandaloneController(id, { container, view, world, level =
       }
       const candidateRandom = { value: saved.random }, candidate = makeEngine(saved.level, candidateRandom);
       if (!candidate.restore(saved.engine)) return false;
+      let history = [];
+      if (id === 'prism' && saved.history !== undefined) {
+        if (!Array.isArray(saved.history) || saved.history.length > 32) return false;
+        history = saved.history.map(parsePrismSave);
+        for (let index = 0; index < history.length; index++) {
+          const before = history[index], after = history[index + 1] || saved.engine;
+          // Only an actual previous turn from this puzzle may be rewound.
+          if (!before || before.mode !== 'playing' || before.level !== saved.level || !after ||
+            after.moves !== before.moves + 1 || before.hintUsed && !after.hintUsed ||
+            before.orientations.filter((value, piece) => value !== after.orientations[piece]).length !== 1) return false;
+        }
+      }
       candidate.resume();
       if (saved.finish?.action === 'bank') candidate.bank();
       else if (saved.finish) {
@@ -265,6 +316,7 @@ export function createStandaloneController(id, { container, view, world, level =
       }
       if (modeOf(candidate) !== saved.mode) return false;
       cancel(); engine = candidate; random = candidateRandom; selected = saved.selected; selectedLevel = saved.level;
+      prismHistory = history;
       ending = saved.finish ? { engine: clone(saved.engine), random: saved.random, finish: clone(saved.finish) } : null;
       message = ''; messageTime = 0; progress(); return true;
     } catch { return false; }
@@ -274,7 +326,7 @@ export function createStandaloneController(id, { container, view, world, level =
     if (id === 'garden') return {
       primary: `${s.sun} SUN · WAVE ${s.wave}/${engine.level.waveCount}`,
       secondary: `${selected === 'shovel' ? 'Shovel selected' : `${PLANTS[selected].name} selected`} · ${s.defeated}/${engine.level.enemies.length} stopped`,
-      hint: messageTime ? message : 'Choose a seed, then tap a lawn patch. Tap suns or use Collect sun.',
+      hint: gardenPreview()?.label || (messageTime ? message : 'Choose a seed, then tap a lawn patch. Tap suns or use Collect sun.'),
       selectedAction: selected,
     };
     if (id === 'borrowed') return {
@@ -282,19 +334,23 @@ export function createStandaloneController(id, { container, view, world, level =
       secondary: `Loop ${s.loop}/${s.maxLoops} · ${Math.ceil(Math.max(0, s.duration - s.loopTicks / 60))}s · ${s.memories.length} echoes`,
       hint: messageTime ? message : s.reason || 'Move to spread the sail. Bank routes in different corners; hold Snap to pulse.',
     };
-    if (id === 'prism') return {
+    if (id === 'prism') {
+      const colors = ['no light', 'red', 'green', 'yellow', 'blue', 'pink', 'cyan', 'white'];
+      const partial = s.incoming.findIndex((light, index) => light && !s.lit[index]);
+      const missing = partial < 0 ? '' : `${colors[engine.level.flowers[partial].color]} receiver has ${colors[s.incoming[partial]]}; add ${colors[engine.level.flowers[partial].color & ~s.incoming[partial]]}.`;
+      return {
       primary: `${s.awake}/${s.total} RECEIVERS LIT`, secondary: `${s.moves} turns · ${engine.level.name}`,
-      hint: s.hintIndex === null ? 'Tap a mirror or splitter to turn the beam.' : 'The highlighted mirror can help. Tap it to turn.',
-    };
-    const guide = s.guide, home = s.lit.length === world.beacons.length;
-    const target = guide ? `${guide.instruction || guide.name || 'Follow the glowing guide'}${Number.isFinite(guide.y) ? ` · altitude ${Math.round(guide.y)}` : ''}` : 'Follow the light across the islands.';
+      hint: messageTime ? message : s.hintIndex !== null ? `The highlighted mirror can help. ${missing || 'Tap it to turn.'}` : missing || 'Tap a mirror or splitter to turn the beam. Undo lets you try another path.',
+      };
+    }
+    const guide = s.guide;
     return { primary: `${s.lit.length}/${world.beacons.length} LANTERNS · ${s.expedition.awakened.length}/${world.satellites.length} ISLANDS`,
-      secondary: `${s.charge} fireflies · altitude ${Math.round(s.player.y)}${s.channel.progress > 0 ? ` · charging ${Math.round(s.channel.progress * 100)}%` : ''}`,
-      hint: !home && guide?.kind === 'beacon' ? 'Release movement and hover inside the lantern ring to relight it.' : target,
+      secondary: `${s.charge} fireflies · altitude ${Math.round(s.player.y)}${held.precision ? ' · precision flight' : ''}${s.channel.progress > 0 ? ` · charging ${Math.round(s.channel.progress * 100)}%` : ''}`,
+      hint: `${flightGuidance(s.player, guide)}${guide?.kind === 'beacon' ? ' · Release movement inside the ring to relight it.' : ''}`,
     };
   }
   return {
-    state, inputMode: definition.inputMode, actions, action, update, pointer, snapshot, restore, hud,
+    state, inputMode: definition.inputMode, get actions() { return actions(); }, action, update, pointer, snapshot, restore, hud,
     get engine() { return engine; }, get renderer() { return view.renderer; }, get camera() { return view.camera; },
     project(x, z, elevation) {
       const point = view.project(x, z, elevation), rect = container.getBoundingClientRect();

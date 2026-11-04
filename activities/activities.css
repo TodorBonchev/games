@@ -33,8 +33,16 @@
 #activitySaveWarning { position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font:10px var(--mono);color:#ffd99e;background:#101916ee;padding:6px 10px;z-index:8; }
 .activity-controls { position:absolute;bottom:max(18px,env(safe-area-inset-bottom));left:max(24px,env(safe-area-inset-left));right:max(24px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-end;gap:20px;pointer-events:none;z-index:3; }
 .activity-actions { margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:70%; }
+.activity-controls:not(:has(.activity-dpad)) .activity-actions { max-width:100%; }
 .activity-controls button { pointer-events:auto;touch-action:none;min-height:45px;padding:12px 15px;background:#101916e8;border:1px solid #d4e5c966;border-radius:5px;font:600 11px var(--sans);letter-spacing:0; }
 .activity-controls button.held { background:var(--activity-accent);color:#102015; }
+.activity-controls button[aria-pressed=true] { border-color:var(--activity-accent);box-shadow:inset 0 -3px var(--activity-accent);color:var(--activity-accent); }
+.activity-controls button.held { color:#102015; }
+.activity-controls button:disabled { opacity:.55;cursor:default; }
+.activity-controls button.unavailable { border-style:dashed;color:#d7b98d; }
+.activity-route { position:relative;width:min(280px,70%);height:6px;margin:12px auto 9px;border:1px solid #d9e8c455;border-radius:4px;background:linear-gradient(to right,#bce69a var(--route-progress,0%),#101916e8 var(--route-progress,0%)); }
+.activity-route i { position:absolute;top:50%;transform:translate(-50%,-50%);font:17px/1 Arial,sans-serif;color:#dae1d3;text-shadow:0 1px 3px #101916,0 -1px 3px #101916; }
+.activity-route i.collected { color:#bce69a; }.activity-route i.missed { color:#ffc571; }
 .activity-dpad { display:none;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:5px; }
 .activity-dpad [data-direction=up] { grid-column:2; }.activity-dpad [data-direction=left] { grid-column:1;grid-row:2; }.activity-dpad [data-direction=down] {grid-column:2;grid-row:2;}.activity-dpad [data-direction=right] {grid-column:3;grid-row:2;}
 body.touch .activity-dpad { display:grid; }.activity-dpad button { font-size:23px;padding:0; }

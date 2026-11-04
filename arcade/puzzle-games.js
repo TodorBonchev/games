@@ -5,6 +5,7 @@ const clone = value => JSON.parse(JSON.stringify(value));
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const integer = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const modeOK = v => v === 'playing' || v === 'won';
+const UNDO_LIMIT = 32;
 const colorSet = ['#f3a0a3', '#ffd884', '#a8dbd0', '#a9b9ef', '#dcafe2', '#eeae78', '#a9d491', '#f3cada', '#86bfd4'];
 
 function sceneKit(THREE, root, background, accent, animal) {
@@ -89,12 +90,15 @@ function sceneKit(THREE, root, background, accent, animal) {
 function createController(ctx, meta, rules) {
   const view = sceneKit(ctx.THREE, ctx.root, meta.background, meta.accent, meta.animal);
   const startLevel = ctx.singleRound ? Math.max(1, Math.min(rules.rounds, Math.trunc(ctx.level || 1))) : 1;
-  const state = { schema: 1, game: meta.id, mode: 'playing', level: startLevel, moves: 0 };
+  const undoable = meta.id !== 'dream-duos';
+  const state = { schema: 1, game: meta.id, mode: 'playing', level: startLevel, moves: 0, history: [] };
   rules.reset(state, startLevel - 1);
   let dirty = true, touch = null, elapsed = 0;
+  function remember() { const { history, ...current } = state; const value = clone(current); if ('selected' in value) value.selected = -1; if ('hint' in value) value.hint = -1; return value; }
+  function validMove(value, level) { return value && !('history' in value) && value.schema === 1 && value.game === meta.id && value.mode === 'playing' && value.level === level && integer(value.moves, 0, 100000) && rules.valid(value); }
   const mark = () => { dirty = true; };
   const complete = () => {
-    if (!ctx.singleRound && state.level < rules.rounds) { state.level++; rules.reset(state, state.level - 1); }
+    if (!ctx.singleRound && state.level < rules.rounds) { state.level++; rules.reset(state, state.level - 1); state.history = []; }
     else state.mode = 'won';
     mark();
   };
@@ -111,7 +115,10 @@ function createController(ctx, meta, rules) {
       if (type === 'down') { touch = { x, z }; return; }
       if (type === 'move') { if (touch && Math.hypot(x - touch.x, z - touch.z) > .8) touch = null; return; }
       if (type === 'up' && touch && Math.hypot(x - touch.x, z - touch.z) <= .8) {
-        touch = null; rules.tap(state, x, z, complete, mark); mark();
+        touch = null; const before = undoable ? remember() : null;
+        rules.tap(state, x, z, complete, mark);
+        if (before && state.level === before.level && state.moves > before.moves) { state.history.push(before); if (state.history.length > UNDO_LIMIT) state.history.shift(); }
+        mark();
       } else if (type === 'up') touch = null;
     },
     update(dt) {
@@ -126,18 +133,33 @@ function createController(ctx, meta, rules) {
     restore(value) {
       try {
         if (!value || value.schema !== 1 || value.game !== meta.id || !modeOK(value.mode) || !integer(value.level, 1, rules.rounds) || !integer(value.moves, 0, 100000) || !rules.valid(value)) return false;
-        Object.assign(state, clone(value)); touch = null; mark(); sync(); return true;
+        if (value.history !== undefined && (!Array.isArray(value.history) || value.history.length > UNDO_LIMIT || value.history.some(entry => !validMove(entry, value.level)))) return false;
+        const restored = clone(value); restored.history = clone(value.history || []);
+        for (const key of Object.keys(state)) delete state[key];
+        Object.assign(state, restored); touch = null; mark(); sync(); return true;
       } catch { return false; }
     },
     hud() { return rules.hud(state); },
-    resetLevel() { state.mode = 'playing'; touch = null; rules.reset(state, state.level - 1); mark(); sync(); },
+    get actions() { return [...(undoable ? [{ id: 'undo', label: 'Undo move · Z', shortcut: 'KeyZ', disabled: state.mode !== 'playing' || !state.history.length }] : []), ...(rules.actions?.(state) || [])]; },
+    action(id, pressed = true) {
+      if (!pressed || state.mode !== 'playing') return false;
+      touch = null;
+      if (id === 'undo' && undoable && state.history.length) {
+        const previous = state.history.pop(), history = state.history;
+        for (const key of Object.keys(state)) delete state[key];
+        Object.assign(state, clone(previous), { history }); mark(); sync(); return true;
+      }
+      if (rules.action?.(state, id, complete, mark)) { mark(); sync(); return true; }
+      return false;
+    },
+    resetLevel() { state.mode = 'playing'; touch = null; rules.reset(state, state.level - 1); state.history = []; mark(); sync(); },
     dispose() { view.dispose(); },
   };
   sync(); return controller;
 }
 
-function pips(v, value, x, y, z, spacing, radius) {
-  for (let i = 0; i < value; i++) v.piece('ball', '#fff8e9', x + (i % 3 - 1) * spacing, y, z + (Math.floor(i / 3) - 1) * spacing, radius, radius * .55, radius);
+function pips(v, value, x, y, z, spacing, radius, color = '#fff8e9') {
+  for (let i = 0; i < value; i++) v.piece('ball', color, x + (i % 3 - 1) * spacing, y, z + (Math.floor(i / 3) - 1) * spacing, radius, radius * .55, radius);
 }
 
 const tile = (v, color, x, z, size = 1.7, height = .16) => v.piece('box', color, x, height / 2, z, size, height, size);
@@ -155,6 +177,16 @@ const burrows = [
   { player: 22, crates: [11, 13, 17], goals: [1, 3, 9], walls: [5, 19] },
 ];
 const stepCell = (a, b) => (Math.abs(a % 5 - b % 5) + Math.abs(Math.floor(a / 5) - Math.floor(b / 5))) === 1;
+function burrowMove(s, target) {
+  const d = burrows[s.level - 1];
+  if (target < 0 || target > 24 || !stepCell(s.player, target) || d.walls.includes(target)) return null;
+  const crate = s.crates.indexOf(target);
+  if (crate < 0) return { target, crate: -1 };
+  const dx = target % 5 - s.player % 5, dz = Math.floor(target / 5) - Math.floor(s.player / 5);
+  const nx = target % 5 + dx, nz = Math.floor(target / 5) + dz, next = nz * 5 + nx;
+  if (nx < 0 || nx >= 5 || nz < 0 || nz >= 5 || d.walls.includes(next) || s.crates.includes(next)) return null;
+  return { target, crate, next };
+}
 function createBurrow(ctx) {
   return createController(ctx, metaBurrow, {
     rounds: burrows.length,
@@ -165,20 +197,15 @@ function createBurrow(ctx) {
     },
     tap(s, x, z, complete) {
       const d = burrows[s.level - 1], target = indexAt(x, z, 5, 5, 1.75, .25);
-      if (target < 0 || !stepCell(s.player, target) || d.walls.includes(target)) return;
-      const ci = s.crates.indexOf(target);
-      if (ci >= 0) {
-        const dx = target % 5 - s.player % 5, dz = Math.floor(target / 5) - Math.floor(s.player / 5);
-        const nx = target % 5 + dx, nz = Math.floor(target / 5) + dz, next = nz * 5 + nx;
-        if (nx < 0 || nx >= 5 || nz < 0 || nz >= 5 || d.walls.includes(next) || s.crates.includes(next)) return;
-        s.crates[ci] = next;
-      }
+      const move = burrowMove(s, target); if (!move) return;
+      if (move.crate >= 0) s.crates[move.crate] = move.next;
       s.player = target; s.moves++;
       if (d.goals.every(i => s.crates.includes(i))) complete();
     },
     draw(v, s) {
       const d = burrows[s.level - 1];
       for (let i = 0; i < 25; i++) { const p = at(i, 5, 5, 1.75, .25); tile(v, d.walls.includes(i) ? '#637c6d' : '#e8d7aa', p.x, p.z, 1.62); if (d.goals.includes(i)) { v.piece('ring', '#ffdd78', p.x, .2, p.z, .48); glow(v, '#fff1bc', p.x, p.z, .16); } }
+      for (let i = 0; i < 25; i++) { const move = burrowMove(s, i); if (move) { const p = at(i, 5, 5, 1.75, .25); v.piece('ring', move.crate >= 0 ? '#fff0a3' : '#7fbba7', p.x, .24, p.z, move.crate >= 0 ? .66 : .29); } }
       for (const i of s.crates) { const p = at(i, 5, 5, 1.75, .25); v.piece('cone', '#efaa66', p.x, .5, p.z, .38, .8, .38); v.piece('ball', '#6fa17d', p.x, .95, p.z, .2, .15, .2); }
       const p = at(s.player, 5, 5, 1.75, .25);
       v.piece('ball', '#b8876b', p.x, .5, p.z, .38, .35, .38);
@@ -188,7 +215,7 @@ function createBurrow(ctx) {
       }
       v.piece('ball', '#dba797', p.x, .66, p.z + .31, .11, .09, .17);
     },
-    hud(s) { const d = burrows[s.level - 1]; return { primary: `BURROW ${s.level} / ${burrows.length}`, secondary: `${d.goals.filter(i => s.crates.includes(i)).length} / ${d.goals.length} ROOTS HOME`, hint: 'Tap an adjacent patch to walk or push.' }; },
+    hud(s) { const d = burrows[s.level - 1]; return { primary: `BURROW ${s.level} / ${burrows.length}`, secondary: `${d.goals.filter(i => s.crates.includes(i)).length} / ${d.goals.length} ROOTS HOME`, hint: 'Green rings show safe steps; gold rings show roots you can push. Undo reverses a move.' }; },
   });
 }
 
@@ -200,6 +227,13 @@ const moonMasks = [
   [0,3,5,6,9,10,12,15],
   [0,3,5,8,11,14],
 ];
+function moonConflicts(cells) {
+  const conflicts = new Set();
+  for (let i = 0; i < 16; i++) if (cells[i]) for (let j = i + 1; j < 16; j++) {
+    if (cells[i] === cells[j] && (i % 4 === j % 4 || Math.floor(i / 4) === Math.floor(j / 4))) { conflicts.add(i); conflicts.add(j); }
+  }
+  return conflicts;
+}
 function createMoon(ctx) {
   const colors = ['#f8efe4', '#ee9fae', '#f5cc79', '#93cbb8', '#99a7dc'];
   const solved = cells => Array.from({ length: 4 }, (_, i) => [0,1,2,3].map(j => cells[i * 4 + j])).every(row => new Set(row).size === 4 && !row.includes(0)) && Array.from({ length: 4 }, (_, i) => [0,1,2,3].map(j => cells[j * 4 + i])).every(col => new Set(col).size === 4 && !col.includes(0));
@@ -209,9 +243,10 @@ function createMoon(ctx) {
     valid(s) { return Array.isArray(s.cells) && s.cells.length === 16 && s.cells.every((n, i) => integer(n, 0, 4) && (!moonMasks[s.level - 1].includes(i) || n === moonSolution[i])) && (s.mode !== 'won' || solved(s.cells)); },
     tap(s, x, z, complete) { const i = indexAt(x, z, 4, 4, 2.05, .2); if (i < 0 || moonMasks[s.level - 1].includes(i)) return; s.cells[i] = (s.cells[i] + 1) % 5; s.moves++; if (solved(s.cells)) complete(); },
     draw(v, s) {
-      for (let i = 0; i < 16; i++) { const p = at(i, 4, 4, 2.05, .2), c = s.cells[i]; tile(v, '#fbf1df', p.x, p.z, 1.85, .22); v.piece('cyl', '#b394a7', p.x, .22, p.z, .59, .16, .59); if (c) { v.piece(['oct', 'ball', 'cone', 'box', 'oct'][c], colors[c], p.x, .62, p.z, .49, .52, .49); if (moonMasks[s.level - 1].includes(i)) glow(v, '#fff8c8', p.x + .55, p.z - .55, .12); } }
+      const conflicts = moonConflicts(s.cells);
+      for (let i = 0; i < 16; i++) { const p = at(i, 4, 4, 2.05, .2), c = s.cells[i]; tile(v, '#fbf1df', p.x, p.z, 1.85, .22); v.piece('cyl', '#b394a7', p.x, .22, p.z, .59, .16, .59); if (c) { v.piece(['oct', 'ball', 'cone', 'box', 'oct'][c], colors[c], p.x, .62, p.z, .49, .52, .49); if (moonMasks[s.level - 1].includes(i)) glow(v, '#fff8c8', p.x + .55, p.z - .55, .12); } if (conflicts.has(i)) { v.piece('ring', '#d76879', p.x, .31, p.z, .82); v.piece('box', '#d76879', p.x + .65, .5, p.z + .65, .09, .3, .09); } }
     },
-    hud(s) { return { primary: `SKY ${s.level} / ${moonMasks.length}`, secondary: `${s.cells.filter(Boolean).length} / 16 BASKETS`, hint: 'Four colors once in each row and column.' }; },
+    hud(s) { const conflicts = moonConflicts(s.cells); return { primary: `SKY ${s.level} / ${moonMasks.length}`, secondary: `${s.cells.filter(Boolean).length} / 16 BASKETS`, hint: conflicts.size ? `${conflicts.size} outlined baskets repeat a color in their row or column. Tap an open basket to fix it.` : 'No color conflicts. Fill each row and column with all four colors.' }; },
   });
 }
 
@@ -234,8 +269,9 @@ function createStack(ctx) {
       if (s.selected < 0) { if (s.rods[target].length) s.selected = target; return; }
       if (s.selected === target) { s.selected = -1; return; }
       const source = s.rods[s.selected], dest = s.rods[target], top = source.at(-1);
-      if (top && (!dest.length || dest.at(-1) > top)) { source.pop(); dest.push(top); s.moves++; }
-      s.selected = -1; if (s.rods[2].length === stackSizes[s.level - 1]) complete();
+      if (top && (!dest.length || dest.at(-1) > top)) { source.pop(); dest.push(top); s.moves++; s.selected = -1; }
+      else return;
+      if (s.rods[2].length === stackSizes[s.level - 1]) complete();
     },
     draw(v, s) {
       for (let i = 0; i < 3; i++) {
@@ -243,25 +279,37 @@ function createStack(ctx) {
         v.piece('cyl', '#906a55', x, 1.12, 0, .12, 2.05, .12);
         for (let j = 0; j < s.rods[i].length; j++) { const n = s.rods[i][j], radius = .38 + n * .18; v.piece('cyl', ['','#e9a27b','#e8bd7b','#afc88d','#9cb9b2'][n], x, .36 + j * .27, 0, radius, .24, radius); }
         if (s.selected === i) v.piece('ring', '#fff3a4', x, .23, 0, 1.48);
+        else if (s.selected >= 0 && (!s.rods[i].length || s.rods[i].at(-1) > s.rods[s.selected].at(-1))) { v.piece('ring', '#78c4ac', x, .23, 0, 1.48); glow(v, '#78c4ac', x, 1.7, .16); }
       }
     },
-    hud(s) { return { primary: `TOWER ${s.level} / ${stackSizes.length}`, secondary: `${s.moves} MOVES`, hint: 'Move smaller logs onto bigger ones.' }; },
+    hud(s) { return { primary: `TOWER ${s.level} / ${stackSizes.length}`, secondary: `${s.moves} MOVES`, hint: s.selected >= 0 ? 'Choose a green landing ring. A larger log cannot cover a smaller one.' : 'Select a top log to see its safe landing pads. Undo takes back a move.' }; },
   });
 }
 
 const metaSwitch = { id: 'jelly-lanterns', title: 'Jelly Lanterns', hero: 'Mona the jellyfish', animal: 'jelly', tagline: 'Wake a little constellation.', instructions: 'Tap a lantern to change it and its four neighbors. Find the right combination to light every lantern.', background: '#737caa', accent: '#d4c4ec' };
 const lightSets = [[0, 4], [1, 5, 6], [0, 2, 4, 7], [1, 2, 3, 6, 8]];
 function lightFlip(mask, i) { const r = Math.floor(i / 3), c = i % 3; for (const [dx, dz] of [[0,0],[-1,0],[1,0],[0,-1],[0,1]]) { const x = c + dx, z = r + dz; if (x >= 0 && x < 3 && z >= 0 && z < 3) mask ^= 1 << (z * 3 + x); } return mask; }
+function nextLightHint(mask) {
+  let best = null;
+  for (let bits = 1; bits < 512; bits++) {
+    const taps = []; let result = mask;
+    for (let i = 0; i < 9; i++) if (bits & (1 << i)) { taps.push(i); result = lightFlip(result, i); }
+    if (result === 511 && (!best || taps.length < best.length)) best = taps;
+  }
+  return best?.[0] ?? -1;
+}
 function createSwitch(ctx) {
   return createController(ctx, metaSwitch, {
     rounds: lightSets.length,
-    reset(s, i) { s.mask = lightSets[i].reduce(lightFlip, 511); },
-    valid(s) { return integer(s.mask, 0, 511) && (s.mode !== 'won' || s.mask === 511); },
-    tap(s, x, z, complete) { const i = indexAt(x, z, 3, 3, 2.6, .2); if (i < 0) return; s.mask = lightFlip(s.mask, i); s.moves++; if (s.mask === 511) complete(); },
+    reset(s, i) { s.mask = lightSets[i].reduce(lightFlip, 511); s.hint = -1; },
+    valid(s) { return integer(s.mask, 0, 511) && integer(s.hint ?? -1, -1, 8) && (s.mode !== 'won' || s.mask === 511); },
+    actions: s => [{ id: 'hint', label: 'Highlight next switch', disabled: s.mode !== 'playing' }],
+    action(s, id) { if (id !== 'hint') return false; s.hint = nextLightHint(s.mask); return s.hint >= 0; },
+    tap(s, x, z, complete) { const i = indexAt(x, z, 3, 3, 2.6, .2); if (i < 0) return; s.mask = lightFlip(s.mask, i); s.hint = -1; s.moves++; if (s.mask === 511) complete(); },
     draw(v, s) {
-      for (let i = 0; i < 9; i++) { const p = at(i, 3, 3, 2.6, .2), on = !!(s.mask & (1 << i)); tile(v, on ? '#d6c3ed' : '#77799c', p.x, p.z, 2.32, .22); v.piece('cyl', '#77759e', p.x, .21, p.z, .78, .18, .78); for (let j = 0; j < 5; j++) { const a = j * Math.PI * 2 / 5; v.piece('ball', on ? '#ffe3b2' : '#9791ad', p.x + Math.cos(a) * .36, .46, p.z + Math.sin(a) * .36, .27, .12, .19, -a); } glow(v, on ? '#fff9dc' : '#b4abc2', p.x, p.z, .22); }
+      for (let i = 0; i < 9; i++) { const p = at(i, 3, 3, 2.6, .2), on = !!(s.mask & (1 << i)); tile(v, on ? '#d6c3ed' : '#77799c', p.x, p.z, 2.32, .22); v.piece('cyl', '#77759e', p.x, .21, p.z, .78, .18, .78); for (let j = 0; j < 5; j++) { const a = j * Math.PI * 2 / 5; v.piece('ball', on ? '#ffe3b2' : '#9791ad', p.x + Math.cos(a) * .36, .46, p.z + Math.sin(a) * .36, .27, .12, .19, -a); } glow(v, on ? '#fff9dc' : '#b4abc2', p.x, p.z, .22); if (s.hint === i) { v.piece('ring', '#fff3a4', p.x, .35, p.z, 1.06); glow(v, '#fff3a4', p.x, p.z - .97, .16); } }
     },
-    hud(s) { const n = s.mask.toString(2).split('1').length - 1; return { primary: `CONSTELLATION ${s.level} / ${lightSets.length}`, secondary: `${n} / 9 LANTERNS LIT`, hint: 'Each tap also changes its neighbors.' }; },
+    hud(s) { const n = s.mask.toString(2).split('1').length - 1; return { primary: `CONSTELLATION ${s.level} / ${lightSets.length}`, secondary: `${n} / 9 LANTERNS LIT`, hint: s.hint >= 0 ? 'Try the gold-ringed lantern next; the hint never makes the move for you.' : 'Each tap changes its neighbors. Use Highlight next switch if you get stuck.' }; },
   });
 }
 
@@ -277,30 +325,41 @@ function createDuos(ctx) {
   const seed = Number.isInteger(ctx.seed) ? ctx.seed >>> 0 : 2468;
   return createController(ctx, metaDuos, {
     rounds: pairCounts.length,
-    reset(s, i) { s.seed ??= seed; s.deck = shuffledDeck(pairCounts[i], s.seed, i); s.matched = []; s.flipped = []; s.delay = 0; },
+    reset(s, i) { s.seed ??= seed; s.deck = shuffledDeck(pairCounts[i], s.seed, i); s.matched = []; s.flipped = []; s.delay = 0; s.queued = -1; },
     valid(s) {
       const n = pairCounts[s.level - 1], expected = shuffledDeck(n, s.seed, s.level - 1);
       if (!integer(s.seed, 0, 0xffffffff) || !Array.isArray(s.deck) || s.deck.length !== 2 * n || s.deck.some((v, i) => v !== expected[i]) || !Array.isArray(s.matched) || !Array.isArray(s.flipped) || s.matched.length > 2*n || s.flipped.length > 2 || new Set([...s.matched, ...s.flipped]).size !== s.matched.length + s.flipped.length) return false;
       if (![...s.matched, ...s.flipped].every(i => integer(i, 0, 2*n-1)) || typeof s.delay !== 'number' || !Number.isFinite(s.delay) || s.delay < 0 || s.delay > 1) return false;
+      const queued = s.queued ?? -1;
+      if (!integer(queued, -1, 2*n-1) || queued >= 0 && (s.delay <= 0 || s.matched.includes(queued) || s.flipped.includes(queued))) return false;
       const counted = Array.from({length:n},(_, id)=>s.matched.filter(i => s.deck[i] === id).length);
       return counted.every(k => k === 0 || k === 2) && (s.flipped.length === 2 ? s.delay > 0 && s.deck[s.flipped[0]] !== s.deck[s.flipped[1]] : s.delay === 0) && (s.mode !== 'won' || s.matched.length === 2*n);
     },
     tap(s, x, z, complete) {
-      if (s.flipped.length >= 2) return;
       const rows = Math.ceil(s.deck.length / 4), index = indexAt(x, z, 4, rows, 2.05, .3);
       if (index < 0 || index >= s.deck.length || s.matched.includes(index) || s.flipped.includes(index)) return;
+      if (s.flipped.length >= 2) { s.queued = index; return; }
       s.flipped.push(index); s.moves++;
       if (s.flipped.length === 2) {
         if (s.deck[s.flipped[0]] === s.deck[s.flipped[1]]) { s.matched.push(...s.flipped); s.flipped = []; if (s.matched.length === s.deck.length) complete(); }
         else s.delay = .85;
       }
     },
-    tick(s, dt, complete, mark) { if (s.delay > 0) { s.delay = Math.max(0, s.delay - dt); if (s.delay === 0) s.flipped = []; mark(); } },
+    tick(s, dt, complete, mark) { if (s.delay > 0) { s.delay = Math.max(0, s.delay - dt); if (s.delay === 0) { s.flipped = []; if ((s.queued ?? -1) >= 0) { s.flipped.push(s.queued); s.moves++; } s.queued = -1; } mark(); } },
     draw(v, s) {
       const rows = Math.ceil(s.deck.length / 4);
-      for (let i = 0; i < s.deck.length; i++) { const p = at(i, 4, rows, 2.05, .3), face = s.flipped.includes(i) || s.matched.includes(i); tile(v, face ? '#fff0dc' : '#8d91b1', p.x, p.z, 1.8, .25); if (face) { const value = s.deck[i]; v.piece(value % 3 === 0 ? 'oct' : value % 3 === 1 ? 'ball' : 'cyl', colorSet[value], p.x, .56, p.z, .48, .42, .48); v.piece('ring', '#fff2ca', p.x, .27, p.z, .66); } else { v.piece('oct', '#dfc9ea', p.x, .42, p.z, .20, .20, .20); } }
+      for (let i = 0; i < s.deck.length; i++) {
+        const p = at(i, 4, rows, 2.05, .3), matched = s.matched.includes(i), face = s.flipped.includes(i) || matched;
+        tile(v, matched ? '#bbd9c8' : face ? '#fff0dc' : '#8d91b1', p.x, p.z, 1.8, .25);
+        if (face) {
+          const value = s.deck[i]; v.piece(value % 3 === 0 ? 'oct' : value % 3 === 1 ? 'ball' : 'cyl', colorSet[value], p.x, .56, p.z, .48, .42, .48);
+          v.piece('ring', matched ? '#6da998' : '#fff2ca', p.x, .27, p.z, .66);
+          pips(v, value + 1, p.x, 1.06, p.z, .21, .08, '#354859');
+        } else { v.piece('oct', '#dfc9ea', p.x, .42, p.z, .20, .20, .20); }
+        if (s.queued === i) v.piece('ring', '#fff2a8', p.x, .28, p.z, .79);
+      }
     },
-    hud(s) { return { primary: `DREAM ${s.level} / ${pairCounts.length}`, secondary: `${s.matched.length / 2} / ${s.deck.length / 2} PAIRS`, hint: 'Find the matching sleeping dreams.' }; },
+    hud(s) { return { primary: `DREAM ${s.level} / ${pairCounts.length}`, secondary: `${s.matched.length / 2} / ${s.deck.length / 2} PAIRS`, hint: s.delay > 0 ? (s.queued >= 0 ? 'Your gold-ringed tile will open when this pair turns over.' : 'Remember these two. You can tap your next tile while they turn over.') : 'Match colors and dot counts. Green cards are pairs you have already found.' }; },
   });
 }
 
@@ -318,11 +377,11 @@ function createFlock(ctx) {
       if (s.tiles.every((v, i) => v === i + 1)) complete();
     },
     draw(v, s) {
-      for (let i = 0; i < 9; i++) { const p = at(i, 3, 3, 2.3, .05); tile(v, '#f7ebdb', p.x, p.z, 2.12, .18); v.piece('oct', colorSet[s.tiles[i]-1], p.x, .42, p.z, .70, .28, .70); pips(v, s.tiles[i], p.x, .74, p.z, .19, .07); }
+      for (let i = 0; i < 9; i++) { const p = at(i, 3, 3, 2.3, .05); tile(v, '#f7ebdb', p.x, p.z, 2.12, .18); v.piece('oct', colorSet[s.tiles[i]-1], p.x, .42, p.z, .70, .28, .70); pips(v, s.tiles[i], p.x, .74, p.z, .19, .07); if (s.tiles[i] === i + 1) v.piece('ring', '#74bda1', p.x, .28, p.z, .93); }
       for (const x of [-1.15, 1.15]) for (const z of [-1.10, 1.20]) { v.piece('cyl', '#fbefcc', x, .69, z, .29, .11, .29); v.piece('ring', '#d0a063', x, .78, z, .22); }
       for (let i=0;i<9;i++) { const p=at(i,3,3,.70,4.48); v.piece('box', colorSet[i], p.x, .1, p.z, .63, .13, .63); pips(v, i+1, p.x, .22, p.z, .15, .045); }
     },
-    hud(s) { return { primary: `MOSAIC ${s.level} / ${scrambles.length}`, secondary: `${s.moves} TURNS`, hint: 'Tap a ring; match the little guide below.' }; },
+    hud(s) { return { primary: `MOSAIC ${s.level} / ${scrambles.length}`, secondary: `${s.tiles.filter((value, i) => value === i + 1).length} / 9 IN PLACE · ${s.moves} TURNS`, hint: 'Green outlines are in the right place. Turn a ring to match the numbered guide; Undo reverses a turn.' }; },
   });
 }
 
@@ -349,15 +408,15 @@ function createKelp(ctx) {
       if(s.selected<0) { if(s.jars[target].length)s.selected=target; return; }
       if(s.selected===target){s.selected=-1;return;}
       const from=s.jars[s.selected],to=s.jars[target],color=from.at(-1);
-      if(color && to.length<recipe.cap && (!to.length||to.at(-1)===color)) { while(from.at(-1)===color&&to.length<recipe.cap)to.push(from.pop()); s.moves++; }
-      s.selected=-1;
+      if(color && to.length<recipe.cap && (!to.length||to.at(-1)===color)) { while(from.at(-1)===color&&to.length<recipe.cap)to.push(from.pop()); s.moves++; s.selected=-1; }
+      else return;
       if(s.jars.every(j=>!j.length||j.length===recipe.cap&&j.every(v=>v===j[0])))complete();
     },
     draw(v,s) {
       const recipe=recipes[s.level-1];
-      s.jars.forEach((jar,i)=>{const x=centers(s.jars.length)[i];v.piece('cyl','#c8e3d5',x,.12,0,.78,.2,.78);v.piece('cyl','#e7f3df',x,.32,0,.69,.25,.69);for(let j=0;j<recipe.cap;j++){const z=((recipe.cap-1)/2-j)*1.15;v.piece('cyl','#a3c6b8',x,.20,z,.65,.13,.52);if(j<jar.length)v.piece('ball',[null,'#ee9f90','#f5d578','#9cbfe6'][jar[j]],x,.52,z,.50,.30,.43);}if(s.selected===i)v.piece('ring','#fff0a3',x,.24,0,.9);});
+      s.jars.forEach((jar,i)=>{const x=centers(s.jars.length)[i];v.piece('cyl','#c8e3d5',x,.12,0,.78,.2,.78);v.piece('cyl','#e7f3df',x,.32,0,.69,.25,.69);for(let j=0;j<recipe.cap;j++){const z=((recipe.cap-1)/2-j)*1.15;v.piece('cyl','#a3c6b8',x,.20,z,.65,.13,.52);if(j<jar.length)v.piece('ball',[null,'#ee9f90','#f5d578','#9cbfe6'][jar[j]],x,.52,z,.50,.30,.43);}if(s.selected===i)v.piece('ring','#fff0a3',x,.24,0,.9);else if(s.selected>=0 && jar.length<recipe.cap && (!jar.length||jar.at(-1)===s.jars[s.selected].at(-1))) {v.piece('ring','#72bba3',x,.24,0,.9);glow(v,'#72bba3',x,2.0,.16);}});
     },
-    hud(s){const recipe=recipes[s.level-1], sorted=s.jars.filter(j=>j.length===recipe.cap&&j.every(v=>v===j[0])).length;return{primary:`RECIPE ${s.level} / ${recipes.length}`,secondary:`${sorted} COLORS SORTED`,hint:'Tap a jar, then tap where to pour.'};},
+    hud(s){const recipe=recipes[s.level-1], sorted=s.jars.filter(j=>j.length===recipe.cap&&j.every(v=>v===j[0])).length;return{primary:`RECIPE ${s.level} / ${recipes.length}`,secondary:`${sorted} COLORS SORTED`,hint:s.selected>=0?'Green rings show jars that can accept this ingredient. Tap the gold jar to cancel.':'Choose an ingredient jar to see valid pours. Undo takes back a pour.'};},
   });
 }
 

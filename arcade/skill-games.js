@@ -132,17 +132,22 @@ function tidehook(ctx) {
   s.ball(fish, '#fbce75', 0, .38, 0, .58, .25, .32);
   const tail = s.mesh(fish, 'cone', '#ff9f80', -.58, .34, 0, .28, .48, .2); tail.rotation.z = Math.PI / 2;
   s.ball(fish, '#31566c', .3, .55, .18, .045, .06, .05);
-  s.ring(s.root, '#dbf5e3', 0, .22, 0, .55);
+  // The catch zone follows the fish and uses the same bounds as the release test.
+  const catchZone = s.ring(s.root, '#dbf5e3', 0, .22, 0, 1); catchZone.name = 'Catch window';
+  catchZone.scale.set(.85, .6, 1);
+  const readyGlow = s.ring(s.root, '#b8f3a5', 0, .24, 0, .22); readyGlow.name = 'Release cue';
+  let feedback = '', feedbackTime = 0;
+  const aligned = () => Math.abs(state.x - state.fishX) < .85 && Math.abs(state.depth - state.fishZ) < .6;
   const id = 'tidehook';
   const state = { mode: 'playing', time: 0, caught: 0, misses: 0, holding: false, x: 0, depth: -4.25, fishX: 0, fishZ: 0 };
   function update(dt) {
     if (state.mode !== 'playing' || !finite(dt, 0, .051)) return;
-    state.time += dt;
+    state.time += dt; feedbackTime = Math.max(0, feedbackTime - dt);
     state.fishX = Math.sin(state.time * .9 + state.caught * .7) * 1.65;
     state.fishZ = Math.sin(state.time * .67 + state.caught * 1.1) * 1.45 + (state.caught % 3 - 1) * .5;
     if (state.holding) {
       state.depth += dt * (3.0 + state.caught * .16);
-      if (state.depth > 4.4) { state.holding = false; state.depth = -4.25; state.misses++; if (state.misses >= 4) state.mode = 'lost'; }
+      if (state.depth > 4.4) { state.holding = false; state.depth = -4.25; feedback = 'Too deep. Lift while the hook is inside the fish’s ring.'; feedbackTime = 2.4; state.misses++; if (state.misses >= 4) state.mode = 'lost'; }
     }
   }
   function pointer(type, x, z) {
@@ -152,13 +157,16 @@ function tidehook(ctx) {
     else if (type === 'cancel') { state.holding = false; state.depth = -4.25; }
     else if (type === 'up' && state.holding) {
       state.holding = false;
-      if (Math.abs(state.x - state.fishX) < .85 && Math.abs(state.depth - state.fishZ) < .6) {
-        state.caught++; ctx.sound?.(440 + state.caught * 35, .16); if (state.caught === 8) state.mode = 'won';
-      } else { state.misses++; ctx.sound?.(170, .15); if (state.misses >= 4) state.mode = 'lost'; }
+      if (aligned()) {
+        feedback = 'Good catch! Follow the next fish.'; feedbackTime = 1.8; state.caught++; ctx.sound?.(440 + state.caught * 35, .16); if (state.caught === 8) state.mode = 'won';
+      } else { feedback = Math.abs(state.x - state.fishX) >= .85 ? 'Slide the hook over the fish before lifting.' : state.depth < state.fishZ ? 'A little early. Lower the hook into the ring.' : 'A little late. Lift as the hook enters the ring.'; feedbackTime = 2.4; state.misses++; ctx.sound?.(170, .15); if (state.misses >= 4) state.mode = 'lost'; }
       state.depth = -4.25;
     }
   }
   function sync() {
+    const ready = state.holding && aligned();
+    catchZone.position.set(state.fishX, .22, state.fishZ); catchZone.material.color.set(ready ? '#b8f3a5' : '#dbf5e3');
+    readyGlow.visible = ready; readyGlow.position.set(state.x, .25, state.depth);
     fish.position.set(state.fishX, .12, state.fishZ);
     fish.rotation.y = Math.sin(state.time * .9) > 0 ? 0 : Math.PI;
     hook.position.set(state.x, .78, state.depth); const length = Math.max(.05, state.depth + 4.65);
@@ -167,24 +175,32 @@ function tidehook(ctx) {
   return { state, update, pointer, sync, dispose: s.dispose,
     snapshot: () => envelope(id, state, { holding: false, depth: -4.25 }),
     restore(value) { return restoreState(id, state, value, v => finite(v.time, 0, 1e7) && integer(v.caught, 0, 8) && integer(v.misses, 0, 4) && v.holding === false && v.depth === -4.25 && finite(v.x, -4, 4) && finite(v.fishX, -1.65, 1.65) && finite(v.fishZ, -2, 2) && (v.mode === 'won' ? v.caught === 8 : v.mode === 'lost' ? v.misses === 4 : v.caught < 8 && v.misses < 4)); },
-    hud: () => ({ primary: `${state.caught} / 8 FISH`, secondary: `${4 - state.misses} CHANCES`, hint: 'Hold to lower. Slide to follow. Release on the fish.' }) };
+    hud: () => ({ primary: `${state.caught} / 8 FISH`, secondary: `${4 - state.misses} CHANCES`, hint: state.holding && aligned() ? 'RELEASE NOW · the hook is inside the catch ring.' : feedbackTime > 0 ? feedback : 'Hold to lower. Follow the moving ring; lift when it glows green.' }) };
 }
 
 const PHRASES = [[0, 1, 2], [2, 0, 1, 2], [1, 2, 0, 2, 1]];
 function bellwood(ctx) {
   const s = stage(ctx); island(s, '#c4d9c1', '#7a9e85'); hero(s, 'koala');
-  const colors = ['#ec9a8d', '#f5cc7e', '#8fc9c5'], frequencies = [330, 415, 494], xs = [-3, 0, 3], pads = [];
+  const colors = ['#ec9a8d', '#f5cc7e', '#8fc9c5'], frequencies = [330, 415, 494], xs = [-3, 0, 3], pads = [], symbols = [];
   for (let i = 0; i < 3; i++) {
     s.disc(s.root, '#799b87', xs[i], .16, 0, 1.35, .32);
     pads.push(s.disc(s.root, colors[i], xs[i], .40, 0, 1.15, .24));
-    s.ring(s.root, '#fff2d6', xs[i], .54, 0, .8);
-    for (let j = 0; j <= i; j++) s.ball(s.root, '#fff7df', xs[i] + (j - i / 2) * .31, .58, 0, .11, .07, .11);
+    const marks = [{ mesh: s.ring(s.root, '#fff2d6', xs[i], .54, 0, .8), y: .54 }];
+    for (let j = 0; j <= i; j++) marks.push({ mesh: s.ball(s.root, '#fff7df', xs[i] + (j - i / 2) * .31, .58, 0, .11, .07, .11), y: .58 });
+    symbols.push(marks);
   }
+  const noteProgress = Array.from({length: 5}, (_, i) => {
+    const bead = s.disc(s.root, '#dbe8cb', (i - 2) * .75, .18, 2.2, .17, .10); bead.name = `Song progress ${i + 1}`; return bead;
+  });
+  const confirmedNotes = noteProgress.map((bead, i) => { const ring = s.ring(s.root, '#82be91', bead.position.x, .4, 2.2, .24); ring.name = `Song confirmed ${i + 1}`; return ring; });
+  let responseNote = -1, responseTime = 0, wrongNote = false;
   const id = 'bellwood-beats';
   const state = { mode: 'playing', round: 0, phase: 'ready', playback: 0, input: 0, mistakes: 0, lit: -1, lastCue: -1, pressed: -1 };
   function begin() { state.phase = 'show'; state.playback = 0; state.input = 0; state.lit = -1; state.lastCue = -1; }
   function update(dt) {
-    if (state.mode !== 'playing' || state.phase !== 'show' || !finite(dt, 0, .051)) return;
+    if (state.mode !== 'playing' || !finite(dt, 0, .051)) return;
+    responseTime = Math.max(0, responseTime - dt);
+    if (state.phase !== 'show') return;
     state.playback += dt;
     const phrase = PHRASES[state.round], index = Math.floor(state.playback / .72);
     if (index >= phrase.length) { state.phase = 'repeat'; state.lit = -1; return; }
@@ -200,7 +216,7 @@ function bellwood(ctx) {
     const pressed = state.pressed; state.pressed = -1;
     if (state.phase === 'ready' && pressed === 3) { begin(); return; }
     if (state.phase !== 'repeat' || index < 0 || pressed !== index) return;
-    ctx.sound?.(frequencies[index], .18);
+    ctx.sound?.(frequencies[index], .18); responseNote = index; responseTime = .24; wrongNote = index !== PHRASES[state.round][state.input];
     if (index !== PHRASES[state.round][state.input]) {
       state.mistakes++; state.input = 0;
       if (state.mistakes >= 4) state.mode = 'lost'; else begin();
@@ -210,19 +226,24 @@ function bellwood(ctx) {
   }
   function sync() {
     pads.forEach((pad, i) => {
-      const lit = state.lit === i;
+      const response = responseTime > 0 && responseNote === i, lit = state.lit === i || state.pressed === i || response;
       // Each cue changes size and brightness, so the song remains easy to
       // follow on a small screen even when the player has sound turned off.
       pad.scale.set(lit ? 1.34 : 1.15, lit ? .42 : .24, lit ? 1.34 : 1.15);
       pad.position.y = lit ? .50 : .40;
-      pad.material.emissive.set(colors[i]);
+      pad.material.emissive.set(response && wrongNote ? '#f04c66' : colors[i]);
       pad.material.emissiveIntensity = lit ? 1 : 0;
+      symbols[i].forEach(({mesh,y}) => { mesh.position.y = y + (lit ? .24 : 0); });
     });
+    confirmedNotes.forEach((ring, i) => { ring.visible = i < state.input; });
+    noteProgress.forEach((bead, i) => { bead.visible = i < PHRASES[state.round].length; bead.scale.y = i < state.input ? .24 : .1; bead.position.y = i < state.input ? .27 : .18; });
   }
   return { state, update, pointer, sync, dispose: s.dispose,
+    get actions() { return state.mode === 'playing' && state.phase !== 'show' ? [{ id: 'replay', label: state.phase === 'ready' ? 'Hear song · R' : 'Replay song · R', shortcut: 'KeyR' }] : []; },
+    action(name, pressed = true) { if (name !== 'replay' || !pressed || state.mode !== 'playing' || state.phase === 'show') return false; state.pressed = -1; responseTime = 0; begin(); return true; },
     snapshot: () => envelope(id, state, { pressed: -1 }),
     restore(value) { return restoreState(id, state, value, v => v.pressed === -1 && integer(v.round, 0, 2) && ['ready', 'show', 'repeat'].includes(v.phase) && finite(v.playback, 0, 10) && integer(v.input, 0, PHRASES[v.round].length) && integer(v.mistakes, 0, 4) && integer(v.lit, -1, 2) && integer(v.lastCue, -1, 5) && (v.mode === 'won' ? v.round === 2 && v.input === PHRASES[2].length : v.mode === 'lost' ? v.mistakes === 4 : v.mistakes < 4 && v.input < PHRASES[v.round].length)); },
-    hud: () => ({ primary: `SONG ${state.round + 1} / 3`, secondary: `${4 - state.mistakes} CHANCES`, hint: state.phase === 'ready' ? 'Tap anywhere to hear the next song.' : state.phase === 'show' ? 'Watch and listen to the glowing bells.' : 'Tap the bells in the same order.' }) };
+    hud: () => ({ primary: `SONG ${state.round + 1} / 3`, secondary: `${4 - state.mistakes} CHANCES`, hint: state.phase === 'ready' ? 'Tap anywhere to hear the next song.' : state.phase === 'show' ? 'Watch and listen to the glowing bells.' : `Repeat ${state.input} / ${PHRASES[state.round].length} notes. Replay song is free if you need another listen.` }) };
 }
 
 const PARCELS = [0, 2, 1, 0, 1, 2, 0, 2, 1];
@@ -238,6 +259,11 @@ function parcelParade(ctx) {
   }
   const parcel = s.group(), boxes = colors.map(color => s.block(parcel, color, 0, .62, 0, .95, .75, .95));
   s.block(parcel, '#fff3de', 0, 1.03, 0, .16, .08, .97); s.block(parcel, '#fff3de', 0, 1.04, 0, .97, .08, .16);
+  const parcelPips = Array.from({length: 3}, (_, i) => {
+    const pip = s.ball(parcel, '#263c4c', 0, 1.13, 0, .075, .04, .075); pip.name = `Parcel symbol ${i + 1}`; return pip;
+  });
+  const dropPreview = s.ring(s.root, '#c9f3ac', 0, .73, -3.65, 1); dropPreview.scale.set(1.25, .67, 1); dropPreview.name = 'Depot drop preview';
+  const depotAt = (x, z) => xs.findIndex(px => Math.abs(x - px) < 1.3 && Math.abs(z + 3.65) < 1.0);
   const id = 'parcel-parade';
   const state = { mode: 'playing', delivered: 0, mistakes: 0, z: 3.1, dragging: false, dragX: 0, dragZ: 3.1 };
   function update(dt) {
@@ -254,7 +280,7 @@ function parcelParade(ctx) {
     else if (type === 'cancel') state.dragging = false;
     else if (type === 'up' && state.dragging) {
       state.dragging = false;
-      const slot = xs.findIndex(px => Math.abs(x - px) < 1.3 && Math.abs(z + 3.65) < 1.0);
+      const slot = depotAt(x, z);
       if (slot >= 0) {
         if (slot === PARCELS[state.delivered]) { state.delivered++; ctx.sound?.(440 + state.delivered * 24, .15); if (state.delivered === PARCELS.length) state.mode = 'won'; }
         else { state.mistakes++; ctx.sound?.(170, .15); if (state.mistakes >= 4) state.mode = 'lost'; }
@@ -263,13 +289,16 @@ function parcelParade(ctx) {
     }
   }
   function sync() {
-    boxes.forEach((box, i) => { box.visible = i === PARCELS[Math.min(state.delivered, PARCELS.length - 1)]; });
+    const symbol = PARCELS[Math.min(state.delivered, PARCELS.length - 1)], slot = state.dragging ? depotAt(state.dragX, state.dragZ) : -1;
+    boxes.forEach((box, i) => { box.visible = i === symbol; });
+    parcelPips.forEach((pip, i) => { pip.visible = i <= symbol; pip.position.x = (i - symbol / 2) * .22; pip.position.z = .25; });
+    dropPreview.visible = slot >= 0; if (slot >= 0) { dropPreview.position.x = xs[slot]; dropPreview.material.color.set(slot === symbol ? '#c9f3ac' : '#ff8b96'); }
     parcel.position.set(state.dragging ? state.dragX : 0, state.dragging ? .3 : 0, state.dragging ? state.dragZ : state.z);
   }
   return { state, update, pointer, sync, dispose: s.dispose,
     snapshot: () => envelope(id, state, { dragging: false, dragX: 0, dragZ: state.z }),
     restore(value) { return restoreState(id, state, value, v => integer(v.delivered, 0, PARCELS.length) && integer(v.mistakes, 0, 4) && finite(v.z, -2.85, 3.1) && v.dragging === false && v.dragX === 0 && v.dragZ === v.z && (v.mode === 'won' ? v.delivered === PARCELS.length : v.mode === 'lost' ? v.mistakes === 4 : v.delivered < PARCELS.length && v.mistakes < 4)); },
-    hud: () => ({ primary: `${state.delivered} / ${PARCELS.length} DELIVERED`, secondary: `${4 - state.mistakes} CHANCES`, hint: 'Drag each parcel to its matching colored depot.' }) };
+    hud: () => ({ primary: `${state.delivered} / ${PARCELS.length} DELIVERED`, secondary: `${4 - state.mistakes} CHANCES`, hint: state.dragging && depotAt(state.dragX, state.dragZ) >= 0 ? (depotAt(state.dragX, state.dragZ) === PARCELS[state.delivered] ? 'Matching depot · release to deliver.' : 'Different symbol · keep dragging to the matching depot.') : 'Match the parcel’s dots to the depot’s dots, then drag and release.' }) };
 }
 
 function wobbleBakery(ctx) {
@@ -284,13 +313,20 @@ function wobbleBakery(ctx) {
   s.ball(cake, '#f5c76c', 0, 1.43, 2.7, .15, .14, .15);
   const clouds = [];
   for (let i = 0; i < 5; i++) clouds.push(s.ball(s.root, '#fff3dd', -4 + i * 2, .33, -2.9 - (i % 2), .7, .18, .26));
+  const windVane = s.group(); windVane.name = 'Wind direction'; windVane.position.set(0, .35, -1.5);
+  s.block(windVane, '#bd7c78', -.3, 0, 0, 1.4, .13, .14);
+  const arrow = s.mesh(windVane, 'cone', '#bd7c78', .55, 0, 0, .3, .5, .3); arrow.rotation.z = -Math.PI / 2;
+  const balance = s.block(s.root, '#b8efb1', 0, .18, 3.65, 2.36, .08, .14); balance.name = 'Safe balance span';
+  s.block(s.root, '#956c71', 0, .18, 4.35, 2.36, .08, .14);
+  const danger = s.block(s.root, '#f09f8d', 0, .23, 4.35, .01, .1, .17); danger.name = 'Balance warning';
+  const windAt = time => (1.7 + time / 30) * Math.sin(time * .73) + .65 * Math.sin(time * 1.47);
   const id = 'wobble-bakery';
   const state = { mode: 'playing', time: 0, tray: 0, target: 0, cake: 0, speed: 0, slips: 0, danger: 0, dragging: false };
   function update(dt) {
     if (state.mode !== 'playing' || !finite(dt, 0, .051)) return;
     state.time = Math.min(30, state.time + dt);
     state.tray += clamp(state.target - state.tray, -7 * dt, 7 * dt);
-    const wind = (1.7 + state.time / 30) * Math.sin(state.time * .73) + .65 * Math.sin(state.time * 1.47);
+    const wind = windAt(state.time);
     state.speed = clamp(state.speed + (wind - state.speed * .72) * dt, -3.3, 3.3);
     state.cake += state.speed * dt;
     if (Math.abs(state.cake) > 4.1) { state.cake = clamp(state.cake, -4.1, 4.1); state.speed *= -.45; }
@@ -307,11 +343,17 @@ function wobbleBakery(ctx) {
     else if (type === 'move' && state.dragging) state.target = clamp(x, -4.1, 4.1);
     else if (type === 'up' || type === 'cancel') state.dragging = false;
   }
-  function sync() { tray.position.x = state.tray; cake.position.x = state.cake; cake.rotation.z = clamp((state.cake - state.tray) * -.17, -.3, .3); clouds.forEach((m, i) => { m.position.x = ((-4 + i * 2 + state.time * .24 + 5) % 10) - 5; }); }
+  function sync() {
+    tray.position.x = state.tray; cake.position.x = state.cake; cake.rotation.z = clamp((state.cake - state.tray) * -.17, -.3, .3);
+    const wind = windAt(state.time); windVane.rotation.y = wind < 0 ? Math.PI : 0; windVane.scale.set(.45 + Math.abs(wind) * .45, 1, 1);
+    balance.position.x = state.tray; balance.material.color.set(state.danger > 0 ? '#f4bf76' : '#b8efb1');
+    danger.scale.x = Math.max(.01, state.danger / .45 * 2.36); danger.visible = state.danger > 0;
+    clouds.forEach((m, i) => { m.position.x = ((-4 + i * 2 + state.time * .24 + 5) % 10) - 5; });
+  }
   return { state, update, pointer, sync, dispose: s.dispose,
     snapshot: () => envelope(id, state, { dragging: false }),
     restore(value) { return restoreState(id, state, value, v => finite(v.time, 0, 30) && finite(v.tray, -4.1, 4.1) && finite(v.target, -4.1, 4.1) && finite(v.cake, -4.1, 4.1) && finite(v.speed, -3.3, 3.3) && integer(v.slips, 0, 3) && finite(v.danger, 0, .45) && v.dragging === false && (v.mode === 'won' ? v.time === 30 && v.slips < 3 : v.mode === 'lost' ? v.slips === 3 : v.time < 30 && v.slips < 3)); },
-    hud: () => ({ primary: `${Math.floor(state.time)} / 30 SECONDS`, secondary: `${3 - state.slips} CHANCES`, hint: 'Slide the platter under the cake as the wind blows.' }) };
+    hud: () => ({ primary: `${Math.floor(state.time)} / 30 SECONDS`, secondary: `${3 - state.slips} CHANCES`, hint: state.danger > 0 ? `Cake tipping! Slide ${state.cake > state.tray ? 'right →' : '← left'} to get it inside the green span.` : `Wind ${windAt(state.time) < 0 ? '← left' : 'right →'} · keep the platter’s green span under the cake.` }) };
 }
 
 const MOTH_ROUTES = [
@@ -333,6 +375,9 @@ function mothlight(ctx) {
   });
   const thorns = [{ x: -4.1, z: -.1 }, { x: 4.1, z: -.1 }];
   for (const thorn of thorns) { s.disc(s.root, '#5a6d68', thorn.x, .14, thorn.z, .62, .18); for (let j = 0; j < 5; j++) { const a = j * Math.PI * .4; const cone = s.mesh(s.root, 'cone', '#9ab79a', thorn.x + .34 * Math.cos(a), .52, thorn.z + .34 * Math.sin(a), .13, .65, .13); cone.rotation.z = Math.cos(a) * .25; } }
+  const tether = s.block(s.root, '#f1d98e', 0, .23, 0, .045, .025, 1); tether.name = 'Moth connection';
+  const goalRing = s.ring(s.root, '#fff2ae', 0, .38, 0, .96); goalRing.name = 'Active flower';
+  const routeDots = Array.from({length: 6}, (_, i) => { const dot = s.ball(s.root, '#edd19c', 0, .18, 0, .055, .025, .055); dot.name = `Flower guide ${i + 1}`; return dot; });
   const id = 'mothlight';
   const state = { mode: 'playing', delivered: 0, bumps: 0, lightX: -4.4, lightZ: 3.7, mothX: -3, mothZ: 2.6, dragging: false, time: 0 };
   function update(dt) {
@@ -357,14 +402,19 @@ function mothlight(ctx) {
     else if (type === 'up' || type === 'cancel') state.dragging = false;
   }
   function sync() {
+    const distance = Math.hypot(state.lightX - state.mothX, state.lightZ - state.mothZ), linked = state.dragging && distance < 2.65;
     bat.position.set(state.lightX, .1, state.lightZ); spotlight.position.set(state.lightX, .18, state.lightZ);
+    spotlight.material.color.set(linked ? '#bfe8ad' : state.dragging ? '#ed9baf' : '#f5cd82');
+    tether.visible = linked && distance > .08; tether.position.set((state.lightX + state.mothX) / 2, .23, (state.lightZ + state.mothZ) / 2); tether.scale.z = Math.max(.01, distance); tether.rotation.y = Math.atan2(state.lightX - state.mothX, state.lightZ - state.mothZ);
+    const destination = MOTH_ROUTES[Math.min(state.delivered, 3)].end; goalRing.visible = state.mode === 'playing'; goalRing.position.set(destination[0], .38, destination[1]);
+    routeDots.forEach((dot, i) => { const t = (i + 1) / 7; dot.visible = state.mode === 'playing'; dot.position.set(state.mothX + (destination[0] - state.mothX) * t, .18, state.mothZ + (destination[1] - state.mothZ) * t); });
     moth.position.set(state.mothX, .12, state.mothZ); moth.rotation.y = Math.sin(state.time * 8) * .12;
     flowers.forEach((g, i) => { g.scale.setScalar(i < state.delivered ? 1 : i === state.delivered ? 1.13 : .72); });
   }
   return { state, update, pointer, sync, dispose: s.dispose,
     snapshot: () => envelope(id, state, { dragging: false }),
     restore(value) { return restoreState(id, state, value, v => integer(v.delivered, 0, 4) && integer(v.bumps, 0, 1e7) && finite(v.time, 0, 1e7) && finite(v.lightX, -5, 5) && finite(v.lightZ, -5, 5) && finite(v.mothX, -5, 5) && finite(v.mothZ, -5, 5) && v.dragging === false && (v.mode === 'won' ? v.delivered === 4 : v.mode === 'playing' && v.delivered < 4)); },
-    hud: () => ({ primary: `${state.delivered} / 4 MOTHS HOME`, secondary: `${state.bumps} BUMPS`, hint: 'Drag Vesper near the moth. Lead it to the bright flower.' }) };
+    hud: () => ({ primary: `${state.delivered} / 4 MOTHS HOME`, secondary: `${state.bumps} BUMPS`, hint: state.dragging && Math.hypot(state.lightX - state.mothX, state.lightZ - state.mothZ) >= 2.65 ? 'The moth lost your light. Bring the pink ring back over it.' : state.dragging ? 'Linked! Move slowly along the dots to the ringed flower.' : 'Hold near the moth to connect your light. Follow the dotted flower guide.' }) };
 }
 
 const VASES = [[1, 3, 2, 1], [2, 2, 3, 1], [1, 2, 3, 2]];
@@ -378,6 +428,11 @@ function cloudPotter(ctx) {
     bands.push(s.block(s.root, ['#d88f82', '#dc9c8b', '#e4ad96', '#e9baa2'][i], 2, .37, rows[i], 1, .35, 1.28));
     s.ring(s.root, '#fff4df', -4.45, .26, rows[i], .17);
   }
+  const matching = rows.map((z, i) => { const g = s.group(); g.name = `Matched clay row ${i + 1}`; g.position.set(4.35, .24, z); s.block(g, '#a4d5a3', -.08, 0, .04, .08, .08, .25).rotation.y = -.75; s.block(g, '#a4d5a3', .08, 0, -.03, .08, .08, .42).rotation.y = .65; return g; });
+  const preview = s.group(); preview.name = 'Clay swipe preview'; preview.position.set(2, .60, rows[0]);
+  for (const side of [-1, 1]) { s.block(preview, '#f8e4bb', 0, 0, side * .715, 1, .035, .045); s.block(preview, '#f8e4bb', side * .5, 0, 0, .045, .035, 1.43); }
+  let previewWidth = null;
+  const widthAfter = x => clamp(state.widths[state.pending] + (x - state.originX > .3 ? 1 : x - state.originX < -.3 ? -1 : 0), 1, 3);
   const id = 'cloud-potter';
   const state = { mode: 'playing', round: 0, widths: [2, 2, 2, 2], moves: 0, pending: -1, originX: 0 };
   function update(dt) { if (!finite(dt, 0, .051)) return; }
@@ -385,10 +440,11 @@ function cloudPotter(ctx) {
     if (state.mode !== 'playing' || !safeCoordinates(x, z)) return;
     if (type === 'down') {
       const row = rows.findIndex(r => Math.abs(r - z) < .72);
-      if (row >= 0 && x > -.1) { state.pending = row; state.originX = x; }
-    } else if (type === 'cancel') state.pending = -1;
+      if (row >= 0 && x > -.1) { state.pending = row; state.originX = x; previewWidth = state.widths[row]; }
+    } else if (type === 'move' && state.pending >= 0) previewWidth = widthAfter(x);
+    else if (type === 'cancel') { state.pending = -1; previewWidth = null; }
     else if (type === 'up' && state.pending >= 0) {
-      const row = state.pending, amount = x - state.originX; state.pending = -1;
+      const row = state.pending, amount = x - state.originX; state.pending = -1; previewWidth = null;
       if (Math.abs(amount) < .3) return;
       const next = clamp(state.widths[row] + (amount > 0 ? 1 : -1), 1, 3);
       if (next === state.widths[row]) return;
@@ -403,12 +459,16 @@ function cloudPotter(ctx) {
     for (let i = 0; i < 4; i++) {
       targets[i].scale.x = .5 + VASES[state.round][i] * .52;
       bands[i].scale.x = .5 + state.widths[i] * .52;
+      matching[i].visible = state.widths[i] === VASES[state.round][i];
+      bands[i].material.emissive.set('#f8dfb2'); bands[i].material.emissiveIntensity = state.pending === i ? .23 : 0;
     }
+    preview.visible = state.pending >= 0 && previewWidth !== null;
+    if (preview.visible) { preview.position.z = rows[state.pending]; preview.scale.x = .5 + previewWidth * .52; }
   }
   return { state, update, pointer, sync, dispose: s.dispose,
     snapshot: () => envelope(id, state, { pending: -1, originX: 0 }),
     restore(value) { return restoreState(id, state, value, v => integer(v.round, 0, 2) && Array.isArray(v.widths) && v.widths.length === 4 && v.widths.every(n => integer(n, 1, 3)) && integer(v.moves, 0, 1e7) && v.pending === -1 && v.originX === 0 && (v.mode === 'won' ? v.round === 2 && v.widths.every((n, i) => n === VASES[2][i]) : v.mode === 'playing' && !v.widths.every((n, i) => n === VASES[v.round][i]))); },
-    hud: () => ({ primary: `POT ${state.round + 1} / 3`, secondary: `${state.moves} SHAPES`, hint: 'Swipe each clay band left or right to match the white pot.' }) };
+    hud: () => ({ primary: `POT ${state.round + 1} / 3`, secondary: `${state.moves} SHAPES`, hint: state.pending >= 0 ? 'The pale outline previews your change. Release to shape; green ticks mark matches.' : `${state.widths.filter((width, i) => width === VASES[state.round][i]).length} / 4 bands matched · swipe clay left or right to follow the white pot.` }) };
 }
 
 export const games = [

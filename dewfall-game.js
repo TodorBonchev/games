@@ -66,7 +66,7 @@ export function createDewfall({ level: requestedLevel = 1 } = {}) {
   function step(input) {
     state.ticks++;
     state.tilt.x = input.x; state.tilt.z = input.z;
-    const moving = Math.hypot(input.x, input.z) > .025, friction = moving ? 2.35 : 5.6;
+    const moving = Math.hypot(input.x, input.z) > .025, friction = input.brake ? 16 : moving ? 2.35 : 5.6;
     const breeze = current.wind * Math.sin(state.ticks / 110);
     for (const ball of state.balls) {
       if (ball.status === 'bloomed') continue;
@@ -120,9 +120,10 @@ export function createDewfall({ level: requestedLevel = 1 } = {}) {
     if (state.mode !== 'playing' || !Number.isFinite(seconds) || seconds <= 0) return;
     control ||= {};
     let x = Number.isFinite(control.x) ? clamp(control.x, -1, 1) : 0, z = Number.isFinite(control.z) ? clamp(control.z, -1, 1) : 0;
+    if (control.brake) x = z = 0;
     const length = Math.hypot(x, z); if (length > 1) { x /= length; z /= length; }
     accumulator += Math.min(1, seconds); let steps = 0;
-    while (accumulator + 1e-8 >= STEP && state.mode === 'playing' && steps++ < 61) { accumulator -= STEP; step({ x, z }); }
+    while (accumulator + 1e-8 >= STEP && state.mode === 'playing' && steps++ < 61) { accumulator -= STEP; step({ x, z, brake: !!control.brake }); }
     if (state.mode === 'won') accumulator = 0;
   }
   function snapshot() {

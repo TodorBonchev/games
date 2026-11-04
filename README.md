@@ -64,6 +64,45 @@ Keyboard pointer controls apply to the activities originally designed for a mous
 - **Moonbounce:** the full five-wave run, including offered powers between waves and the final Big Grump. Gather moons, steer clear of incoming creatures and launch the orbit to defend the watch perimeter.
 - **Popwake, Pond Post, Ribbon Reef and Dewdrop Drift:** their puzzle boards, mail routes, reef currents and gardens are selectable stages inside their outposts.
 
+### Minigame polish
+
+Every outpost has one or two focused improvements. The action buttons show their current availability and keep keyboard focus and held touches when their labels change. New controls clear on pause, rotation and return to the island; older activity saves remain supported.
+
+| Activity | Improvements |
+| --- | --- |
+| Upside Nib | Route progress with collected, upcoming and missed star markers. |
+| Garden Guard | Selected seed, cost and planting readiness; valid/invalid planting previews. |
+| Borrowed Tomorrow | Ability cooldown and availability labels; **B** banks a route directly. |
+| Prism Orchard | **Z** undoes rotations while retaining hint penalties; missing-color guidance for partially powered receivers. |
+| Lantern Vale | Hold **G** for precision flight; relative direction, distance and altitude guidance. |
+| Moonbounce | **L** launches moons while you keep steering; Moonstorm readiness guidance. |
+| Popwake | **Z** removes the last domino while drawing and returns its budget. |
+| Pond Post | **C** cancels an aimed hop; safe/perfect landing and splash guidance. |
+| Ribbon Reef | Next-arch direction and arrival countdown; immediate gate feedback. |
+| Dewdrop Drift | Hold **B** to brake and settle drops near flowers. |
+| Lane Lark | Arrival markers; catch and miss feedback. |
+| Orbit Guard | Next-star direction preview; alignment and centered-catch feedback. |
+| Cloud Skimmer | Upcoming altitude guide; precise pass and miss feedback. |
+| Ink Sling | Aiming trajectory and target preview; one buffered follow-up shot. |
+| Bubble Basket | Pearl and urchin landing markers; catch feedback. |
+| Moss Flip | Danger warnings; animated rail crossings that respect reduced motion. |
+| Bell Bloom | Visible timing window; perfect, early and late feedback with duplicate-tap protection. |
+| Burrow Banquet | Undo; legal walk and push markers. |
+| Moon Basket | Undo; row and column conflict outlines. |
+| Stack Strata | Undo; valid destination cues that preserve selection after a mistake. |
+| Jelly Lanterns | Undo; next-switch hints computed from the current board. |
+| Dream Duos | Buffered next tap during mismatch reveals; numbered symbols and distinct matched cards. |
+| Flock Shift | Undo; correct-position outlines and progress count. |
+| Kelp Kitchen | Undo; valid pour cues that preserve selection after a mistake. |
+| Tidehook | Moving catch cue; directional miss feedback. |
+| Bellwood Beats | **R** replays the song without spending a chance; visible notes and input progress. |
+| Parcel Parade | Matching number symbols; valid/invalid depot drop previews. |
+| Wobble Bakery | Wind direction and strength indicator; balance warning gauge. |
+| Mothlight | Connection and lost-light feedback; active-flower route guidance. |
+| Cloud Potter | Live swipe preview; matched-row markers. |
+
+The six board-puzzle undo controls use **Z** and retain up to 32 successful moves across checkpoints. Reset remains available for a fresh attempt.
+
 ## Saved progress
 
 Progress is stored in this browser's **localStorage**. No account is required. Clearing site data removes the saves; blocked or full storage leaves the current visit playable and displays a storage notice in activities.
@@ -166,6 +205,7 @@ These tests execute game rules, DOM controls, real Three.js geometry and raycast
 ```sh
 npx playwright install chromium
 npm run test:activities
+npm run test:polish
 npm run test:browser
 npm run test:mobile
 npm run test:abilities
@@ -173,6 +213,8 @@ npm run test:piano
 ```
 
 `test:activities` exercises the unified entry points, outposts and native controllers. Activity-specific aliases such as `test:upside`, `test:garden`, `test:moonbounce` and `test:lantern` select that activity in the same browser runner. The `test:arcade` and `test:voyage:legacy` aliases select groups. Older script names remain compatibility shortcuts; they no longer imply testing a standalone page or a complete old campaign playthrough.
+
+`test:polish` checks the new controls in the live zombie host on desktop and phone: undo/replay, seed selection and costs, cooldowns, launching while steering, simultaneous touches, overlapping keyboard/touch holds, pause cleanup, route progress and returning to the island without click-through. The unit suite also checks each activity's new mechanics and existing legal completion paths.
 
 Use `CHROMIUM_PATH=/path/to/chromium` to select an installed browser. Screenshots and measurements go into ignored `test-results/`. Browser checks verify actual rendering, transitions, input and saves; simulation tests exercise additional completion paths. Passing these checks does not establish that every full campaign, audio path or physical phone has been played. Real iOS/Android hardware remains useful for touch, GPU, audio, thermal and browser-toolbar behavior.
 

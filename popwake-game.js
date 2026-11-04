@@ -112,6 +112,12 @@ export function createPopwake({ level: requestedLevel = 1 } = {}) {
     state.mode = 'running'; state.stroke = null; accumulator = 0; state.queue = []; state.settleAt = 0;
     queue('trail', 0, 1); event('release', { used: state.used }); return true;
   }
+  function undo() {
+    if (state.mode !== 'drawing' || state.trail.length < 2) return false;
+    const removed = state.trail.pop(), last = state.trail.at(-1);
+    state.used = state.trail.length - 1; state.stroke = { x: last.x, z: last.z };
+    event('undo', { x: removed.x, z: removed.z }); return true;
+  }
   function cancel() {
     if (state.mode !== 'drawing') return false;
     state.mode = 'playing'; state.trail = []; state.used = 0; state.stroke = null; state.queue = []; state.settleAt = 0; event('cancel'); return true;
@@ -202,7 +208,7 @@ export function createPopwake({ level: requestedLevel = 1 } = {}) {
     return true;
   }
   reset();
-  return { state, get level() { return current; }, start, begin, drag, release, cancel, retry, hint, next, pause, resume, advance, snapshot, restore };
+  return { state, get level() { return current; }, start, begin, drag, release, cancel, retry, hint, undo, next, pause, resume, advance, snapshot, restore };
 }
 
 // Only accept bounded, internally consistent checkpoints. An incomplete finger

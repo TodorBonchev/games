@@ -14,7 +14,7 @@ function sameShape(value, template) {
   return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(template).every(k => sameShape(value[k], template[k]));
 }
 
-function controller(id, state, { update, pointer, sync, hud, valid = () => true }) {
+function controller(id, state, { update, pointer, sync, hud, valid = () => true, migrate = value => value, restored = () => {} }) {
   const template = copy(state);
   return {
     state,
@@ -28,16 +28,31 @@ function controller(id, state, { update, pointer, sync, hud, valid = () => true 
     snapshot() { return { schema: 1, id, mode: state.mode, state: copy(state) }; },
     restore(data) {
       try {
+        if (data?.state) data = { ...data, state: migrate(copy(data.state)) };
         if (!data || data.schema !== 1 || data.id !== id || !['playing', 'won', 'lost'].includes(data.mode) || data.state?.mode !== data.mode || !sameShape(data.state, template) || !valid(data.state)) return false;
         for (const key of Object.keys(template)) state[key] = copy(data.state[key]);
         // Interrupted gestures never repeat a release or remain held after reload.
         if ('holding' in state) state.holding = false;
         if ('aiming' in state) state.aiming = false;
-        sync(); return true;
+        restored(); sync(); return true;
       } catch { return false; }
     },
   };
 }
+
+// Transient coaching never changes scores or checkpoint schemas.
+function feedback(sound) {
+  let message = '', remaining = 0, positive = true;
+  return {
+    show(text, good = true, seconds = .9) { message = text; remaining = seconds; positive = good; sound?.(good ? 660 : 180, good ? .07 : .12, good ? 'sine' : 'triangle', .045); },
+    update(dt) { remaining = Math.max(0, remaining - dt); },
+    clear() { remaining = 0; message = ''; },
+    hint(fallback) { return remaining > 0 ? message : fallback; },
+    get active() { return remaining > 0; }, get positive() { return positive; },
+  };
+}
+function accent(mesh, name) { mesh.name = name; mesh.material = mesh.material.clone(); return mesh; }
+function tint(mesh, color, glow = .12) { mesh.material.color.set(color); mesh.material.emissive.set(color); mesh.material.emissiveIntensity = glow; }
 
 function workshop(THREE, root) {
   const materials = new Map();
@@ -118,7 +133,8 @@ function railLark(ctx) {
   w.ground('#354f72','#a9def0');
   for (const x of [-3.3,0,3.3]) w.part(root,'cube','#6e96bc',x,.02,0,.12,.04,11.5);
   const hero=w.character('owl'); hero.position.set(0,.1,4.25);
-  const lanes=[-3.3,0,3.3], items=[];
+  const lanes=[-3.3,0,3.3], items=[], response=feedback(ctx.sound);
+  const landings=lanes.map((x,i)=>accent(w.part(root,'torus','#a9def0',x,.08,4.2,.63,.63,.63),`Lane arrival ${i}`));
   for(let i=0;i<44;i++) {
     const g=w.group();
     if(i%2===0) w.star(g,'#ffdf89',0,.35,0,.25);
@@ -127,14 +143,14 @@ function railLark(ctx) {
   }
   const state={mode:'playing',time:0,spawned:0,score:0,health:3,lane:1,items:Array.from({length:44},(_,i)=>({lane:0,kind:i%2===0?1:2,z:-8,status:0}))};
   function update(dt){
-    state.time+=dt;
+    state.time+=dt;response.update(dt);
     while(state.spawned<22 && state.time>=.35+state.spawned*1.02){const n=state.spawned, lane=(n*7+Math.floor(n/4))%3;const note=state.items[n*2],hazard=state.items[n*2+1];Object.assign(note,{lane,z:-5.5,status:1});Object.assign(hazard,{lane:(lane+1+n%2)%3,z:-5.5,status:1});state.spawned++;}
-    for(const it of state.items)if(it.status===1){it.z+=dt*(3.6+Math.min(state.spawned,20)*.035);if(it.z>=4.2){if(it.lane===state.lane){if(it.kind===1)state.score++;else state.health--;}it.status=2;}}
+    for(const it of state.items)if(it.status===1){it.z+=dt*(3.6+Math.min(state.spawned,20)*.035);if(it.z>=4.2){if(it.lane===state.lane){if(it.kind===1){state.score++;response.show('Note caught — keep the melody going!');}else{state.health--;response.show('Thorn hit — watch the coral arrival ring.',false);}}else if(it.kind===1)response.show('Note missed — follow the gold arrival ring.',false);it.status=2;}}
     if(state.health<=0)state.mode='lost';else if(state.spawned===22&&state.items.every(it=>it.status!==1))state.mode=state.score>=14?'won':'lost';
   }
   function pointer(type,x){if(type==='down'||type==='move')state.lane=x < -1.7 ? 0 : x > 1.7 ? 2 : 1;}
-  function sync(){hero.position.x=lanes[state.lane];hero.rotation.z=(1-state.lane)*.13;state.items.forEach((it,i)=>{items[i].visible=it.status===1;items[i].position.set(lanes[it.lane],.1,it.z);items[i].rotation.y=state.time*1.4;});}
-  sync();return controller('lane-lark',state,{update,pointer,sync,hud:()=>({primary:`${state.score} / 14 NOTES`,secondary:`${state.health} HEARTS`,hint:'Tap a rail to catch gold and dodge thorns.'}),valid:s=>int(s.lane,0,2)&&int(s.health,0,3)&&int(s.score,0,22)&&int(s.spawned,0,22)&&s.time>=0&&s.items.every((it,i)=>int(it.lane,0,2)&&int(it.status,0,2)&&it.kind===(i%2===0?1:2)&&it.z>=-8&&it.z<=4.4)});
+  function sync(){hero.position.x=lanes[state.lane];hero.rotation.z=(1-state.lane)*.13;const next=state.items.filter(it=>it.status===1).sort((a,b)=>b.z-a.z);for(let lane=0;lane<3;lane++){const incoming=next.find(it=>it.lane===lane);const color=incoming&&incoming.z>-.8?(incoming.kind===1?'#ffe18a':'#ff8198'):'#769cba';tint(landings[lane],color,lane===state.lane?.5:.12);landings[lane].scale.setScalar(lane===state.lane?.78:.63);}state.items.forEach((it,i)=>{items[i].visible=it.status===1;items[i].position.set(lanes[it.lane],.1,it.z);items[i].rotation.y=state.time*1.4;});}
+  sync();return controller('lane-lark',state,{update,pointer,sync,restored:()=>response.clear(),hud:()=>({primary:`${state.score} / 14 NOTES`,secondary:`${state.health} HEARTS`,hint:response.hint('Gold arrival ring: catch a note. Coral arrival ring: change rail.')}),valid:s=>int(s.lane,0,2)&&int(s.health,0,3)&&int(s.score,0,22)&&int(s.spawned,0,22)&&s.time>=0&&s.items.every((it,i)=>int(it.lane,0,2)&&int(it.status,0,2)&&it.kind===(i%2===0?1:2)&&it.z>=-8&&it.z<=4.4)});
 }
 
 function orbitGuard(ctx) {
@@ -143,11 +159,13 @@ function orbitGuard(ctx) {
   const hero=w.character('hedgehog');hero.scale.setScalar(1.25);
   const shield=w.group();for(let i=-2;i<=2;i++){const a=i*.21;w.part(shield,'sphere','#7ce9d8',Math.cos(a)*1.55,.46,Math.sin(a)*1.55,.22,.25,.22);}
   const comet=w.group();w.star(comet,'#ffce83',0,.5,0,.27);w.part(comet,'sphere','#ff9d91',0,.35,-.32,.12,.12,.38);
+  const response=feedback(ctx.sound), approach=accent(w.part(root,'torus','#9cb7be',1.55,.08,0,.46,.46,.46),'Orbit interception marker');
+  const nextStar=w.star(root,'#cfbbed',0,.12,0,.15);nextStar.name='Next orbit approach';
   const state={mode:'playing',time:0,index:0,hits:0,health:4,angle:0,distance:5.5,cometAngle:0};
-  function update(dt){state.time+=dt;state.distance-=dt*(2.25+state.index*.06);if(state.distance<=1.42){if(angleDiff(state.angle,state.cometAngle)<.58)state.hits++;else state.health--;state.index++;state.distance=5.5;state.cometAngle=(state.index*2.399963)%(Math.PI*2);if(state.health<=0)state.mode='lost';else if(state.index>=16)state.mode=state.hits>=13?'won':'lost';}}
+  function update(dt){state.time+=dt;response.update(dt);state.distance-=dt*(2.25+state.index*.06);if(state.distance<=1.42){const error=angleDiff(state.angle,state.cometAngle);if(error<.58){state.hits++;response.show(error<.18?'Centered catch! The next star is marked.':'Star saved! Turn toward the next marker.');}else{state.health--;response.show('Star slipped through — cover the glowing landing ring.',false);}state.index++;state.distance=5.5;state.cometAngle=(state.index*2.399963)%(Math.PI*2);if(state.health<=0)state.mode='lost';else if(state.index>=16)state.mode=state.hits>=13?'won':'lost';}}
   function pointer(type,x,z){if(type==='down'||type==='move')state.angle=Math.atan2(z,x);}
-  function sync(){shield.rotation.y=-state.angle;comet.visible=state.mode==='playing';comet.position.set(Math.cos(state.cometAngle)*state.distance,.2,Math.sin(state.cometAngle)*state.distance);hero.rotation.y=-state.angle+Math.PI/2;}
-  sync();return controller('orbit-guard',state,{update,pointer,sync,hud:()=>({primary:`${state.hits} / 13 SAVED`,secondary:`${state.health} HEARTS`,hint:'Drag the shield toward each falling star.'}),valid:s=>int(s.index,0,16)&&int(s.hits,0,16)&&int(s.health,0,4)&&s.distance>=0&&s.distance<=5.6&&Math.abs(s.angle)<=Math.PI&&s.cometAngle>=0&&s.cometAngle<=Math.PI*2&&s.time>=0});
+  function sync(){const aligned=angleDiff(state.angle,state.cometAngle)<.58;tint(approach,aligned?'#a9f6c6':'#ffce83',aligned?.6:.15);approach.position.set(Math.cos(state.cometAngle)*1.55,.1,Math.sin(state.cometAngle)*1.55);const next=(state.index+1)*2.399963;nextStar.visible=state.index<15&&state.distance<3.4;nextStar.position.set(Math.cos(next)*4.7,.16,Math.sin(next)*4.7);shield.rotation.y=-state.angle;comet.visible=state.mode==='playing';comet.position.set(Math.cos(state.cometAngle)*state.distance,.2,Math.sin(state.cometAngle)*state.distance);hero.rotation.y=-state.angle+Math.PI/2;}
+  sync();return controller('orbit-guard',state,{update,pointer,sync,restored:()=>response.clear(),hud:()=>({primary:`${state.hits} / 13 SAVED`,secondary:`${state.health} HEARTS`,hint:response.hint('Cover the gold landing ring. The small violet star previews the next arrival.')}),valid:s=>int(s.index,0,16)&&int(s.hits,0,16)&&int(s.health,0,4)&&s.distance>=0&&s.distance<=5.6&&Math.abs(s.angle)<=Math.PI&&s.cometAngle>=0&&s.cometAngle<=Math.PI*2&&s.time>=0});
 }
 
 function cloudSkimmer(ctx) {
@@ -155,13 +173,15 @@ function cloudSkimmer(ctx) {
   for(let i=0;i<9;i++)w.part(root,'sphere','#e6f4f0',-5+i*1.4,.05,i%2?-5.25:5.25,.58,.15,.27);
   const hero=w.character('squirrel');hero.position.x=-3.2;
   const rings=[];for(let i=0;i<10;i++){const g=w.group();w.part(g,'torus','#f6bf6c',0,.3,0,.82,.82,.82);w.star(g,'#fff3cc',0,.42,0,.12);rings.push(g);}
+  const response=feedback(ctx.sound), flightGuide=accent(w.part(root,'torus','#fff3cc',-3.2,.05,0,.86,.86,.86),'Next ring altitude');
+  const guideDots=Array.from({length:6},()=>w.part(root,'sphere','#fff3cc',0,.08,0,.055));
   const state={mode:'playing',time:0,z:0,velocity:0,holding:false,hits:0,misses:0,gates:Array.from({length:10},(_,i)=>({x:5.5+i*5.3,z:[0,-1.3,1.3,-2,1.7,-.8,2,-1.8,1,0][i],status:0}))};
-  function update(dt){state.time+=dt;state.velocity=clamp(state.velocity+(state.holding?-9:7)*dt,-3.2,3.2);state.z=clamp(state.z+state.velocity*dt,-4.4,4.4);if(Math.abs(state.z)>=4.4)state.velocity=0;
-    for(const gate of state.gates)if(gate.status===0){gate.x-=dt*3;if(gate.x<=-3.2){gate.status=1;if(Math.abs(state.z-gate.z)<1.05)state.hits++;else state.misses++;}}
+  function update(dt){state.time+=dt;response.update(dt);state.velocity=clamp(state.velocity+(state.holding?-9:7)*dt,-3.2,3.2);state.z=clamp(state.z+state.velocity*dt,-4.4,4.4);if(Math.abs(state.z)>=4.4)state.velocity=0;
+    for(const gate of state.gates)if(gate.status===0){gate.x-=dt*3;if(gate.x<=-3.2){gate.status=1;const error=Math.abs(state.z-gate.z);if(error<1.05){state.hits++;response.show(error<.3?'Perfect center! Look ahead to the next ring.':'Ring collected!');}else{state.misses++;response.show(gate.z<state.z?'Too low — hold a little earlier.':'Too high — release a little earlier.',false); }}}
     if(state.misses>2)state.mode='lost';else if(state.gates.every(g=>g.status===1))state.mode=state.hits>=8?'won':'lost';}
   function pointer(type){if(type==='down')state.holding=true;if(type==='up'||type==='cancel')state.holding=false;}
-  function sync(){hero.position.z=state.z;hero.position.y=.4;hero.rotation.y=-Math.PI/2;hero.rotation.z=clamp(-state.velocity*.08,-.25,.25);state.gates.forEach((gate,i)=>{rings[i].visible=gate.status===0&&gate.x<=6;rings[i].position.set(gate.x,.3,gate.z);});}
-  sync();return controller('cloud-skimmer',state,{update,pointer,sync,hud:()=>({primary:`${state.hits} / 8 RINGS`,secondary:`${Math.max(0,3-state.misses)} CHANCES`,hint:'Hold to rise; lift to drift down.'}),valid:s=>int(s.hits,0,10)&&int(s.misses,0,10)&&Math.abs(s.z)<=4.4&&Math.abs(s.velocity)<=3.2&&s.time>=0&&s.gates.every(g=>int(g.status,0,1)&&g.x>=-3.4&&g.x<=54&&Math.abs(g.z)<=4.4)&&s.hits+s.misses===s.gates.filter(g=>g.status===1).length});
+  function sync(){const next=state.gates.find(g=>g.status===0);flightGuide.visible=!!next;guideDots.forEach(dot=>dot.visible=!!next);if(next){flightGuide.position.z=next.z;tint(flightGuide,Math.abs(state.z-next.z)<.45?'#92dfad':'#fff3cc');guideDots.forEach((dot,i)=>dot.position.set(-3.2+(Math.min(5.5,next.x)+3.2)*(i+1)/7,.08,next.z));}hero.position.z=state.z;hero.position.y=.4;hero.rotation.y=-Math.PI/2;hero.rotation.z=clamp(-state.velocity*.08,-.25,.25);state.gates.forEach((gate,i)=>{rings[i].visible=gate.status===0&&gate.x<=6;rings[i].position.set(gate.x,.3,gate.z);});}
+  sync();return controller('cloud-skimmer',state,{update,pointer,sync,restored:()=>response.clear(),hud:()=>({primary:`${state.hits} / 8 RINGS`,secondary:`${Math.max(0,3-state.misses)} CHANCES`,hint:response.hint('Match the pale altitude marker: hold to rise, release to descend.')}),valid:s=>int(s.hits,0,10)&&int(s.misses,0,10)&&Math.abs(s.z)<=4.4&&Math.abs(s.velocity)<=3.2&&s.time>=0&&s.gates.every(g=>int(g.status,0,1)&&g.x>=-3.4&&g.x<=54&&Math.abs(g.z)<=4.4)&&s.hits+s.misses===s.gates.filter(g=>g.status===1).length});
 }
 
 function inkSling(ctx) {
@@ -169,15 +189,17 @@ function inkSling(ctx) {
   for(let i=0;i<8;i++){const x=-5.2+i*1.5;const leaf=w.part(root,'sphere',i%2?'#4caa99':'#76c3aa',x,.2,-5.4,.17,.24,.7);leaf.rotation.y=(i%2?1:-1)*.4;}
   const hero=w.character('octopus');hero.position.z=4;
   const shot=w.part(root,'sphere','#b4f8f3',0,.65,0,.22);const aim=w.group();
-  for(let i=0;i<7;i++)w.part(aim,'sphere','#b4eee5',0,.3,0,.05+i*.012);
+  for(let i=0;i<18;i++)w.part(aim,'sphere','#b4eee5',0,.3,0,.055+i*.004);
   const targets=[];for(let i=0;i<6;i++){const g=w.group();w.part(g,'torus','#ffcf93',0,.16,0,.59,.59,.59);w.part(g,'sphere','#f08fa2',0,.35,0,.27,.23,.27);for(let n=0;n<5;n++){const a=n*Math.PI*2/5;w.part(g,'sphere','#f6b3b4',Math.cos(a)*.32,.30,Math.sin(a)*.32,.13,.09,.13);}targets.push(g);}
-  const state={mode:'playing',time:0,hits:0,aiming:false,aimX:0,aimZ:-3,shot:{active:false,x:0,z:4,vx:0,vz:0},targets:[{x:-3.5,z:-3.8,alive:true},{x:0,z:-4.2,alive:true},{x:3.5,z:-3.8,alive:true},{x:-2.4,z:-1.3,alive:true},{x:2.4,z:-1.3,alive:true},{x:0,z:-.3,alive:true}]};
-  function pointer(type,x,z){if(type==='down'){state.aiming=true;state.aimX=x;state.aimZ=z;}else if(type==='move'&&state.aiming){state.aimX=x;state.aimZ=z;}else if(type==='cancel')state.aiming=false;else if(type==='up'&&state.aiming){state.aimX=x;state.aimZ=z;state.aiming=false;if(!state.shot.active){const dx=x, dz=z-4, size=Math.hypot(dx,dz);if(size>.15)Object.assign(state.shot,{active:true,x:0,z:4,vx:dx/size*9,vz:dz/size*9});}}}
-  function update(dt){state.time+=dt;const p=state.shot;if(!p.active)return;const ox=p.x,oz=p.z;p.x+=p.vx*dt;p.z+=p.vz*dt;
-    for(const target of state.targets)if(target.alive){const drift=Math.sin(state.time*1.15+target.z)*.23,x=target.x+drift;const dx=p.x-ox,dz=p.z-oz,len=dx*dx+dz*dz,t=len?clamp(((x-ox)*dx+(target.z-oz)*dz)/len,0,1):0;if(Math.hypot(x-ox-t*dx,target.z-oz-t*dz)<.64){target.alive=false;p.active=false;state.hits++;break;}}
+  const targetGuide=accent(w.part(root,'torus','#b4eee5',0,.12,0,.76,.76,.76),'Bubble target preview'), response=feedback(ctx.sound);
+  const state={mode:'playing',time:0,hits:0,aiming:false,aimX:0,aimZ:-3,queued:{active:false,x:0,z:-3},shot:{active:false,x:0,z:4,vx:0,vz:0},targets:[{x:-3.5,z:-3.8,alive:true},{x:0,z:-4.2,alive:true},{x:3.5,z:-3.8,alive:true},{x:-2.4,z:-1.3,alive:true},{x:2.4,z:-1.3,alive:true},{x:0,z:-.3,alive:true}]};
+  function launch(x,z){const size=Math.hypot(x,z-4);if(size<=.15)return;Object.assign(state.shot,{active:true,x:0,z:4,vx:x/size*9,vz:(z-4)/size*9});}
+  function pointer(type,x,z){if(type==='down'){state.aiming=true;state.aimX=x;state.aimZ=z;}else if(type==='move'&&state.aiming){state.aimX=x;state.aimZ=z;}else if(type==='cancel')state.aiming=false;else if(type==='up'&&state.aiming){state.aimX=x;state.aimZ=z;state.aiming=false;if(state.shot.active){Object.assign(state.queued,{active:true,x,z});response.show('Next bubble lined up — it launches when this one lands.');}else launch(x,z);}}
+  function update(dt){state.time+=dt;response.update(dt);const p=state.shot;if(!p.active&&state.queued.active){state.queued.active=false;launch(state.queued.x,state.queued.z);}if(!p.active)return;const ox=p.x,oz=p.z;p.x+=p.vx*dt;p.z+=p.vz*dt;
+    for(const target of state.targets)if(target.alive){const drift=Math.sin(state.time*1.15+target.z)*.23,x=target.x+drift;const dx=p.x-ox,dz=p.z-oz,len=dx*dx+dz*dz,t=len?clamp(((x-ox)*dx+(target.z-oz)*dz)/len,0,1):0;if(Math.hypot(x-ox-t*dx,target.z-oz-t*dz)<.64){target.alive=false;p.active=false;state.hits++;response.show('Bloom painted!');break;}}
     if(Math.abs(p.x)>6||Math.abs(p.z)>6)p.active=false;if(state.hits===6)state.mode='won';}
-  function sync(){shot.visible=state.shot.active;shot.position.set(state.shot.x,.55,state.shot.z);targets.forEach((g,i)=>{const t=state.targets[i];g.visible=t.alive;g.position.set(t.x+Math.sin(state.time*1.15+t.z)*.23,0,t.z);g.rotation.y=state.time*.4;});aim.visible=state.aiming&&!state.shot.active;const dx=state.aimX,dz=state.aimZ-4,len=Math.hypot(dx,dz)||1;aim.children.forEach((p,i)=>p.position.set(dx/len*(i+1)*.45,.2,4+dz/len*(i+1)*.45));}
-  sync();return controller('ink-sling',state,{update,pointer,sync,hud:()=>({primary:`${state.hits} / 6 BLOOMS`,secondary:state.shot.active?'BUBBLE IN FLIGHT':'READY TO AIM',hint:'Touch a bloom and lift to launch a bubble.'}),valid:s=>int(s.hits,0,6)&&s.time>=0&&s.hits===s.targets.filter(t=>!t.alive).length&&s.targets.every(t=>Math.abs(t.x)<=6&&Math.abs(t.z)<=6)&&Math.abs(s.shot.vx)<=9.01&&Math.abs(s.shot.vz)<=9.01&&Math.abs(s.aimX)<=6&&Math.abs(s.aimZ)<=6});
+  function sync(){shot.visible=state.shot.active;shot.position.set(state.shot.x,.55,state.shot.z);targets.forEach((g,i)=>{const t=state.targets[i];g.visible=t.alive;g.position.set(t.x+Math.sin(state.time*1.15+t.z)*.23,0,t.z);g.rotation.y=state.time*.4;});aim.visible=state.aiming||state.queued.active;const ax=state.aiming?state.aimX:state.queued.x,az=state.aiming?state.aimZ:state.queued.z,dx=ax,dz=az-4,len=Math.hypot(dx,dz)||1;let nearest=null,along=11;for(const target of state.targets)if(target.alive){const x=target.x+Math.sin(state.time*1.15+target.z)*.23,t=(x*dx+(target.z-4)*dz)/len,off=Math.abs(x*dz-(target.z-4)*dx)/len;if(t>0&&off<.64&&t<along){nearest={x,z:target.z};along=t;}}targetGuide.visible=aim.visible&&!!nearest;if(nearest)targetGuide.position.set(nearest.x,.13,nearest.z);aim.children.forEach((p,i)=>{const d=(i+1)*.5;const ux=dx/len,uz=dz/len,edge=Math.min(ux>0?5.8/ux:ux<0?-5.8/ux:Infinity,uz>0?1.8/uz:uz<0?-9.8/uz:Infinity);p.visible=d<Math.min(10.5,along,edge);p.position.set(dx/len*d,.2,4+dz/len*d);});}
+  sync();return controller('ink-sling',state,{update,pointer,sync,restored:()=>response.clear(),migrate:s=>({...s,queued:s.queued??{active:false,x:0,z:-3}}),hud:()=>({primary:`${state.hits} / 6 BLOOMS`,secondary:state.queued.active?'NEXT BUBBLE QUEUED':state.shot.active?'BUBBLE IN FLIGHT':'READY TO AIM',hint:response.hint('The dotted line highlights your first target. You can line up the next bubble during flight.')}),valid:s=>int(s.hits,0,6)&&s.time>=0&&s.hits===s.targets.filter(t=>!t.alive).length&&s.targets.every(t=>Math.abs(t.x)<=6&&Math.abs(t.z)<=6)&&Math.abs(s.shot.vx)<=9.01&&Math.abs(s.shot.vz)<=9.01&&Math.abs(s.aimX)<=6&&Math.abs(s.aimZ)<=6&&Math.abs(s.queued.x)<=6&&Math.abs(s.queued.z)<=6});
 }
 
 function bubbleBasket(ctx) {
@@ -186,13 +208,14 @@ function bubbleBasket(ctx) {
   const hero=w.character('crab');hero.position.z=4.15;
   const net=w.part(root,'torus','#ffe6b9',0,.15,4.15,.95,.95,.95);
   const drops=[];for(let i=0;i<20;i++){const g=w.group();const danger=i%4===3;w.part(g,'sphere',danger?'#db7288':'#a8f6f2',0,.5,0,danger?.34:.29);if(danger){for(let j=0;j<6;j++){const a=j*Math.PI/3;w.part(g,'sphere','#ef9aaa',Math.cos(a)*.36,.4,Math.sin(a)*.36,.13);}}else w.part(g,'sphere','#ffffff',-.1,.65,.1,.075);drops.push(g);}
+  const response=feedback(ctx.sound), forecasts=Array.from({length:3},(_,i)=>accent(w.part(root,'torus','#a8f6f2',0,.08,4.1,.28,.28,.28),`Catch forecast ${i}`));
   const state={mode:'playing',time:0,spawned:0,score:0,health:3,x:0,items:Array.from({length:20},(_,i)=>({x:Math.sin(i*2.3)*4.4,z:-7,status:0,danger:i%4===3}))};
-  function update(dt){state.time+=dt;while(state.spawned<20&&state.time>=.4+state.spawned*.82){state.items[state.spawned].status=1;state.items[state.spawned].z=-5.5;state.spawned++;}
-    for(const item of state.items)if(item.status===1){item.z+=dt*(3.35+state.spawned*.045);if(item.z>=4.1){if(Math.abs(item.x-state.x)<.95){if(item.danger)state.health--;else state.score++;}item.status=2;}}
+  function update(dt){state.time+=dt;response.update(dt);while(state.spawned<20&&state.time>=.4+state.spawned*.82){state.items[state.spawned].status=1;state.items[state.spawned].z=-5.5;state.spawned++;}
+    for(const item of state.items)if(item.status===1){item.z+=dt*(3.35+state.spawned*.045);if(item.z>=4.1){if(Math.abs(item.x-state.x)<.95){if(item.danger){state.health--;response.show('Urchin hit — steer away from coral markers.',false);}else{state.score++;response.show(Math.abs(item.x-state.x)<.25?'Perfect basket catch!':'Pearl collected!');}}else if(!item.danger)response.show('Pearl missed — line the basket up with its pale ring.',false);item.status=2;}}
     if(state.health<=0)state.mode='lost';else if(state.score>=12)state.mode='won';else if(state.spawned===20&&state.items.every(item=>item.status!==1))state.mode='lost';}
   function pointer(type,x){if(type==='down'||type==='move')state.x=clamp(x,-4.9,4.9);}
-  function sync(){hero.position.x=state.x;net.position.x=state.x;state.items.forEach((it,i)=>{drops[i].visible=it.status===1;drops[i].position.set(it.x,0,it.z);});}
-  sync();return controller('bubble-basket',state,{update,pointer,sync,hud:()=>({primary:`${state.score} / 12 PEARLS`,secondary:`${state.health} HEARTS`,hint:'Slide the crab under bubbles, not urchins.'}),valid:s=>int(s.score,0,15)&&int(s.health,0,3)&&int(s.spawned,0,20)&&Math.abs(s.x)<=4.9&&s.time>=0&&s.items.every((it,i)=>int(it.status,0,2)&&it.danger===(i%4===3)&&Math.abs(it.x)<=4.5&&it.z>=-7&&it.z<=4.4)});
+  function sync(){hero.position.x=state.x;net.position.x=state.x;const next=state.items.filter(it=>it.status===1).sort((a,b)=>b.z-a.z).slice(0,3);forecasts.forEach((mark,i)=>{const it=next[i];mark.visible=!!it;if(it){mark.position.x=it.x;mark.scale.setScalar(i===0?.55:.35);tint(mark,it.danger?'#ff7998':'#b5fff0',i===0?.5:.12);}});state.items.forEach((it,i)=>{drops[i].visible=it.status===1;drops[i].position.set(it.x,0,it.z);});}
+  sync();return controller('bubble-basket',state,{update,pointer,sync,restored:()=>response.clear(),hud:()=>({primary:`${state.score} / 12 PEARLS`,secondary:`${state.health} HEARTS`,hint:response.hint('Pale landing rings bring pearls. Give coral landing rings room.')}),valid:s=>int(s.score,0,15)&&int(s.health,0,3)&&int(s.spawned,0,20)&&Math.abs(s.x)<=4.9&&s.time>=0&&s.items.every((it,i)=>int(it.status,0,2)&&it.danger===(i%4===3)&&Math.abs(it.x)<=4.5&&it.z>=-7&&it.z<=4.4)});
 }
 
 function mossFlip(ctx) {
@@ -200,26 +223,31 @@ function mossFlip(ctx) {
   for(const z of [-2.6,2.6]){w.part(root,'cube','#a7bd7c',0,.03,z,11.8,.12,.25);for(let i=0;i<12;i++)w.part(root,'sphere','#d2d99d',-5.5+i, .13,z,.11,.08,.1);}
   const hero=w.character('beetle');hero.position.x=-3.2;hero.rotation.y=-Math.PI/2;
   const hazards=[];for(let i=0;i<22;i++){const g=w.group();for(let j=0;j<3;j++){const q=w.part(g,'cone','#d48876',(j-1)*.29,.35,0,.16,.65,.2);q.rotation.z=(j-1)*.13;}hazards.push(g);}
+  const response=feedback(ctx.sound), landing=accent(w.part(root,'torus','#d0eaa6',-3.2,.07,2.6,.72,.72,.72),'Moss safe landing');
+  const warning=accent(w.part(root,'torus','#ffae89',-3.2,.08,2.6,.55,.55,.55),'Moss thorn arrival');
+  let visualZ=2.6,flipProgress=1;
   const state={mode:'playing',time:0,lane:0,health:3,cleared:0,obstacles:Array.from({length:22},(_,i)=>({x:5.5+i*3.3,lane:[0,0,1,0,1,1,0,1,0,0,1][i%11],status:0}))};
-  function pointer(type){if(type==='down')state.lane=1-state.lane;}
-  function update(dt){state.time+=dt;for(const o of state.obstacles)if(o.status===0){o.x-=dt*(3.3+Math.min(state.cleared,18)*.04);if(o.x<=-3.2){o.status=1;state.cleared++;if(o.lane===state.lane)state.health--;}}
+  function pointer(type){if(type==='down'){state.lane=1-state.lane;flipProgress=0;}}
+  function update(dt){state.time+=dt;response.update(dt);flipProgress=Math.min(1,flipProgress+dt*7);visualZ+=((state.lane===0?2.6:-2.6)-visualZ)*(1-Math.exp(-24*dt));for(const o of state.obstacles)if(o.status===0){o.x-=dt*(3.3+Math.min(state.cleared,18)*.04);if(o.x<=-3.2){o.status=1;state.cleared++;if(o.lane===state.lane){state.health--;response.show('Thorn hit — watch the arrival marker.',false);}else response.show('Safe crossing!');}}
     if(state.health<=0)state.mode='lost';else if(state.cleared===22)state.mode='won';}
-  function sync(){hero.position.z=state.lane===0?2.6:-2.6;hero.rotation.y=state.lane===0?-Math.PI/2:Math.PI/2;state.obstacles.forEach((o,i)=>{hazards[i].visible=o.status===0&&o.x<6;hazards[i].position.set(o.x,.1,o.lane===0?2.6:-2.6);});}
-  sync();return controller('moss-flip',state,{update,pointer,sync,hud:()=>({primary:`${state.cleared} / 22 THORNS`,secondary:`${state.health} HEARTS`,hint:'Tap to flip between the two moss rails.'}),valid:s=>int(s.lane,0,1)&&int(s.health,0,3)&&int(s.cleared,0,22)&&s.time>=0&&s.obstacles.every(o=>int(o.lane,0,1)&&int(o.status,0,1)&&o.x>=-3.5&&o.x<=76)&&s.cleared===s.obstacles.filter(o=>o.status===1).length});
+  function sync(){const next=state.obstacles.find(o=>o.status===0);landing.position.z=state.lane===0?2.6:-2.6;tint(landing,next&&next.lane===state.lane&&next.x<1?'#ffae89':'#d0eaa6');warning.visible=!!next&&next.x<3.5;if(next)warning.position.z=next.lane===0?2.6:-2.6;hero.position.z=ctx.reducedMotion?landing.position.z:visualZ;hero.position.y=ctx.reducedMotion?0:Math.sin(flipProgress*Math.PI)*.35;hero.rotation.y=state.lane===0?-Math.PI/2:Math.PI/2;state.obstacles.forEach((o,i)=>{hazards[i].visible=o.status===0&&o.x<6;hazards[i].position.set(o.x,.1,o.lane===0?2.6:-2.6);});}
+  sync();return controller('moss-flip',state,{update,pointer,sync,restored:()=>{response.clear();visualZ=state.lane===0?2.6:-2.6;flipProgress=1;},hud:()=>({primary:`${state.cleared} / 22 THORNS`,secondary:`${state.health} HEARTS`,hint:state.obstacles.find(o=>o.status===0&&o.x<1&&o.lane===state.lane)?'Flip now — thorns are approaching your rail!':response.hint('The amber ring marks incoming thorns. Tap to switch rails.')}),valid:s=>int(s.lane,0,1)&&int(s.health,0,3)&&int(s.cleared,0,22)&&s.time>=0&&s.obstacles.every(o=>int(o.lane,0,1)&&int(o.status,0,1)&&o.x>=-3.5&&o.x<=76)&&s.cleared===s.obstacles.filter(o=>o.status===1).length});
 }
 
 function bellBloom(ctx) {
   const {THREE,root}=ctx,w=workshop(THREE,root);w.ground('#504668','#d5bee4');
   for(let i=0;i<9;i++){const a=i*Math.PI*2/9;w.star(root,i%2?'#c4b4e9':'#eed0d5',Math.cos(a)*5,.1,Math.sin(a)*5,.13);}
   const hero=w.character('axolotl');hero.scale.setScalar(1.25);
-  w.part(root,'torus','#f4d4a0',0,.07,0,1.45,1.45,1.45);const pulse=w.part(root,'torus','#8ee8e0',0,.12,0,1,1,1);
+  const timingWindow=accent(w.part(root,'torus','#f4d4a0',0,.07,0,1.45,1.45,1.45),'Bell timing window');const pulse=w.part(root,'torus','#8ee8e0',0,.12,0,1,1,1);
   const beatTimes=Array.from({length:14},(_,i)=>2+i*1.08+(i>4?Math.sin(i*1.8)*.18:0));
+  const timingLights=Array.from({length:4},(_,i)=>{const a=i*Math.PI/2;return accent(w.part(root,'sphere','#f4d4a0',Math.cos(a)*1.75,.1,Math.sin(a)*1.75,.11,.06,.11),`Bell window light ${i}`);});
+  const response=feedback(ctx.sound);let lastHitTime=-Infinity;
   const state={mode:'playing',time:0,index:0,hits:0,misses:0,faults:0,flash:0};
   function advanceBeat(){state.index++;if(state.index>=beatTimes.length)state.mode=state.hits>=10?'won':'lost';}
-  function pointer(type){if(type!=='down')return;if(state.index>=beatTimes.length)return;if(Math.abs(state.time-beatTimes[state.index])<=.27){state.hits++;state.flash=.35;advanceBeat();}else{state.faults++;if(state.faults>=7)state.mode='lost';}}
-  function update(dt){state.time+=dt;state.flash=Math.max(0,state.flash-dt);if(state.index<beatTimes.length&&state.time>beatTimes[state.index]+.27){state.misses++;advanceBeat();}}
-  function sync(){const until=beatTimes[state.index]-state.time;const scale=clamp(1.45+until*.9,1.1,4.1);pulse.scale.set(scale,scale,scale);pulse.visible=state.mode==='playing';hero.scale.setScalar(1.25+state.flash*.6);}
-  sync();return controller('bell-bloom',state,{update,pointer,sync,hud:()=>({primary:`${state.hits} / 10 BELLS`,secondary:`${state.index} / 14 BEATS`,hint:'Tap when the glowing ring meets the gold.'}),valid:s=>int(s.index,0,14)&&int(s.hits,0,14)&&int(s.misses,0,14)&&int(s.faults,0,7)&&s.hits+s.misses===s.index&&s.time>=0&&s.flash>=0&&s.flash<=.35});
+  function pointer(type){if(type!=='down'||state.index>=beatTimes.length||state.time-lastHitTime<.16)return;const error=state.time-beatTimes[state.index];if(Math.abs(error)<=.27){state.hits++;state.flash=.35;lastHitTime=state.time;response.show(Math.abs(error)<=.09?'Perfect bell!':error<0?'Early, but on beat!':'Late, but on beat!',true,.6);advanceBeat();}else{state.faults++;response.show(error<0?'Too early — wait for the gold ring to brighten.':'Too late — follow the next shrinking ring.',false,.65);if(state.faults>=7)state.mode='lost';}}
+  function update(dt){state.time+=dt;response.update(dt);state.flash=Math.max(0,state.flash-dt);if(state.index<beatTimes.length&&state.time>beatTimes[state.index]+.27){state.misses++;response.show('Beat missed — watch the next ring.',false,.6);advanceBeat();}}
+  function sync(){const until=beatTimes[state.index]-state.time,ready=Math.abs(until)<=.27;tint(timingWindow,ready?'#fff4b6':'#c49b78',ready?.8:0);timingLights.forEach(light=>tint(light,ready?'#fff4b6':'#876e83',ready?.8:0));timingWindow.scale.set(1.45,1.45,1.45);const scale=clamp(1.45+until*.9,1.1,4.1);pulse.scale.set(scale,scale,scale);pulse.visible=state.mode==='playing';hero.scale.setScalar(1.25+state.flash*.6);}
+  sync();return controller('bell-bloom',state,{update,pointer,sync,restored:()=>{response.clear();lastHitTime=-Infinity;},hud:()=>({primary:`${state.hits} / 10 BELLS`,secondary:`${state.index} / 14 BEATS`,hint:response.hint(Math.abs(state.time-beatTimes[state.index])<=.27?'NOW — the gold ring is bright!':'Tap as the shrinking ring meets the gold. The gold ring lights the timing window.')}),valid:s=>int(s.index,0,14)&&int(s.hits,0,14)&&int(s.misses,0,14)&&int(s.faults,0,7)&&s.hits+s.misses===s.index&&s.time>=0&&s.flash>=0&&s.flash<=.35});
 }
 
 export const games = [

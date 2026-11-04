@@ -49,6 +49,8 @@ export function createArcade(id, { container, seed = 1, level = 1, sound, onResi
     },
     render() { engine.sync(); renderer.render(scene, camera); },
     snapshot: () => engine.snapshot(), restore: value => engine.restore(value),
+    get actions() { return [...(engine.actions || []), ...(engine.resetLevel ? [{ id: 'reset', label: 'Reset puzzle' }] : [])]; },
+    action(id, pressed = true) { return id === 'reset' ? pressed && engine.resetLevel?.() : engine.action?.(id, pressed); },
     hud() { const hud = engine.hud(); return { ...hud, primary: definition.category === 'Puzzles' ? hud.secondary : hud.primary }; },
     resetLevel: engine.resetLevel ? () => engine.resetLevel() : undefined,
     dispose() {

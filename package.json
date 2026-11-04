@@ -36,7 +36,8 @@
     "test:piano": "node tests/piano-wait-browser.mjs",
     "test:lantern:expedition": "node tests/activities-browser.mjs --activity=lantern",
     "test:upside:quality": "node tests/activities-browser.mjs --activity=upside",
-    "test:activities": "node tests/activities-browser.mjs"
+    "test:activities": "node tests/activities-browser.mjs",
+    "test:polish": "node tests/activity-polish-browser.mjs"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

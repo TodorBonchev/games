@@ -2,6 +2,7 @@
 // Pixel art and world rendering mirror upside-main.js so the full platformer survives
 // its move into the zombie campaign, including four themes, stars and landing guides.
 import { createUpside, readBest, readRecords, readUnlocked, LEVELS, ROWS, TILE, FLOOR_Y, CEIL_Y } from '../upside-game.js?v3';
+import { nibRoute } from './guidance.js';
 
 const sessionProfile = new Map();
 
@@ -484,6 +485,7 @@ function burst(kind, x, y, n, sp = 6, life = .9, grav = 40) { if (prefs.reducedM
       primary: `${game.level.name} · ${Math.round(S.score).toLocaleString()} points`,
       secondary: `${S.assist ? 'Assist · unlimited retries' : `${S.lives} lives`} · ${Math.ceil(S.time)}s · ${stars}/3 stars · ${S.coins} coins`,
       hint: hintTime > 0 ? hint : !flipReady ? 'Land or stomp to recharge your air flip.' : 'Hold Jump for height. Flip gravity to cross gaps. Run / Fire gives speed.',
+      route: nibRoute(S, game.level),
     };
   }
   const loseContext = event => { event.preventDefault(); contextLost = true; resetInput(); onLost?.(); };

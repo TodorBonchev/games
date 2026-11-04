@@ -3,6 +3,7 @@ import { createPopwake, LEVELS as POP_LEVELS } from '../popwake-game.js';
 import { createPondPost, LEVELS as POND_LEVELS } from '../pondpost-game.js';
 import { createRibbon, LEVELS as REEF_LEVELS } from '../ribbon-game.js';
 import { createDewfall, LEVELS as DEW_LEVELS } from '../dewfall-game.js';
+import { hopGuidance, reefGuidance } from '../activities/guidance.js';
 
 // These are the original simulations and worlds, played as chapters of the
 // voyage. No iframe, navigation, or second menu interrupts the shared journey.
@@ -22,10 +23,10 @@ export function createLegacyController(id, { container, view, level = 1, seed = 
   engine.start(id === 'moonbounce' ? seed : selected);
   const state = { mode: 'playing' };
   let held = false, anchorX = 0, anchorY = 0, originX = 0, originY = 0, axisX = 0, axisZ = 0;
-  let ending = null, disposed = false;
+  let ending = null, disposed = false, braking = false, undoneAt = null, pointerX = 0, pointerY = 0;
   const refresh = () => { state.mode = modeOf(engine); };
   function cancel() {
-    held = false; axisX = axisZ = 0;
+    held = false; axisX = axisZ = 0; braking = false; undoneAt = null;
     if (id === 'popwake') engine.cancel();
     if (id === 'pondpost') engine.cancelAim();
     if (id === 'dewfall') engine.endTilt();
@@ -34,7 +35,12 @@ export function createLegacyController(id, { container, view, level = 1, seed = 
   function move(x, y) {
     if (!held) return;
     if (id === 'popwake') {
-      const cell = view.pick(x, y); if (cell) engine.drag(cell);
+      const cell = view.pick(x, y);
+      // Release jitter within the same tile must not immediately undo the undo.
+      if (undoneAt && ((x === undoneAt.x && y === undoneAt.y) ||
+        (cell && undoneAt.cell && cell.x === undoneAt.cell.x && cell.z === undoneAt.cell.z))) return;
+      undoneAt = null;
+      if (cell) engine.drag(cell);
     } else if (id === 'pondpost') engine.aim(view.dragVector(anchorX - x, anchorY - y));
     else if (id === 'ribbon') {
       const rect = container.getBoundingClientRect();
@@ -53,8 +59,9 @@ export function createLegacyController(id, { container, view, level = 1, seed = 
     if (disposed) return;
     if (type === 'cancel') { cancel(); return; }
     if (state.mode !== 'playing' || !Number.isFinite(x) || !Number.isFinite(y)) return;
+    pointerX = x; pointerY = y;
     if (type === 'down' && !held) {
-      anchorX = x; anchorY = y; axisX = axisZ = 0; held = true;
+      anchorX = x; anchorY = y; axisX = axisZ = 0; held = true; undoneAt = null;
       if (id === 'popwake') { const cell = view.pick(x, y); held = !!cell && engine.begin(cell); }
       if (id === 'pondpost') held = engine.beginAim();
       if (id === 'dewfall') engine.beginTilt();
@@ -73,7 +80,7 @@ export function createLegacyController(id, { container, view, level = 1, seed = 
   }
   function update(dt) {
     if (disposed || state.mode !== 'playing' || !Number.isFinite(dt) || dt <= 0) return;
-    const seconds = Math.min(.05, dt), input = { x: axisX, z: axisZ };
+    const seconds = Math.min(.05, dt), input = { x: axisX, z: axisZ, ...(id === 'dewfall' ? { brake: braking } : {}) };
     // These two engines do not serialize defeats (and Reef does not serialize
     // victories). Retain the last legal tick and the exact finishing input.
     const prior = id === 'ribbon' || id === 'moonbounce' ? engine.snapshot() : null;
@@ -117,9 +124,12 @@ export function createLegacyController(id, { container, view, level = 1, seed = 
     const s = engine.state;
     if (id === 'moonbounce') return { primary: `${s.waveKills}/${WAVES[0].goal} CHEERED`, secondary: `${Math.ceil(s.player.hp)} health · ${s.orbits.length} moons gathered`, hint: 'Drag to steer. Lift to launch your moons. Clear one wave.' };
     if (id === 'popwake') return { primary: `${s.awake}/${s.total} AWAKE`, secondary: `${s.budget - s.used} dominoes left · ${engine.level.name}`, hint: 'Draw from the blue spark. Lift to start the chain reaction.' };
-    if (id === 'pondpost') return { primary: `${s.padId}/${engine.level.goalPad} PADS`, secondary: s.mode === 'aiming' ? 'The dotted arc shows your leap.' : engine.level.name, hint: 'Pull down to aim upward. Lift to hop to the next lily pad.' };
-    if (id === 'ribbon') return { primary: `${Math.min(100, Math.floor(s.distance / REEF_LEVELS[s.level - 1].length * 100))}% HOME`, secondary: `${s.health} hearts · ${s.passed} arches crossed`, hint: 'Slide your finger to steer through glowing arches. Lift to hold course.' };
-    return { primary: `${s.bloomed}/${s.total} BLOOMS`, secondary: `${s.spills} spills · ${engine.level.name}`, hint: 'Hold and slide to tilt all the drops. Lift to slow them down.' };
+    if (id === 'pondpost') return { primary: `${s.padId}/${engine.level.goalPad} PADS`, secondary: s.mode === 'aiming' ? hopGuidance(s,engine.preview()) : engine.level.name, hint: 'Pull down to aim upward. Release to hop, or Cancel aim to keep your footing.' };
+    if (id === 'ribbon') {
+      const feedback=[...(s.effects||[])].reverse().find(effect=>['perfect','gate','miss','flow'].includes(effect.type)&&effect.age<.9);
+      return { primary: `${Math.min(100, Math.floor(s.distance / REEF_LEVELS[s.level - 1].length * 100))}% HOME`, secondary: `${s.health} hearts · ${s.passed} arches · ${s.perfects} perfects`, hint: feedback ? ({perfect:`Perfect arch! ${s.combo} in a row`,gate:'Arch cleared — aim for its center for a perfect.',miss:'Missed the safe route — follow the next arch guide.',flow:'Close call! Flow bonus earned.'})[feedback.type] : reefGuidance(s,REEF_LEVELS[s.level-1]) };
+    }
+    return { primary: `${s.bloomed}/${s.total} BLOOMS`, secondary: `${s.spills} spills · ${engine.level.name}`, hint: braking ? 'Brake held — drops are slowing. Release to roll again.' : 'Slide to tilt. Hold Brake (B) to stop a spill or settle beside a flower.' };
   }
   function project(x, z) {
     const rect = container.getBoundingClientRect();
@@ -133,6 +143,29 @@ export function createLegacyController(id, { container, view, level = 1, seed = 
   }
   return {
     state, update, pointer, snapshot, restore, hud, project,
+    get actions() {
+      const s=engine.state;
+      if(id==='popwake')return [{id:'undo',label:'Undo domino · Z',shortcut:'KeyZ',disabled:s.mode!=='drawing'||s.used===0},{id:'hint',label:'Show path hint',disabled:!['playing','failed'].includes(s.mode)},{id:'reset',label:'Reset puzzle'}];
+      if(id==='pondpost')return [{id:'cancel-aim',label:'Cancel aim · C',shortcut:'KeyC',disabled:s.mode!=='aiming'}];
+      if(id==='dewfall')return [{id:'brake',label:'Hold Brake · B',shortcut:'KeyB',hold:true}];
+      return [];
+    },
+    action(name,pressed=true) {
+      if(disposed)return false;
+      if(id==='dewfall'&&name==='brake'){braking=!!pressed;return true;}
+      if(!pressed)return false;
+      if(id==='pondpost'&&name==='cancel-aim'){const aiming=engine.state.mode==='aiming';cancel();return aiming;}
+      if(id==='popwake'){
+        if(name==='undo'){
+          const changed=engine.undo();
+          if(changed)undoneAt={x:pointerX,y:pointerY,cell:view.pick(pointerX,pointerY)};
+          return changed;
+        }
+        if(name==='hint')return engine.hint();
+        if(name==='reset'){cancel();engine.retry();ending=null;refresh();return true;}
+      }
+      return false;
+    },
     get engine() { return engine; }, get renderer() { return view.renderer; }, get camera() { return view.camera; },
     render(time = 0) { if (!disposed) view.render(engine.state, time, id === 'pondpost' && engine.state.mode === 'aiming' ? engine.preview() : null); },
     ...(id === 'popwake' ? { hint() { return engine.hint(); }, resetLevel() { cancel(); engine.retry(); ending = null; refresh(); } } : {}),
