@@ -1,0 +1,195 @@
+import { ACTIVITIES, DISTRICTS, byId } from './catalog.js';
+import { completeActivity, writeProgress } from './progress.js';
+import { createKeyboardPointer } from './keyboard-pointer.js';
+import { createActivityGamepad } from './gamepad.js';
+
+// The zombie loop owns time. Activities never create a second animation loop,
+// navigate away, or replace the live survival state.
+export function createActivityHost({ world, progress, canEnter, onEnter, onExit, onReward, onSave, getPosition, isMuted, onMute, initialLevel = 1 }) {
+  const root = document.createElement('section');
+  root.id = 'activityShell'; root.className = 'activity-shell'; root.hidden = true;
+  root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'Survivor outpost');
+  root.innerHTML = `<header class="activity-top"><a class="activity-brand" href="#">Z<span> / </span>OUTPOST</a><div class="activity-heading"><small id="activityDistrict"></small><h2 id="activityTitle"></h2></div><button id="activityHelp" aria-label="Activity instructions">?</button><button id="activityPause">Pause</button><button id="activityLeave">Return to island <span>↗</span></button></header><div id="activityStage" class="activity-stage"></div><div class="activity-live"><strong id="activityPrimary"></strong><span id="activitySecondary"></span><p id="activityHint"></p></div><div id="activityControls" class="activity-controls"></div><div id="activityCard" class="activity-card"></div><div id="activityJournal" class="activity-journal"></div><p id="activitySaveWarning" role="status" hidden>Storage is unavailable. Progress is kept for this visit.</p>`;
+  document.body.append(root);
+  const $ = id => root.querySelector(`#${id}`), stage = $('activityStage'), card = $('activityCard');
+  const hud = document.createElement('aside'); hud.className = 'expedition-hud'; hud.hidden = true;
+  hud.innerHTML = `<button id="expeditionJournal" aria-label="Open survivor outpost map (Tab)"><span class="expedition-mark">✦</span><span><small>SURVIVOR OUTPOSTS</small><strong id="expeditionCount">0 / 30 restored</strong></span><kbd>Tab</kbd></button><div id="expeditionWaypoint"></div>`;
+  document.body.append(hud);
+  const prompt = document.createElement('button'); prompt.id = 'activityInteract'; prompt.className = 'activity-interact'; prompt.hidden = true;
+  document.body.append(prompt);
+  let active = false, phase = 'closed', current = null, controller = null, level = 1, seed = 1, generation = 0, elapsed = 0, saveClock = 0, finished = false, previousFocus = null, selectedDistrict = 'all', lost = false;
+  const gamepad=createActivityGamepad();
+  const keyboardPointer=createKeyboardPointer({stage,onPointer:(...args)=>controller?.pointer?.(...args)});
+  let actionSignature='',worldLayout='';
+  const held = {}, pressed = {}, actionPointers = new Map(), directions = new Set(); let pointer = null, audio = null, nearest = null, hudCache = '';
+  const refresh = () => { world.refresh(progress); document.getElementById('expeditionCount').textContent = `${progress.completed.length} / 30 restored`; };
+  const persist = () => { const saved = writeProgress(progress); $('activitySaveWarning').hidden = saved; return saved; };
+  function sound(frequency = 440, duration = .07, wave = 'sine', volume = .06) {
+    if (isMuted?.() || phase !== 'playing') return;
+    try { audio ||= new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); const oscillator = audio.createOscillator(), gain = audio.createGain(); oscillator.type = ['sine','triangle','square','sawtooth'].includes(wave) ? wave : 'sine'; oscillator.frequency.value = Math.max(30, Math.min(14000, frequency)); gain.gain.setValueAtTime(Math.min(.12, volume), audio.currentTime); gain.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + duration); oscillator.connect(gain); gain.connect(audio.destination); oscillator.start(); oscillator.stop(audio.currentTime + duration); } catch {}
+  }
+  function clearInput() {
+    for (const key of Object.keys(held)) delete held[key]; for(const key of Object.keys(pressed))delete pressed[key]; directions.clear();
+    gamepad.reset(); keyboardPointer.reset(); controller?.pointer?.('cancel', 0, 0); pointer = null;
+    for (const id of actionPointers.values()) controller?.action?.(id, false);
+    actionPointers.clear();
+    for (const action of controller?.actions || []) if (action.hold) controller.action?.(action.id, false);
+    root.querySelectorAll('.held').forEach(button => button.classList.remove('held'));
+  }
+  function checkpoint() {
+    if (controller && current && !finished && !lost) {
+      try { const state = controller.snapshot(); if (state) progress.checkpoints[current.id] = { id: current.id, level, seed, state }; } catch {}
+    }
+    persist(); onSave?.();
+  }
+  function setPhase(next) { phase = next; root.dataset.phase = next; $('activityPause').hidden = !['playing','paused'].includes(next); $('activityHelp').hidden = !current || next === 'loading'; $('activityControls').hidden = next !== 'playing'; root.querySelector('.activity-live').hidden = !['playing','paused'].includes(next); card.hidden = ['playing','journal'].includes(next); $('activityJournal').hidden = next !== 'journal'; }
+  function enterShell() {
+    if (!active) { previousFocus = document.activeElement; active = true; onEnter(); document.body.classList.add('activity-open'); root.hidden = false; hud.hidden = true; prompt.hidden = true; }
+    root.querySelector('.activity-brand').focus();
+  }
+  function disposeController() { clearInput(); controller?.dispose(); controller = null; stage.replaceChildren(); }
+  function close() {
+    if (!active) return;
+    checkpoint(); generation++; disposeController(); active = false; current = null; root.hidden = true; setPhase('closed'); document.body.classList.remove('activity-open'); audio?.suspend?.(); refresh(); onExit(); if (previousFocus?.isConnected) previousFocus.blur?.();
+  }
+  function instructions(activity) { return activity.instructions + (activity.inputMode === 'pointer' ? '\n\nKeyboard: arrows or WASD move the cursor. Hold Space or Enter to drag; release to act. Tab reaches the action buttons.' : activity.id === 'borrowed' ? '\n\nSpace: Snap · Shift: Dash · E: Borrow echo. Tab reaches Bank route.' : '') + (activity.inputMode==='native' ? '\n\nController: left stick / D-pad to move. ' + (activity.id==='upside'?'A jumps, B flips, X / trigger runs.':activity.id==='lantern'?'A rises, B descends, X / trigger boosts.':'A snaps, B borrows, X / trigger dashes.') + ' Start pauses.' : ''); }
+  function heading(activity) { $('activityTitle').textContent = activity?.title || 'A home worth rebuilding'; $('activityDistrict').textContent = activity ? DISTRICTS.find(d => d.id === activity.district).title : 'ISLAND FIELD GUIDE · 30 OUTPOSTS'; root.style.setProperty('--activity-accent', activity?.color || '#a4d6ab'); }
+  function makeButton(label, fn, className = '') { const button = document.createElement('button'); button.textContent = label; button.className = className; button.addEventListener('click', fn); return button; }
+  function showCard(eyebrow, title, description, buttons = []) {
+    card.replaceChildren(); const small = document.createElement('small'), h = document.createElement('h3'), p = document.createElement('p'), row = document.createElement('div'); small.textContent = eyebrow; h.textContent = title; p.textContent = description; row.className = 'activity-card-actions'; row.append(...buttons); card.append(small, h, p, row); buttons[0]?.focus();
+  }
+  function open(id, requestedLevel) {
+    const activity = byId.get(id); if (!activity || active || !canEnter(id)) return false;
+    current = activity; level = Math.max(1, Math.min(activity.levelCount, requestedLevel || progress.checkpoints[id]?.level || Math.min(activity.levelCount, (progress.levels[id] || 0) + 1) || initialLevel));
+    if (initialLevel > 1 && !requestedLevel && !progress.checkpoints[id]) { level = Math.min(activity.levelCount, Math.floor(initialLevel)); initialLevel = 1; }
+    heading(activity); enterShell(); setPhase('brief'); finished = false;
+    showCard(`${progress.completed.includes(id) ? 'OUTPOST RESTORED · REPLAY' : 'SURVIVOR REQUEST'} · ${activity.category}`, activity.task, `${activity.description}\n\n${instructions(activity)}`, [makeButton(progress.checkpoints[id] ? 'Continue activity' : 'Begin activity', () => launch(level, true), 'primary'), makeButton('Back to island', close)]);
+    if (activity.levelCount > 1) {
+      const label = document.createElement('label'); label.className = 'activity-level-select'; label.textContent = 'Stage '; const select = document.createElement('select'); select.setAttribute('aria-label', 'Activity stage');
+      for (let n = 1; n <= activity.levelCount; n++) { const option = document.createElement('option'); option.value = n; option.textContent = `${n} / ${activity.levelCount}${(progress.levels[id] || 0) >= n ? ' · completed' : ''}`; select.append(option); }
+      select.value = level; select.addEventListener('change', () => { level = Number(select.value); card.querySelector('.primary').textContent = progress.checkpoints[id]?.level === level ? 'Continue activity' : 'Begin activity'; }); label.append(select); card.insertBefore(label, card.lastChild);
+    }
+    const reward = document.createElement('p'); reward.className = 'activity-reward'; reward.textContent = progress.completed.includes(id) ? 'Your work here is remembered. Explore every stage or replay for practice.' : 'First restoration: +300 score · +20 health · +10 armor'; card.append(reward); return true;
+  }
+  async function launch(nextLevel = level, resume = false) {
+    if (!active || !current) return;
+    const token = ++generation; disposeController(); level = nextLevel; finished = false; lost = false; elapsed = saveClock = 0; heading(current); setPhase('loading');
+    showCard('PREPARING OUTPOST', current.task, 'Your island and equipment are safe.');
+    const saved = resume && progress.checkpoints[current.id]?.level === level ? progress.checkpoints[current.id] : null;
+    seed = saved?.seed ?? ((Math.random() * 0xffffffff) >>> 0);
+    try {
+      const { createActivity } = await import('./controllers.js');
+      const instance = await createActivity(current.id, { container: stage, level, seed, sound, onResize: () => { if(generation===token)clearInput(); }, onLost: () => { if(generation!==token)return; lost = true; pause('Graphics paused. Your last checkpoint is safe. Return to the island or retry when graphics recover.'); }, onRestored: () => { if(generation!==token)return; lost = false; if (active && phase === 'paused') pause('Graphics recovered. Resume when you are ready.'); } });
+      if (generation !== token || !active) { instance.dispose(); return; }
+      controller = instance;
+      if (saved) { try { if (controller.restore(saved.state) === false) delete progress.checkpoints[current.id]; } catch { delete progress.checkpoints[current.id]; } }
+      setPhase('playing'); setupControls(); $('activityPause').textContent = 'Pause'; stage.tabIndex = -1; stage.focus(); checkpoint();
+    } catch (error) {
+      if (generation !== token || !active) return;
+      disposeController(); setPhase('error'); showCard('OUTPOST UNAVAILABLE', 'The activity could not start', 'Your island run is safe. Try again, or return and visit another outpost.', [makeButton('Try again', () => launch(level, resume), 'primary'), makeButton('Return to island', close)]); console.error('Activity load failed:', error);
+    }
+  }
+  function pause(message) {
+    if (!active || !controller || !['playing','paused'].includes(phase)) return;
+    clearInput(); checkpoint(); setPhase('paused'); $('activityPause').textContent = 'Resume';
+    showCard(`STAGE ${level} · ${current.title}`, 'Take a breath', message || instructions(current), [makeButton('Resume activity', resume, 'primary'), makeButton('Restart stage', () => launch(level)), makeButton(isMuted?.() ? 'Sound on' : 'Sound off', () => { onMute?.(); pause(message); }), makeButton('Return to island', close)]);
+    for(const action of controller.menuActions||[])card.querySelector('.activity-card-actions').append(makeButton(action.label,()=>{const result=controller.menuAction?.(action.id);if(result==='resume')resume();else pause();}));
+  }
+  function resume() { if (phase !== 'paused' || lost) return; clearInput(); setPhase('playing'); $('activityPause').textContent = 'Pause'; stage.focus(); audio?.resume?.(); }
+  function finish(won) {
+    if (finished) return; finished = true; clearInput();
+    let first = false;
+    if (won) { first = completeActivity(progress, current.id, level); persist(); if (first) onReward(current); refresh(); onSave?.(); }
+    else { delete progress.checkpoints[current.id]; persist(); }
+    setPhase(won ? 'won' : 'lost');
+    const buttons = [];
+    if (won && level < current.levelCount) buttons.push(makeButton('Next stage', () => launch(level + 1), 'primary'));
+    buttons.push(makeButton(won ? 'Return to island' : 'Try again', won ? close : () => launch(level), buttons.length ? '' : 'primary'));
+    buttons.push(makeButton(won ? 'Replay stage' : 'Return to island', won ? () => launch(level) : close));
+    showCard(won ? `${progress.completed.length} / 30 OUTPOSTS RESTORED` : 'YOUR SURVIVAL RUN IS SAFE', won ? first ? 'A little more hope.' : 'Good work, survivor.' : 'Every attempt helps.', won ? `${current.task} — complete. ${first ? '+300 score · +20 health · +10 armor. The outpost beacon now shines green.' : 'Keep exploring the remaining stages, or head back to the island.'}${progress.completed.length === 30 ? ' All 30 outposts are restored. The settlement is alive again.' : ''}` : 'Retry this activity at no cost, or return to your exact spot on the island.', buttons);
+  }
+  function setupControls() {
+    actionSignature=JSON.stringify(controller?.actions||[]);
+    const controls = $('activityControls'); controls.replaceChildren();
+    if (controller.inputMode === 'native') {
+      const dpad = document.createElement('div'); dpad.className = 'activity-dpad';
+      for (const [id, label] of [['up','↑'],['left','←'],['down','↓'],['right','→']]) { const b = makeButton(label, () => {}); b.dataset.direction = id; b.setAttribute('aria-label', `Move ${id}`); bindHold(b, () => directions.add(id), () => directions.delete(id)); dpad.append(b); } controls.append(dpad);
+    }
+    const actions = document.createElement('div'); actions.className = 'activity-actions';
+    for (const action of controller.actions || []) { const b = makeButton(action.label, () => { if (!action.hold && phase === 'playing') controller?.action?.(action.id, true); }); if (action.hold) bindHold(b, e => { actionPointers.set(e.pointerId ?? action.id, action.id); controller?.action?.(action.id, true); }, e => { actionPointers.delete(e.pointerId ?? action.id); controller?.action?.(action.id, false); }); actions.append(b); } controls.append(actions);
+  }
+  function bindHold(button, down, up) {
+    const release = e => { button.classList.remove('held'); up(e); };
+    button.addEventListener('pointerdown', e => { if (phase !== 'playing') return; e.preventDefault(); button.setPointerCapture?.(e.pointerId); button.classList.add('held'); down(e); });
+    for (const name of ['pointerup','pointercancel','lostpointercapture','blur']) button.addEventListener(name, release);
+    button.addEventListener('keydown', e => { if (['Space','Enter'].includes(e.code) && !e.repeat && phase === 'playing') { e.preventDefault(); down(e); } }); button.addEventListener('keyup', e => { if (['Space','Enter'].includes(e.code)) { e.preventDefault(); release(e); } });
+  }
+  function setTarget(id) { if (!byId.has(id)) return false; progress.target = id; world.setTarget(id); persist(); return true; }
+  function journal() {
+    if (active || !canEnter(null)) return false;
+    current = null; enterShell(); heading(null); setPhase('journal'); renderJournal(); return true;
+  }
+  function renderJournal() {
+    const journal = $('activityJournal'); journal.replaceChildren();
+    const intro = document.createElement('div'); intro.className = 'expedition-intro'; intro.innerHTML = `<small>THE SETTLEMENT NEEDS YOU</small><h3>Every light is a reason<br>to keep going.</h3><p>Walk to an outpost and press E or tap its prompt. Restore it through a survivor activity, then return to your island with supplies. Green beacons mark completed work.</p><strong>${progress.completed.length} / 30 restored</strong>`;
+    const map = document.createElementNS('http://www.w3.org/2000/svg','svg'); map.setAttribute('viewBox','-62 -62 124 124'); map.setAttribute('aria-label','Outpost locations on the island'); map.classList.add('expedition-map');
+    const shape = (tag, attrs) => { const node = document.createElementNS(map.namespaceURI,tag); for (const [key,value] of Object.entries(attrs)) node.setAttribute(key,value); map.append(node); return node; };
+    shape('circle',{cx:0,cy:0,r:51,fill:'#253b37',stroke:'#6a8574','stroke-dasharray':'1 2'});
+    for (const station of world.stations) { const circle = shape('circle',{cx:station.x,cy:station.z,r:progress.target===station.id?2.7:1.7,fill:progress.completed.includes(station.id)?'#b6efa2':byId.get(station.id).color}); const title = document.createElementNS(map.namespaceURI,'title'); title.textContent = byId.get(station.id).title; circle.append(title); }
+    const p = getPosition(); shape('circle',{cx:p.x,cy:p.z,r:2.2,fill:'#fff',stroke:'#111','stroke-width':.8}); intro.append(map); journal.append(intro);
+    const content = document.createElement('div'); content.className = 'expedition-directory'; const filters = document.createElement('nav'); filters.setAttribute('aria-label','Outpost districts');
+    for (const district of [{id:'all',title:'All outposts'},...DISTRICTS]) { const b=makeButton(district.title,()=>{selectedDistrict=district.id;renderJournal();}); b.classList.toggle('selected',selectedDistrict===district.id); b.setAttribute('aria-pressed',String(selectedDistrict===district.id));filters.append(b); } content.append(filters);
+    const list = document.createElement('div'); list.className='expedition-list';
+    for (const a of ACTIVITIES.filter(a=>selectedDistrict==='all'||a.district===selectedDistrict)) { const station=world.stations.find(s=>s.id===a.id),distance=Math.round(Math.hypot(station.x-p.x,station.z-p.z)); const row=makeButton('',()=>{setTarget(a.id);close();}); row.className='expedition-entry';row.dataset.activity=a.id; row.style.setProperty('--entry-color',a.color); const title=document.createElement('strong'),task=document.createElement('span'),meta=document.createElement('small'); title.textContent=a.title;task.textContent=a.task;meta.textContent=`${progress.completed.includes(a.id)?'✓ Restored':progress.checkpoints[a.id]?'◐ In progress':'◇ Explore'} · ${distance} m${progress.target===a.id?' · Tracked':''}`;row.append(title,task,meta);list.append(row); }content.append(list);journal.append(content);
+  }
+  function updateWorld({ playing, yaw = 0 }) {
+    if (active) return;
+    hud.hidden = !playing;
+    const layoutKey=`${innerWidth}:${innerHeight}:${playing}`;
+    if(playing&&worldLayout!==layoutKey){worldLayout=layoutKey;const battle=document.getElementById('hud')?.getBoundingClientRect(),field=document.getElementById('fieldObjective')?.getBoundingClientRect();let bottom=battle?.bottom||120;if(field?.height&&field.top<innerHeight*.55&&field.bottom<innerHeight-145)bottom=Math.max(bottom,field.bottom);hud.style.top=`${Math.round(bottom+9)}px`;document.body.style.setProperty('--outpost-top',hud.style.top);}
+    nearest = playing ? world.nearest(getPosition(), 3.8) : null;
+    if (nearest && Math.abs(getPosition().y-nearest.y)>2) nearest=null;
+    prompt.hidden = !nearest;document.body.classList.toggle('near-outpost',!!nearest);
+    if (nearest) { const a=byId.get(nearest.id),copy=`<kbd>E</kbd><span><small>${progress.completed.includes(a.id)?'RESTORED OUTPOST · REPLAY':'SURVIVOR OUTPOST · INTERACT'}</small><strong>${a.title}</strong><em>${a.task}</em></span><b>↗</b>`;if(prompt.innerHTML!==copy)prompt.innerHTML=copy; }
+    const target=world.stations.find(s=>s.id===progress.target), waypoint=document.getElementById('expeditionWaypoint');
+    if(target&&playing&&innerHeight>=450){const p=getPosition(),angle=(Math.atan2(-(target.x-p.x),-(target.z-p.z))-yaw)*-180/Math.PI;waypoint.hidden=false;waypoint.innerHTML=`<i style="transform:rotate(${angle}deg)">↑</i><span>${byId.get(target.id).title}<small>${Math.round(Math.hypot(target.x-p.x,target.z-p.z))} m · follow the beacon</small></span>`;}else waypoint.hidden=true;
+  }
+  function update(dt) {
+    if (!active || !controller) return;
+    const pad=controller.inputMode==='native'?gamepad.sample():{};
+    if(pad.pausePressed){if(phase==='playing')pause();else if(phase==='paused')resume();return;}
+    if (phase === 'playing' && !lost) {
+      const sampled={...pressed,...held}; for(const key of Object.keys(pressed))delete pressed[key];
+      const input = { left:!!(sampled.KeyA||sampled.ArrowLeft||directions.has('left')),right:!!(sampled.KeyD||sampled.ArrowRight||directions.has('right')),up:!!(sampled.KeyW||sampled.ArrowUp||directions.has('up')),down:!!(sampled.KeyS||sampled.ArrowDown||directions.has('down')),jump:!!sampled.Space,run:!!(sampled.ShiftLeft||sampled.ShiftRight),flip:!!(sampled.KeyW||sampled.ArrowUp||directions.has('up')),fire:!!(sampled.ShiftLeft||sampled.ShiftRight),action:!!sampled.Space,secondary:!!sampled.KeyE,boost:!!(sampled.ShiftLeft||sampled.ShiftRight) };
+      for(const key of ['left','right','up','down','jump','flip','run','fire','action','secondary','boost'])input[key]=input[key]||!!pad[key];
+      if(controller.inputMode==='pointer')keyboardPointer.update(dt);
+      controller.update(dt,input); if(JSON.stringify(controller.actions||[])!==actionSignature)setupControls(); elapsed+=dt; saveClock+=dt;
+      const info=controller.hud(), cache=JSON.stringify(info); if(cache!==hudCache){hudCache=cache;$('activityPrimary').textContent=info.primary||'';$('activitySecondary').textContent=info.secondary||'';$('activityHint').textContent=info.hint||current.instructions;}
+      if(controller.state.mode==='won'||controller.state.mode==='lost') finish(controller.state.mode==='won'); else if(saveClock>5){saveClock=0;checkpoint();}
+    }
+    if(!lost)controller.render(elapsed);
+  }
+  for (const name of ['pointerdown','pointermove','pointerup','pointercancel','lostpointercapture']) stage.addEventListener(name,e=>{
+    if(phase!=='playing'||!controller)return;
+    if(name==='pointerdown'){if(pointer!==null||e.button!==0)return;pointer=e.pointerId;stage.setPointerCapture?.(e.pointerId);}
+    if(pointer!==e.pointerId)return;e.preventDefault();controller.pointer?.(name==='pointerdown'?'down':name==='pointermove'?'move':name==='pointerup'?'up':'cancel',e.clientX,e.clientY);
+    if(['pointerup','pointercancel','lostpointercapture'].includes(name))pointer=null;
+  });
+  addEventListener('keydown',e=>{
+    if(!active)return;
+    if(e.code==='Tab'){clearInput();const nodes=[...root.querySelectorAll('button,a,select,[tabindex="0"]')].filter(n=>!n.disabled&&!n.hidden&&n.getClientRects().length);if(nodes.length){const i=nodes.indexOf(document.activeElement);nodes[(i+(e.shiftKey?-1:1)+nodes.length)%nodes.length].focus();}e.preventDefault();e.stopImmediatePropagation();return;}
+    if(e.target.matches?.('select')||(e.target.closest?.('button,a')&&['Space','Enter'].includes(e.code)))return;
+    if(phase==='playing'&&controller?.inputMode==='pointer'&&keyboardPointer.keydown(e)){e.stopImmediatePropagation();return;}
+    e.stopImmediatePropagation();if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Escape','KeyP','KeyW','KeyA','KeyS','KeyD','KeyE'].includes(e.code))e.preventDefault();
+    if(e.repeat)return;
+    if(e.code==='Escape'){if(phase==='playing')pause();else if(phase==='paused')resume();else close();return;}
+    if(e.code==='KeyM'){onMute?.();return;}
+    if(e.code==='KeyP'){phase==='playing'?pause():resume();return;}
+    if(phase==='playing'){held[e.code]=true;pressed[e.code]=true;}
+  },true);
+  addEventListener('keyup',e=>{if(active){delete held[e.code];if(e.target.closest?.('button,a,select')&&['Space','Enter'].includes(e.code))return;if(phase==='playing'&&controller?.inputMode==='pointer')keyboardPointer.keyup(e);e.stopImmediatePropagation();}},true);
+  addEventListener('blur',()=>{clearInput();pause();});addEventListener('resize',clearInput);document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInput();pause();checkpoint();}});addEventListener('pagehide',checkpoint);
+  $('activityLeave').addEventListener('click',close);$('activityPause').addEventListener('click',()=>phase==='playing'?pause():resume());$('activityHelp').addEventListener('click',()=>pause(current&&instructions(current)));root.querySelector('.activity-brand').addEventListener('click',e=>{e.preventDefault();close();});document.getElementById('expeditionJournal').addEventListener('click',journal);prompt.addEventListener('click',()=>nearest&&open(nearest.id));
+  refresh();if(progress.target)world.setTarget(progress.target);
+  return { get active(){return active;},get phase(){return phase;},get current(){return current;},get controller(){return controller;},get level(){return level;},progress,open,close,pause,resume,journal,setTarget,update,updateWorld,checkpoint,interact:()=>nearest?open(nearest.id):false };
+}

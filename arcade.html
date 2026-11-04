@@ -1,42 +1,15 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-activity-entry="arcade">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#111d29">
-  <meta name="description" content="A pocket-sized game with its own little hero. Play in your browser with one finger.">
-  <link rel="icon" href="assets/games-icon.svg" type="image/svg+xml">
-  <link rel="preload" href="assets/fonts/barlow-condensed-800.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="arcade.css?v1">
-  <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
-  <title>Little Arcade — Games</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#151c19">
+<meta name="description" content="Little Arcade is now an activity inside Zombie. Follow its marker in the world to play.">
+<link rel="icon" href="assets/games-icon.svg" type="image/svg+xml">
+<link rel="canonical" href="soldier.html?district=harbor">
+<title>Little Arcade — part of Zombie</title>
+<style>body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#151c19;color:#f3f1e7;font:16px/1.6 system-ui,sans-serif}main{max-width:32rem;padding:32px}p{color:#b2c4b4}a{display:inline-block;padding:12px 20px;background:#ffd36d;color:#151c19;border-radius:8px;font-weight:700;text-decoration:none}a:focus-visible{outline:3px solid #85ead9;outline-offset:5px}</style>
+<script type="module" src="activity-redirect.js?v1"></script>
 </head>
-<body>
-  <div class="app">
-    <header class="topbar">
-      <a class="home" href="./" aria-label="Back to all games">← <span>games.</span></a>
-      <a class="brand" href="./#little-arcade" aria-label="Little Arcade, back to game collection"><span>✦</span> LITTLE ARCADE<span>.</span></a>
-      <nav aria-label="Game options">
-        <button id="soundButton" aria-label="Turn sound on" aria-pressed="false">♪</button>
-        <button id="helpButton" aria-label="How to play">?</button>
-        <button id="pauseButton" aria-label="Pause game" disabled>Ⅱ</button>
-      </nav>
-    </header>
-    <main class="layout">
-      <section class="hud" aria-label="Game status">
-        <div class="hud-main"><span class="eyebrow" id="heroLabel">MEET YOUR HERO</span><h1 id="gameTitle">Little Arcade</h1><p id="statusText">A little world is loading.</p></div>
-        <div class="hud-score"><span class="eyebrow">YOUR RUN</span><strong id="scoreText">READY</strong></div>
-      </section>
-      <section class="stage" id="arcadeStage" tabindex="0" aria-label="Game board. Use touch or mouse. On a keyboard, move the cursor with the arrow keys and press Enter or Space to interact.">
-        <div id="touchHint" class="touch-hint" aria-hidden="true"><span>✦</span> PLAY YOUR WAY</div>
-      </section>
-      <footer class="controls"><div class="control-icon" aria-hidden="true">✳</div><div class="control-copy"><strong id="controlTitle">ONE LITTLE GAME. BIG FUN.</strong><span id="controlText">Touch the board to play.</span></div><button id="restartButton" aria-label="Restart game">RESTART ↻</button></footer>
-    </main>
-    <div id="saveStatus" class="save-status" role="status">AUTOSAVE ON THIS DEVICE</div>
-  </div>
-  <div class="modal" id="modalLayer" hidden><section id="panel" class="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" tabindex="-1"><div id="panelContent"></div></section></div>
-  <div id="loading" class="loading"><span>✦</span><strong>Getting your little world ready…</strong></div>
-  <noscript><div class="loading"><strong>JavaScript is needed to play.</strong><a href="./">← All games</a></div></noscript>
-  <script type="module" src="arcade/main.js?v1"></script>
-</body>
+<body><main><h1>A new home for Little Arcade.</h1><p>This adventure is now part of Zombie. Find it at a survivor outpost as you explore the islands.</p><a id="activityDestination" href="soldier.html?district=harbor">Enter Zombie →</a><noscript><p>JavaScript is needed to play. Your saved progress stays on this device.</p></noscript></main></body>
 </html>

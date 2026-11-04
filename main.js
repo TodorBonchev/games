@@ -1,5 +1,9 @@
 import {readGameSave,writeGameSave,removeGameSave} from './save-store.js';
 import {parseSoldierSave} from './soldier-save.js';
+import {createActivityWorld} from './activities/world.js';
+import {createActivityHost} from './activities/host.js';
+import {readProgress as readExpedition,writeProgress as writeExpedition} from './activities/progress.js';
+import {byId as activityById,DISTRICTS} from './activities/catalog.js';
 import {getWeapon,shotInterval,weaponDamage} from './weapons.js?v19';
 import * as THREE from 'three';import {restoreRanks,bonuses,upgradeChoices,restoreUpgradeChoices,buildSummary} from './progression.js?v21';import {createRewardPool,createEliteAccent,createSlamWarning} from './rewards.js?v19';import {createCombatAudio,createImpactPool} from './combat.js?v19';import {createEnemyNavigator} from './navigation.js?v19';import {getLookSensitivity,reducedMotion} from './preferences.js?v19';import {mk,mkc,LOD,mergeRigid,isCachedGeometry} from './lod.js?v19';import {makeSoldier} from './soldier.js?v19';import {makeHeli,makeChute} from './heli.js?v19';
 THREE.Sprite.prototype.raycast=function(){};
@@ -13,7 +17,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 const LEVEL=new URLSearchParams(location.search).get('level')==='2'?2:1;
 const WM=LEVEL===2?await import('./world2.js?v19'):await import('./world.js?v19');const {buildWorld,groundH,islandD,shoreR,SUN_DIR,FOG_COLOR,iceF,lavaF,LIGHTS}=WM;
-export const BUILD='v21 · saved operations';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
+export const BUILD='v22 · survivor outposts';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
 const MOBILE=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;if(MOBILE)document.body.classList.add('touch');
 // ---------- quality tiers ----------
 const QL=['auto','low','medium','high'];const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){return null;}};
@@ -87,13 +91,15 @@ function windStart(){if(!ac||wind)return;const b=ac.createBuffer(1,ac.sampleRate
  const s=ac.createBufferSource();s.buffer=b;s.loop=true;const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=700;f.Q.value=.7;const g=ac.createGain();g.gain.value=0;s.connect(f).connect(g).connect(masterGain);s.start();wind={s,f,g};}
 const setGain=(n,v)=>n&&n.g.gain.setTargetAtTime(v,ac.currentTime,.15);
 // ---------- input ----------
-let yaw=0,pitch=-.1,firing=false,running=false,mode='menu',introDone=false,gamePaused=false,pauseStarted=0;const keys={};
+let yaw=0,pitch=-.1,firing=false,running=false,mode='menu',introDone=false,gamePaused=false,pauseStarted=0;const keys={};let activityHost=null,activityWorld=null;const expedition=readExpedition();
 let jumpPointer=null,jumpButtonHeld=false,jetHeldTime=0,jetFuel=1,jetActive=false,jetLocked=false;
 addEventListener('keydown',e=>{
- if(e.defaultPrevented||e.target.closest?.('input,select,textarea,[contenteditable=true]'))return;
+ if(activityHost?.active||e.defaultPrevented||e.target.closest?.('input,select,textarea,[contenteditable=true]'))return;
  if(e.code==='Escape'||e.code==='KeyP'){if(!e.repeat&&(mode==='play'||mode==='intro')){e.preventDefault();gamePaused?resumeGame():pauseGame();}return;}
  if(e.code==='KeyM'&&!e.repeat){muted=!muted;LS('szMuted',muted?'1':'0');syncAudio();return;}
  if(gamePaused||(mode!=='play'&&mode!=='intro'))return;
+ if(mode==='play'&&!e.repeat&&e.code==='KeyE'){e.preventDefault();activityHost?.interact();return;}
+ if(mode==='play'&&!e.repeat&&e.code==='Tab'){e.preventDefault();activityHost?.journal();return;}
  if(mode==='intro'&&(e.code==='Space'||e.code==='Enter')&&!e.target.closest?.('button,input,select,textarea')){e.preventDefault();if(!e.repeat)skipIntro();return;}
  if(e.code==='Space'&&e.target.closest?.('button'))return;
  keys[e.code]=true;
@@ -142,8 +148,8 @@ jumpButton.addEventListener('click',e=>{e.preventDefault();if(e.detail===0&&!jum
 $('orbBtn')?.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();e.stopPropagation();castFrozenOrb();});
 $('orbBtn')?.addEventListener('click',e=>{e.stopPropagation();if(e.detail===0)castFrozenOrb();});
 function clearInput(){Object.keys(keys).forEach(k=>delete keys[k]);releaseJump();firing=false;fireId=null;stick.id=lk.id=null;stick.x=stick.y=0;knob.style.transform='';$('stick').classList.remove('active');$('fireBtn').classList.remove('active');document.body.classList.remove('sprinting');curSpeed=0;jumpBuffer=coyoteTime=0;lockT=null;swing=null;wasFiring=false;aligned=false;burstRound=0;}
-function pauseGame(settings=false){if(mode!=='play'&&mode!=='intro')return;if(!gamePaused){gamePaused=true;pauseStarted=performance.now();running=false;clearInput();document.body.classList.add('paused');syncAudio();document.exitPointerLock?.();}updRejump();$('pausePanel')?.classList.toggle('hide',settings);$('setPanel').classList.toggle('hide',!settings);(settings?$('setClose'):$('resumeBtn'))?.focus();saveRun();}
-function resumeGame(){if(!gamePaused||graphicsLost)return;rjReady+=performance.now()-pauseStarted;gamePaused=false;running=mode==='play';document.body.classList.remove('paused');$('pausePanel')?.classList.add('hide');$('setPanel').classList.add('hide');clearInput();syncAudio();ensureAudio();document.activeElement?.blur();lockPointer();}
+function pauseGame(settings=false){if(activityHost?.active){activityHost.pause();return;}if(mode!=='play'&&mode!=='intro')return;if(!gamePaused){gamePaused=true;pauseStarted=performance.now();running=false;clearInput();document.body.classList.add('paused');syncAudio();document.exitPointerLock?.();}updRejump();$('pausePanel')?.classList.toggle('hide',settings);$('setPanel').classList.toggle('hide',!settings);(settings?$('setClose'):$('resumeBtn'))?.focus();saveRun();}
+function resumeGame(){if(activityHost?.active||!gamePaused||graphicsLost)return;rjReady+=performance.now()-pauseStarted;gamePaused=false;running=mode==='play';document.body.classList.remove('paused');$('pausePanel')?.classList.add('hide');$('setPanel').classList.add('hide');clearInput();syncAudio();ensureAudio();document.activeElement?.blur();lockPointer();}
 addEventListener('blur',()=>{inactiveWindow=true;pauseGame();});addEventListener('focus',()=>inactiveWindow=false);document.addEventListener('visibilitychange',()=>{inactiveWindow=document.hidden;if(document.hidden)pauseGame();});
 let hadPointerLock=false;document.addEventListener('pointerlockchange',()=>{const locked=document.pointerLockElement===cv;if(hadPointerLock&&!locked&&!gamePaused)pauseGame();hadPointerLock=locked;});
 ['gesturestart','dblclick','contextmenu'].forEach(ev=>addEventListener(ev,e=>e.preventDefault(),{passive:false}));
@@ -462,7 +468,18 @@ function updDebris(dt){for(const d of [...debris]){d.t+=dt;
 // ---------- random drop spot ----------
 function okSpot(x,z){if(!onLand(x,z,2)||islandD(x,z)>.8)return false;const h=groundH(x,z);if(h<.7||h>9)return false;
  for(const[a,b] of[[0,0],[3,0],[-3,0],[0,3],[0,-3]])if(lavaF(x+a,z+b)>.02)return false;return Math.abs(groundH(x+1,z)-groundH(x-1,z))<1.4&&Math.abs(groundH(x,z+1)-groundH(x,z-1))<1.4;}
-function pickDrop(){for(let k=0;k<600;k++){const a=rnd(0,6.283),R=shoreR(a)*Math.sqrt(rnd(.01,.55)),x=Math.cos(a)*R,z=Math.sin(a)*R;if(okSpot(x,z))return new THREE.Vector3(x,groundH(x,z),z);}return new THREE.Vector3(0,groundH(0,0),0);}
+function pickDrop(){
+ const station=activityWorld?.stations.find(s=>s.id===expedition.target)||activityWorld?.stations[0];
+ // Land in sight of the tracked outpost, with a clear walking approach.
+ if(station)for(let i=0;i<24;i++){
+  const a=i*Math.PI/12,x=station.x+Math.sin(a)*5.3,z=station.z+Math.cos(a)*5.3;
+  if(!okSpot(x,z)||activityWorld.nearest({x,z},4.2))continue;
+  let clear=true;for(const t of[.25,.5,.75])if(!onLand(station.x+(x-station.x)*t,station.z+(z-station.z)*t,.7)){clear=false;break;}
+  if(clear)return new THREE.Vector3(x,groundH(x,z),z);
+ }
+ for(let k=0;k<600;k++){const a=rnd(0,6.283),R=shoreR(a)*Math.sqrt(rnd(.01,.55)),x=Math.cos(a)*R,z=Math.sin(a)*R;if(okSpot(x,z))return new THREE.Vector3(x,groundH(x,z),z);}
+ return new THREE.Vector3(0,groundH(0,0),0);
+}
 let DT=new THREE.Vector3(),heading=0,rejumping=false,rjReady=0,rjShown=-1;const RJ_CD=3000;const landed=[];
 // ---------- intro: high-altitude jump ----------
 const heli=makeHeli();heli.visible=false;scene.add(heli);const chute=makeChute();chute.visible=false;player.add(chute);lowify(heli);lowify(chute);
@@ -498,7 +515,7 @@ function endIntro(){iPhase='';const u=chute.userData;chute.visible=false;u.can.s
  for(const z of zombies){const d=z.position.clone().sub(P);d.y=0;const L=d.length();if(L<16){d.normalize();for(const r of[18,22,26]){const x=P.x+d.x*r,zz=P.z+d.z*r;if(onLand(x,zz)&&lavaF(x,zz)<.05){z.position.set(x,groundH(x,zz),zz);break;}}}}
  introDone=true;$('skipBtn').classList.add('hide');document.body.classList.remove('intro');startPlay(rejumping);rejumping=false;}
 function spawnPlayer(){player.position.copy(pickDrop());}
-function startPlay(keep){clearInput();flightMovement=false;clearTimeout(card.t);clearTimeout(card.hideT);$('lvlCard').classList.add('hide');mode='play';view.follow=view.boom;player.rotation.set(0,yaw+Math.PI,0);pitch=-.1;vy=0;document.body.classList.add('playing');running=true;rjReady=performance.now()+RJ_CD;if(!keep){wave=0;nextWave();}else announce('BACK IN THE FIGHT');updHud();}
+function startPlay(keep){clearInput();if(!keep&&activityWorld){const destination=activityWorld.stations.find(s=>s.id===expedition.target);if(destination)yaw=Math.atan2(player.position.x-destination.x,player.position.z-destination.z);}flightMovement=false;clearTimeout(card.t);clearTimeout(card.hideT);$('lvlCard').classList.add('hide');mode='play';view.follow=view.boom;player.rotation.set(0,yaw+Math.PI,0);pitch=-.1;vy=0;document.body.classList.add('playing');running=true;rjReady=performance.now()+RJ_CD;if(!keep){wave=0;nextWave();}else announce('BACK IN THE FIGHT');updHud();}
 function rejump(){if(gamePaused||mode!=='play'||performance.now()<rjReady)return;running=false;clearInput();frozenOrb.clear();rejumping=true;vy=0;startIntro();snd(500,.3,'triangle',.12,1.5);}
 $('rejumpBtn').addEventListener('click',e=>{e.stopPropagation();rejump();});addEventListener('keydown',e=>{if(!e.defaultPrevented&&!e.target.closest?.('input,select,textarea,[contenteditable=true]')&&e.code==='KeyH')rejump();});
 function updRejump(){const el=$('rejumpBtn'),pauseEl=$('pauseRejumpBtn');const v=mode==='play'?Math.ceil(Math.max(0,(rjReady-(gamePaused?pauseStarted:performance.now()))/1000)):-2;if(v===rjShown)return;rjShown=v;el.classList.toggle('cd',v!==0);el.disabled=v!==0;el.querySelector('b').textContent=v>0?v+'s':v===0?'JUMP AGAIN':'—';if(pauseEl){pauseEl.disabled=v!==0;const label=pauseEl.querySelector('[data-rejump-label]')||pauseEl;const text=v>0?'REDEPLOY IN '+v+'s':v===0?'HELICOPTER REDEPLOY':'AVAILABLE AFTER LANDING';if(label.textContent!==text)label.textContent=text;}}
@@ -647,6 +664,20 @@ $('continueBtn')?.addEventListener('click',continueSavedRun);
 addEventListener('pagehide',()=>saveRun());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveRun();});
 document.querySelectorAll('.games-return,.brand[href="./"]').forEach(link=>link.addEventListener('click',()=>saveRun()));
+// ---------- survivor outposts: one world, one animation clock ----------
+activityWorld=createActivityWorld({scene,groundH,islandD,lavaF,onLand,level:LEVEL,progress:expedition});
+const requestedActivity=activityById.has(Q.get('activity'))?Q.get('activity'):DISTRICTS.find(d=>d.id===Q.get('district'))?.missions[0];
+if(requestedActivity)expedition.target=requestedActivity;
+if(!expedition.target)expedition.target=activityWorld.stations.find(s=>!expedition.completed.includes(s.id))?.id||'upside';
+activityWorld.setTarget(expedition.target);writeExpedition(expedition);
+activityHost=createActivityHost({world:activityWorld,progress:expedition,initialLevel:Math.max(1,Number(Q.get('activityLevel'))||1),getPosition:()=>player.position,isMuted:()=>muted,onMute(){muted=!muted;LS('szMuted',muted?'1':'0');syncAudio();},
+ canEnter:id=>mode==='play'&&running&&!gamePaused&&!graphicsLost&&(!id||(activityWorld.nearest(player.position,3.8)?.id===id&&Math.abs(player.position.y-groundH(player.position.x,player.position.z))<2)),
+ onEnter(){saveRun();gamePaused=true;pauseStarted=performance.now();running=false;clearInput();document.body.classList.add('paused');$('pausePanel')?.classList.add('hide');$('setPanel').classList.add('hide');syncAudio();document.exitPointerLock?.();},
+ onExit(){if(inactiveWindow||document.hidden||graphicsLost){pauseGame();}else resumeGame();saveRun();},
+ onReward(activity){score+=300;hp=Math.min(100,hp+20);reserveArmor=Math.min(60,reserveArmor+10);rememberScore();updHud();activityWorld.refresh(expedition);},
+ onSave:saveRun
+});
+const outpostCopy=document.getElementById('outpostStartInfo');if(outpostCopy)outpostCopy.textContent=requestedActivity?`Waypoint set: ${activityById.get(requestedActivity).title}. Deploy, walk to its beacon, and press E or tap to enter.`:`30 survivor outposts · ${expedition.completed.length} restored · E to interact / Tab for map`;
 // ---------- loop ----------
 const camRc=new THREE.Raycaster(),camAnchor=new THREE.Vector3(),camSight=new THREE.Vector3(),clock=new THREE.Clock(),closeup=Q.get('view')==='closeup';let camOverride=null;
 spawnPlayer();
@@ -655,7 +686,7 @@ function loop(){requestAnimationFrame(loop);const _t0=performance.now();
  // Keep high-refresh phones within a useful battery and thermal budget.
  if(document.hidden){clock.getDelta();lastNow=_t0;return;}
  if(MOBILE){const interval=1000/(mode==='play'||mode==='intro'?60:30);if(_t0-lastMobileFrameAt<interval-.5)return;lastMobileFrameAt=_t0;}
- const dt=Math.min(clock.getDelta(),.05);if(graphicsContext.isContextLost())markGraphicsLost();if(gamePaused||graphicsLost||mode==='upgrade'){lastNow=_t0;return;}scaler(_t0);gT+=dt;const T=gT,P=player.position;
+ const dt=Math.min(clock.getDelta(),.05);if(graphicsContext.isContextLost())markGraphicsLost();if(activityHost?.active){activityHost.update(dt);lastNow=_t0;return;}if(gamePaused||graphicsLost||mode==='upgrade'){lastNow=_t0;return;}scaler(_t0);gT+=dt;const T=gT,P=player.position;
  flashTime=Math.max(0,flashTime-dt);if(!flashTime){player.userData.flash.visible=false;player.userData.flashLight.intensity=0;}impacts.update(dt);recoil*=Math.exp(-16*dt);hitTime=Math.max(0,hitTime-dt);bannerTime=Math.max(0,bannerTime-dt);damageTime=Math.max(0,damageTime-dt);
  if(!hitTime)$('hitmarker')?.classList.remove('show');if(!bannerTime)$('waveBanner')?.classList.remove('show');if(!damageTime)$('vig').classList.remove('hurt');
  if(mode==='intro')intro(dt);updHeli(dt);
@@ -706,7 +737,7 @@ function loop(){requestAnimationFrame(loop);const _t0=performance.now();
  const nn=alt>150?1.5:.1;if(cam.near!==nn){cam.near=nn;cam.updateProjectionMatrix();}
  const sc=mode==='intro'?(iPhase==='heli'?heli.position:P):P;sun.position.copy(sc).addScaledVector(SUN_DIR,90);sun.target.position.copy(sc);
  if(MEDQ&&(frameN++&1)===0)renderer.shadowMap.needsUpdate=true;
- W.update(T,cam,!reducedMotion());renderFrame();PF.calls=renderer.info.render.calls;PF.tris=renderer.info.render.triangles;PF.ms.push(performance.now()-_t0);if(PF.ms.length>600)PF.ms.shift();if(performance.now()-lastRunSaveAt>=5000)saveRun();}
+ W.update(T,cam,!reducedMotion());cam.updateMatrixWorld();activityWorld.update({time:reducedMotion()?0:T,player:P,camera:cam,width:innerWidth,height:innerHeight,playing:mode==='play'&&running});activityHost.updateWorld({playing:mode==='play'&&running,yaw});renderFrame();PF.calls=renderer.info.render.calls;PF.tris=renderer.info.render.triangles;PF.ms.push(performance.now()-_t0);if(PF.ms.length>600)PF.ms.shift();if(performance.now()-lastRunSaveAt>=5000)saveRun();}
 $('ver').textContent='build '+BUILD+' · '+TIER;
 // ---------- dynamic resolution scaler (hysteresis) + auto tier downgrade + FPS counter ----------
 let lastNow=performance.now(),winSum=0,winN=0,slowW=0,fastW=0,degraded=0;const NOSCALE=Q.get('noscale')==='1';
@@ -738,7 +769,7 @@ function prewarm(){const zs=Object.keys(ZT).map(t=>{const z=makeZombie(t);z.posi
  heli.visible=chute.visible=false;TP.forEach(t=>t.visible=false);}
 prewarm();
 if(closeup){$('start').classList.add('hide');$('hud').classList.add('hide');}
-if(DEBUG)window.__game={save:saveRun,continueRun:continueSavedRun,get cameraMode(){return cameraMode},setCameraView,get jetpack(){return{active:jetActive,fuel:jetFuel,held:!!keys.Space||jumpButtonHeld,velocity:vy}},get frozenOrb(){return frozenOrb.state},castFrozenOrb,get encounter(){return{id:currentEncounter.id,name:currentEncounter.name,roster:[...currentEncounter.roster],gap:currentEncounter.gap}},get momentum(){return momentum.state},get campaignComplete(){return campaignComplete},get weather(){return W.weather?.state||null},get threats(){return acidThreats.active},spawnSpitter(){const z=spawn(null,'spitter');z.position.copy(player.position).add(new THREE.Vector3(0,0,-12));z.position.y=groundH(z.position.x,z.position.z);return z;},get field(){return{...fieldUplink.state,position:fieldUplink.position.toArray(),completed:runUplinks}},get progression(){return{ranks:{...ranks},choices:offeredUpgrades.map(({id,rank})=>({id,rank})),overdrive,shield:reserveArmor,eliteKills,drops:rewards.active.map(e=>({id:e.id,type:e.type,position:e.position.toArray(),age:e.age})),elites:zombies.filter(z=>z.userData.elite&&!z.userData.dead).map(z=>({name:z.userData.eliteName,hp:z.userData.hp,maxHp:z.userData.maxHp,slamWind:z.userData.slamWind||0,slamCooldown:z.userData.slamCooldown||0})),bonuses:{...loadout}}},spawnDrop(type='medkit',offset=2){return dropReward(type,player.position.clone().add(new THREE.Vector3(offset,0,0)))?.id;},spawnElite(commander=false){const z=spawn(commander?'commander':'elite');z.position.copy(player.position).add(new THREE.Vector3(0,0,-5));z.position.y=groundH(z.position.x,z.position.z);return z;},get weapon(){return{id:weapon.id,name:weapon.name,pellets:weapon.pellets.length,range:weapon.range,assistRange:weapon.assistRange,burstRound,cooldown:fireT}},get graphicsLost(){return graphicsLost},get combat(){return{kills:runKills,seconds:runSeconds,shots:runShots,hits:runHits,waveTotal,impacts:impacts.active,impactCapacity:impacts.capacity}},colliders:{circles:W.circles,boxes:W.boxes},get mode(){return mode},get phase(){return iPhase},get paused(){return gamePaused},pause:pauseGame,resume:resumeGame,returnToMenu,get muted(){return muted},get toSpawn(){return toSpawn},get waveBreak(){return waveBreak},get bestScore(){return bestScore},get time(){return gT},get firing(){return firing||fireId!==null},get score(){return score},set score(v){score=v;rememberScore();updHud();},get heads(){return headsDetached},get yaw(){return yaw},get alt(){return player.position.y},aimLog,level:LEVEL,scene,player,camera:cam,setView(y,p=-.1){yaw=y;pitch=THREE.MathUtils.clamp(p,cameraMode==='first'?-1.35:-.7,cameraMode==='first'?1.35:.55);},get zombies(){return zombies},PF,tier:TIER,qSet,detect:DETECT,merge:MERGE,get scale(){return rScale},get programs(){return renderer.info.programs.length},landed,get drop(){return[DT.x,DT.z]},get hp(){return hp},set hp(v){hp=Math.max(0,Math.min(100,v));updHud();},get rjCD(){return (rjReady-performance.now())/1000},set rjCD(v){rjReady=performance.now()+v*1000},get lavaHurt(){return lavaHurt},get wave(){return wave},get pos(){return[player.position.x,player.position.y,player.position.z]},
+if(DEBUG)window.__game={activities:{host:activityHost,world:activityWorld,progress:expedition},save:saveRun,continueRun:continueSavedRun,get cameraMode(){return cameraMode},setCameraView,get jetpack(){return{active:jetActive,fuel:jetFuel,held:!!keys.Space||jumpButtonHeld,velocity:vy}},get frozenOrb(){return frozenOrb.state},castFrozenOrb,get encounter(){return{id:currentEncounter.id,name:currentEncounter.name,roster:[...currentEncounter.roster],gap:currentEncounter.gap}},get momentum(){return momentum.state},get campaignComplete(){return campaignComplete},get weather(){return W.weather?.state||null},get threats(){return acidThreats.active},spawnSpitter(){const z=spawn(null,'spitter');z.position.copy(player.position).add(new THREE.Vector3(0,0,-12));z.position.y=groundH(z.position.x,z.position.z);return z;},get field(){return{...fieldUplink.state,position:fieldUplink.position.toArray(),completed:runUplinks}},get progression(){return{ranks:{...ranks},choices:offeredUpgrades.map(({id,rank})=>({id,rank})),overdrive,shield:reserveArmor,eliteKills,drops:rewards.active.map(e=>({id:e.id,type:e.type,position:e.position.toArray(),age:e.age})),elites:zombies.filter(z=>z.userData.elite&&!z.userData.dead).map(z=>({name:z.userData.eliteName,hp:z.userData.hp,maxHp:z.userData.maxHp,slamWind:z.userData.slamWind||0,slamCooldown:z.userData.slamCooldown||0})),bonuses:{...loadout}}},spawnDrop(type='medkit',offset=2){return dropReward(type,player.position.clone().add(new THREE.Vector3(offset,0,0)))?.id;},spawnElite(commander=false){const z=spawn(commander?'commander':'elite');z.position.copy(player.position).add(new THREE.Vector3(0,0,-5));z.position.y=groundH(z.position.x,z.position.z);return z;},get weapon(){return{id:weapon.id,name:weapon.name,pellets:weapon.pellets.length,range:weapon.range,assistRange:weapon.assistRange,burstRound,cooldown:fireT}},get graphicsLost(){return graphicsLost},get combat(){return{kills:runKills,seconds:runSeconds,shots:runShots,hits:runHits,waveTotal,impacts:impacts.active,impactCapacity:impacts.capacity}},colliders:{circles:W.circles,boxes:W.boxes},get mode(){return mode},get phase(){return iPhase},get paused(){return gamePaused},pause:pauseGame,resume:resumeGame,returnToMenu,get muted(){return muted},get toSpawn(){return toSpawn},get waveBreak(){return waveBreak},get bestScore(){return bestScore},get time(){return gT},get firing(){return firing||fireId!==null},get score(){return score},set score(v){score=v;rememberScore();updHud();},get heads(){return headsDetached},get yaw(){return yaw},get alt(){return player.position.y},aimLog,level:LEVEL,scene,player,camera:cam,setView(y,p=-.1){yaw=y;pitch=THREE.MathUtils.clamp(p,cameraMode==='first'?-1.35:-.7,cameraMode==='first'?1.35:.55);},get zombies(){return zombies},PF,tier:TIER,qSet,detect:DETECT,merge:MERGE,get scale(){return rScale},get programs(){return renderer.info.programs.length},landed,get drop(){return[DT.x,DT.z]},get hp(){return hp},set hp(v){hp=Math.max(0,Math.min(100,v));updHud();},get rjCD(){return (rjReady-performance.now())/1000},set rjCD(v){rjReady=performance.now()+v*1000},get lavaHurt(){return lavaHurt},get wave(){return wave},get pos(){return[player.position.x,player.position.y,player.position.z]},
  clearWave(){zombies.forEach(disposeZombie);zombies=[];toSpawn=0;waveBreak=-1;updHud();},damage(amount){hurt(amount);},
  setPos(x,z){player.position.set(x,groundH(x,z),z);},lavaSpot(){for(let k=0;k<5000;k++){const x=rnd(-60,60),z=rnd(-60,60);if(lavaF(x,z)>.95&&islandD(x,z)<.8&&lavaF(x+1.5,z)>.9&&lavaF(x-1.5,z)>.9)return[x,z];}return null;},winLevel(){goLevel2();},rejump(){rejump();},
  setAlt(y){player.position.y=y;},overview(on){camOverride=on?[new THREE.Vector3(...on[0]),new THREE.Vector3(...on[1])]:null;},

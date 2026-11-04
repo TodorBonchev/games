@@ -1,5 +1,5 @@
 {
-  "name": "Games",
+  "name": "Games \u2014 Zombie & Piano",
   "short_name": "Games",
   "start_url": "./index.html",
   "scope": "./",
@@ -22,5 +22,6 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "description": "One survival world with 30 discoverable minigames, plus a piano to play and learn."
 }

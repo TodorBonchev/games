@@ -116,7 +116,7 @@ try {
     try {
       // The high tier runs through software WebGL on CI. Its capped simulation
       // delta can make a four-second recovery take over30 wall-clock seconds.
-      await page.waitForFunction(() => window.__game.mode === 'upgrade', null, { timeout: 60000 });
+      await page.waitForFunction(() => window.__game.mode === 'upgrade', null, { timeout: spec.quality === 'high' ? 120000 : 60000 });
     } catch (error) {
       console.error('Upgrade transition failed', spec.name, await page.evaluate(() => ({ mode: window.__game.mode, paused: window.__game.paused, time: window.__game.time, hp: window.__game.hp, waveBreak: window.__game.waveBreak, graphicsLost: window.__game.graphicsLost })), errors);
       throw error;

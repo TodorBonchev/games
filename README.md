@@ -2,220 +2,85 @@
 
 [Play online](https://todorbonchev.github.io/games/)
 
-A collection of **seven Three.js browser games**, made for phones and computers. Wonderwake combines 25 former games into a single adventure with one campaign, five islands, and a growing crew. The other six games keep their own worlds and progress. Everything needed to play is bundled locally.
+The site has two destinations: **Zombie** and **Piano**. Zombie combines the two-island survival campaign with **30 activities discovered in the world**. Walk to survivor outposts, help rebuild the settlement, then return to the same live battle with your position, equipment and campaign intact. Piano remains a separate instrument.
 
-| Game | Play | What's included |
+| Destination | Play | Includes |
 | --- | --- | --- |
-| **Wonderwake** | [Set sail](https://todorbonchev.github.io/games/wonderwake.html) | Bring five islands back to life through 25 different challenges. Recruit little heroes, light the beacons, and prepare a shared festival. |
-| **Soldier vs Zombies** | [Launch the shooter](https://todorbonchev.github.io/games/soldier.html) | A two-island survival campaign, jetpack, Frozen Orb, weapons, upgrades, and endless mode. |
-| **Garden Guard** | [Launch garden defense](https://todorbonchev.github.io/games/garden.html) | Five garden defense levels with five lanes, three plant types, runners, armored zombies, and up to five waves. |
-| **Borrowed Tomorrow** | [Launch the time sail](https://todorbonchev.github.io/games/borrowed.html) | Six clockworld chambers where your two recorded past selves steer a triangular weapon. Flow and Rift difficulties, clockblooms, crosswinds, armor, and a final boss. |
-| **Prism Orchard** | [Launch Prism Orchard](https://todorbonchev.github.io/games/prism.html) | Turn crystal mirrors, split colored light, and combine beams to bloom eight night gardens. |
-| **Lantern Vale** | [Launch Lantern Vale](https://todorbonchev.github.io/games/lantern.html) | Explore three Blender-built islands by spaceship: a lantern village, a moonlit garden, and a celestial observatory. |
-| **Upside Nib** | [Launch Upside Nib](https://todorbonchev.github.io/games/upside.html) | A gravity-flipping 2D pixel platformer: bump ?-blocks, stomp Grumblebugs, kick Shellbacks, grow with Glow Caps, throw embers, and flip between a floor world and a ceiling world across four levels to reach the flagpole. Local save and best score. |
+| Zombie | [Enter the world](https://todorbonchev.github.io/games/soldier.html) | Survival, exploration, weapons, upgrades, and every former game as an outpost activity. |
+| Piano | [Take a seat](https://todorbonchev.github.io/games/piano/) | Free play, instrument sounds, songs and guided practice. |
 
-## Wonderwake
-
-A sleepy archipelago is preparing for a festival, and everyone has something to contribute. Sail between five islands, help their residents, and watch your crew and the island celebrations grow. Each island has five challenges: help **any three** to light its beacon and continue. You can return for the remaining friends at any time. Recruiting all 25 completes the full crew.
-
-Each mission introduces just its own controls. Action, puzzle, and creative challenges alternate within one adventure; they share a map, progress, and a goal. Each puzzle needs one board; creative challenges keep their short sequences, such as three songs or three pots. The five longer former games become single-level, single-route, or single-wave missions. Revisit a friend to try a harder board or level where available; the friend stays recruited.
-
-The adventure includes Moonbounce, Popwake, Pond Post, Ribbon Reef, Dewdrop Drift, and these 20 character challenges:
-
-| Game | Character | Challenge |
-| --- | --- | --- |
-| Lane Lark | Pip the blue owl | Tap or slide between the three rails. Catch gold notes and avoid the pink thorns. Collect at least 14 notes before the last rail passes. |
-| Orbit Guard | Quill the star hedgehog | Drag around Quill to turn the turquoise shield. Catch the incoming stars before they reach the center. Save 13 of 16 stars. |
-| Cloud Skimmer | Hazel the flying squirrel | Hold anywhere to rise, then lift your finger to drift down. Glide through at least 8 of the 10 golden rings. You can miss two. |
-| Ink Sling | Inky the bubble octopus | Touch a sea bloom, then lift to send a bubble toward it. Aim for all six drifting blooms; missed bubbles can be tried again. |
-| Bubble Basket | Coral the little crab | Slide left and right to catch bubbles in Coral’s basket. Gather 12 pearls and avoid the pink spiky urchins. |
-| Moss Flip | Bramble the moss beetle | Tap anywhere to flip between the two moss rails. Avoid the coral thorns as the tunnel rolls by. Survive all 22 thorns. |
-| Bell Bloom | Mira the bell axolotl | Tap when the moving turquoise ring meets the gold circle. Make at least 10 of 14 bells bloom; too many early taps end the song. |
-| Burrow Banquet | Tansy the aardvark | Tap a neighboring patch to walk. Push each golden root onto a glowing burrow. You can push one root at a time. |
-| Moon Basket | Cleo the cat | Tap an open basket to cycle its jewel. Put each of the four colors once in every row and column. The star-marked clues stay in place. |
-| Stack Strata | Bolo the beaver | Tap a log pile, then another pile to move its top log. A larger log cannot rest on a smaller one. Move the whole stack to the gold pad. |
-| Jelly Lanterns | Mona the jellyfish | Tap a lantern to change it and its four neighbors. Find the right combination to light every lantern. |
-| Dream Duos | Fenn the fox | Tap two sleeping dream tiles to reveal them. Find every matching pair. The dreams grow more numerous each round. |
-| Flock Shift | Kiko the pigeon | Tap a glowing ring to rotate its four neighboring stones. Restore the jewel mosaic to the small guide along the bottom. |
-| Kelp Kitchen | Mallow the snail | Tap a jar, then another to pour its top ingredient. You can pour onto the same color or into an empty jar. Sort each color into its own full jar. |
-| Tidehook | Nori the penguin | Hold to lower the hook. Slide to follow the fish, then lift when the hook reaches it. Catch eight fish before four misses. |
-| Bellwood Beats | Bibi the koala | Tap to hear Bibi’s song. Watch the colored bells, then tap them back in the same order. Learn three songs. |
-| Parcel Parade | Dottie the stork | Drag each moving parcel to the depot with the same color. Deliver nine before four mistakes. |
-| Wobble Bakery | Milo the mole | Drag the tray beneath the cake as gusts blow it around. Keep it safe for 30 seconds; three slips end the run. |
-| Mothlight | Vesper the bat | Drag Vesper close to the moth, then slowly lead it to the glowing flower. Guide all four home and avoid thorns. |
-| Cloud Potter | Saffron the raccoon | Swipe a clay band left to narrow it or right to widen it. Match the pale pattern for each of three little pots. |
+Former entry pages redirect into Zombie with an activity waypoint. They do not open separate game sessions. Wonderwake's 25 challenges and the five larger adventures now share the survivor settlement.
 
 ## Play locally
 
-With Node.js installed, run:
+Run a static server with Node.js:
 
 ```sh
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173** to choose a game. The seven entries are `/wonderwake.html`, `/soldier.html`, `/garden.html`, `/borrowed.html`, `/prism.html`, `/lantern.html`, and `/upside.html`. No install, build step, account, or internet connection is needed to play. The pinned Three.js engine is included in `vendor/` with its MIT license. The game can also be served by any ordinary static HTTP server.
+Open **http://127.0.0.1:5173**. The runtime needs no build step or account. Three.js, game assets and fonts are bundled locally; any ordinary static HTTP server works. Piano can download instrument samples and uses its built-in synthesizer when they are unavailable.
 
-To try on a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Both portrait and landscape have dedicated menus, camera framing, and thumb controls. Rotate during a run without losing progress; lift and place your thumbs again after rotating.
+For a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Portrait and landscape layouts support rotation during play. Release and replace held touches after rotating.
+
+## Survivor outposts
+
+Thirty numbered workstations are placed on safe terrain across six districts on each island. Their colored rings, signs and beacons identify them; completed activities shine green. Placement checks the current island's terrain, lava, scenery collisions and approach slopes. Outposts do not add movement obstacles.
+
+| District | Activities | Work for the settlement |
+| --- | --- | --- |
+| Greenhouse Quarter | Dewdrop Drift, Burrow Banquet, Moss Flip, Bellwood Beats, Dream Duos | Irrigation, food stores, trails and communications. |
+| Supply Harbor | Pond Post, Tidehook, Bubble Basket, Parcel Parade, Kelp Kitchen | Mail, fishing, water filters, deliveries and medicine. |
+| Repair Yard | Ribbon Reef, Ink Sling, Jelly Lanterns, Cloud Potter, Flock Shift | Water routes, crossing markers, floodlights and repairs. |
+| Rooftop Camp | Cloud Skimmer, Lane Lark, Wobble Bakery, Moon Basket, Stack Strata | Glider training, rooftop routes and camp construction. |
+| Night Watch | Moonbounce, Popwake, Orbit Guard, Bell Bloom, Mothlight | Perimeter defense, alarms, radio protection and returning scouts. |
+| Relay Command | Garden Guard, Borrowed Tomorrow, Prism Orchard, Lantern Vale, Upside Nib | Food defense, echo power, solar relays, island connections and gravity cores. |
+
+Press **Tab** or tap **Survivor Outposts** to see the map and directory. Selecting an activity sets a waypoint and returns you to the island. Follow its compass and beacon, approach on foot, then press **E** or tap the interaction prompt. The map does not launch activities remotely.
+
+The briefing explains the survivor's request and the activity controls. Select any available stage before starting. After a win, **Next stage** continues a longer activity; **Replay stage** and **Return to island** remain available. The first successful restoration of each activity grants **300 score, up to 20 health and 10 reserve armor**. Replays and later stages keep their records without awarding that first-restoration bonus again. Activity restoration persists across new survival runs.
+
+Entering an activity or opening the map freezes the live island. Enemies, projectiles, wave timers, position, equipment and cooldowns do not advance behind the overlay. Returning resumes that same in-memory battle. Activities load within the page, without iframes, another game route or a second animation loop.
+
+### Shared activity controls
+
+| Action | Keyboard / mouse | Touch |
+| --- | --- | --- |
+| Move in a movement activity | WASD or arrows | Direction pad / drag, as shown in its briefing |
+| Point, select or drag | Mouse; arrows/WASD move a visible keyboard cursor, hold Space/Enter to drag and release to act | Tap, hold, drag and release |
+| Activity actions | Labeled buttons; Tab focuses controls | Labeled action buttons |
+| Pause / resume | Esc or P | Pause / Resume |
+| Return to survival | Return to island button | Return to island button |
+
+Keyboard pointer controls apply to the activities originally designed for a mouse or finger. Pausing, backgrounding, rotating or leaving clears held keys and gestures. Native movement activities also support a controller: left stick or D-pad to move, A/B for the primary actions, X or a trigger for running/boosting, and Start to pause. Held input must return to neutral after menus or reconnection. Each activity's briefing remains the source for its specific controls.
+
+### Longer activities
+
+- **Upside Nib:** four complete gravity platforming worlds with three optional stars each, lantern checkpoints, enemies, power-ups and floor/ceiling routes. A/D or left/right moves, Space jumps, W/up flips gravity, and Shift runs or fires. Hold Jump for extra height. Its original pixel art, themed scenery and landing guides are retained. The shared pause menu retains Always run, Assist for the next restart and checkpoint retry. Assist grants unlimited retries and a gentler timer; its records remain separate from Classic. Original Nib best scores, medals, unlocks and preferences are preserved alongside the outpost checkpoint.
+- **Garden Guard:** defend five gardens by planting Sun bloom, Pea pod and Shellnut, collecting sun and using the shovel. Plants, enemies, resources, waves and lawnmowers remain part of each garden's simulation.
+- **Borrowed Tomorrow:** six echo chambers combine movement, recorded routes, borrowing and banking echoes. Space snaps, Shift dashes and E borrows; the action buttons expose the remaining tools.
+- **Prism Orchard:** eight gardens of mirrors, splitters, colored light and flower receivers. Rotate pieces to complete the circuit; Hint and Reset remain available.
+- **Lantern Vale:** freely fly the relief ship around the village and its two neighboring islands. Restore the village lanterns, awaken Moonbloom Sanctuary and calibrate Sunspire Observatory. W/S moves, A/D turns, Space rises, E descends and Shift boosts. Touch has flight gestures and altitude buttons.
+- **Moonbounce:** the full five-wave run, including offered powers between waves and the final Big Grump. Gather moons, steer clear of incoming creatures and launch the orbit to defend the watch perimeter.
+- **Popwake, Pond Post, Ribbon Reef and Dewdrop Drift:** their puzzle boards, mail routes, reef currents and gardens are selectable stages inside their outposts.
 
 ## Saved progress
 
-All six games automatically save their current progress to **localStorage** in this browser. Use **Continue** on the game menu, or the game card on the home page, to resume. Time spent away does not advance the run.
+Progress is stored in this browser's **localStorage**. No account is required. Clearing site data removes the saves; blocked or full storage leaves the current visit playable and displays a storage notice in activities.
 
-Garden Guard restores the chosen level, plants and health, enemies, sun resources and drops, projectiles, seed cooldowns, used lawnmowers, wave progress, selected plant, and game speed. A completed garden can resume at its victory screen and continue to the next garden. Each level’s best stars and time stay separate from its current run.
-
-Soldier vs Zombies restores the island, wave and remaining enemies, health, score, weapon, upgrade build, supplies, armor, Overdrive, field uplink progress, statistics, jetpack fuel, and ability cooldown. Pending upgrade choices are retained; the Palm-to-Ember transition is saved independently of the old tab session. Positions are moved to nearby walkable ground when the regenerated island scenery requires it. In-flight spells, acid, and cosmetic effects are cleared on restore. A completed campaign can resume into endless play.
-
-Borrowed Tomorrow restores the chamber, difficulty, exact loop clock, player and enemies, incoming shots, health, beats, bloom repairs, boss health, cooldowns, random sequence, and both recorded routes, including borrow teleports. You can also resume between loops or from a completed chamber. Chamber stars, best scores, fewest loops, sound, and difficulty preference are stored separately from the run.
-
-Wonderwake keeps its island progress, recruited friends, and current mission together in a separate campaign save. The first time you visit a challenge, it offers a compatible unfinished checkpoint from that former game when one exists. The original save remains untouched. Returning to the map or switching away preserves your place; replaying a mission never removes an earned friend.
-
-Prism Orchard restores the puzzle, mirror orientations, turn count, and hint use. Its completion stars and unlocked puzzles are saved separately. Lantern Vale saves your ship’s position, altitude, heading and momentum, lit lanterns, gathered fireflies, and discovered memories independently from the other games. Existing walking saves migrate to flight while keeping discoveries and lantern progress.
-
-No account or cookies are needed. Saves belong to this browser and device; clearing site data removes them. If storage is blocked or full, gameplay continues. Existing standalone and Little Arcade saves are retained so reorganizing the collection does not erase earlier progress. Old direct URLs remain available as archival entries, while the homepage presents only the six current games.
-
-## Lantern Vale
-
-Fly your own little spaceship around a handmade island village floating through open space. A camera follows behind the ivory-and-teal ship, revealing rooftops, coastal cliffs, and the underside of the island. Three layers of parallax stars and a soft nebula surround the world. Reduced-motion mode removes decorative banking, bobbing and backdrop movement.
-
-Gather airborne fireflies, then hover in the sky rings above five landmarks to light their lanterns. Five memories reward exploration around the coast and beneath the island: three memories earn two stars, and all five earn three. There are no lives or timers, and you can keep flying after lighting the village. A compass shows the next target, distance and altitude direction. The flight map lets you choose any island and records each discovery.
-
-Two nearby worlds reward a longer flight. **Moonbloom Sanctuary** is a lavender sculpture garden with luminous pools, mushroom groves, hanging vines, and a giant sleeping flower. Gather its three dew seeds to open the six Blender-authored petals and release luminous pollen. **Sunspire Observatory** is a sandstone island with suspended stairs, ruin arches, a telescope, and a brass orrery. Fly through its three calibration rings to set its miniature sun in motion. Both activities can be explored in any order; their discoveries and awakenings save independently of the village lanterns.
-
-On a phone, hold anywhere in the scene to fly forward. Drag left/right to turn and up/down to climb/descend; release to hover. Hold the separate Boost button with another thumb to fly faster. On a keyboard, W/S or up/down fly forward/backward, A/D or left/right turn, Q/E descend/climb, and Shift boosts. P or Esc pauses. Collision protection keeps the ship outside the island and buildings. Progress saves on the device, including existing journeys from the walking version.
-
-The world is authored in Blender at `blender/lantern-vale.blend` and exported as `assets/lantern-vale.glb`; `assets/lantern-world.json` describes the playable world. These assets are bundled locally. The editable scene keeps its objects separate; the 2.72 MB web model merges static geometry by material. The two neighboring islands retain their own editable Blender collections, close-up cameras, and lighting, and the flower petals and orrery remain separate for animation. `scripts/build-lantern-satellites.py` is composed by the main generator. The generation script was tested with Blender 4.5 LTS.
-
-To regenerate the editable Blender file and exported model with Blender installed, run:
-
-```sh
-blender --background --factory-startup --python scripts/build-lantern-world.py
-```
-
-Append `-- --render` to also create a native camera render at `test-results/lantern/blender-world.png`.
-
-## Prism Orchard
-
-Guide colored light into every flower in eight night gardens. Tap a crystal to rotate its mirror; diamonds split the beam, and colored filters keep only their own color. Separate beams can meet in a flower: red and blue make pink. The early puzzles teach each idea, and the final gardens combine branching paths and multiple colors.
-
-There is no timer. Finish in the fewest turns for three stars, or use **Hint** to highlight a useful crystal; a hinted attempt can earn at most two stars. **Reset** begins a fresh attempt. On a keyboard, focus the board, use arrow keys to select crystals, and press Enter or Space to turn one. Completing each garden opens the next.
-
-## Wonderwake mission engine: Ribbon Reef
-
-Guide a little manta through five coral currents. Drag one finger anywhere in the scene to move horizontally and vertically; lifting holds your course. Your whole trailing ribbon collects pearls. The current carries you forward, so look ahead and steer toward the next glowing arch. Keyboard arrows or WASD also steer.
-
-Passing through an arch's center builds a perfect streak. Close passes by coral earn extra flow points; missed arches and collisions cost a heart. Each swim takes about 47 seconds. Reach the end to open the next current. For three stars, pass at least 75% of the arches, earn five perfects, and collect six pearls. Retry a current to improve your record.
-
-## Wonderwake mission engine: Dewdrop Drift
-
-Hold anywhere in the garden and slide your thumb to tilt it. Every water marble rolls together; guide each into a thirsty flower. Release to level the garden and slow the drops. Six gardens introduce rocks, spring leaves, and breezes. The rim keeps drops on the island, while puddles send a drop back to its starting point without undoing flowers already filled.
-
-There is no timer or lives counter. A gentle touch helps you guide the remaining drops as the garden blooms. Earn three stars with at most one spill, two with at most four, or one for finishing. Keyboard arrows or WASD also tilt the garden.
-
-All three games support portrait and landscape, safe-area insets, cancelled touches, pause, reduced motion, and WebGL context recovery. Touch rendering uses at most 420,000 pixels and 1.35× density with multisample antialiasing disabled. Paused games stop repainting until something changes; actual frame rate depends on the device.
-
-## Wonderwake mission engine: Pond Post
-
-Help a little frog carry the post across five forest ponds. Hold and pull back to aim, watch the predicted arc, then release to leap onto the next lily pad. Collect stamps along the way and reach the mailbox to finish the route. Some pads move and the wind changes, so each jump is a small timing puzzle.
-
-There are no lives to lose: a missed jump returns the frog to the last safe pad. Aim for the centers of pads to make perfect landings and build a streak. The game supports phone play in portrait and landscape and saves route progress on the device.
-
-For three stars, collect at least half the stamps, make two perfect landings, and miss at most once. The predicted arc accounts for wind and moving pads. A flight can be resumed from the exact point where it was saved.
-
-| Action | Phone | Keyboard / mouse |
+| Save | Key | Contents |
 | --- | --- | --- |
-| Aim and leap | Hold anywhere, pull back, and release | Drag and release, or press Space, adjust with arrows or WASD, and press Space / Enter |
-| Pause / resume | Pause / Keep hopping | P / Esc |
+| Survival run | `games:save:soldier` | Island, wave, enemies, player, equipment, upgrades, health, score, supplies, armor, Overdrive, uplink, statistics and ability cooldowns. |
+| Outpost expedition | `games:zombie:expedition:v1` | Restored activity IDs, completed stage progress, per-activity checkpoints, play counts and selected waypoint. |
+| Previous Wonderwake campaign | `games:wonderwake:v1` | Read for migration when no valid outpost save exists; retained afterward. |
 
-The scene supports interrupted touches, rotation, background pausing, reduced motion, and WebGL recovery. On touch devices it caps the framebuffer at 420,000 pixels and 1.35× density, disables multisample antialiasing, and targets 30 frames per second. Actual performance depends on the device.
+Activity checkpoints are recorded while playing, when pausing and when leaving. Reentering the corresponding station offers **Continue activity**. Closing or reloading the page resumes through the Zombie menu: continue the survival run, visit the station and continue its checkpoint. Time away does not advance either simulation. Ending or restarting a survival run does not remove restored outposts.
 
-## Wonderwake mission engine: Popwake
+Migration imports compatible Wonderwake completion and checkpoints into the new expedition. Other standalone saves, scores and preferences remain on the device but are not automatically copied into every new activity. Keeping those keys does not make the retired standalone menus accessible.
 
-Draw a connected trail of jelly dominoes from the glowing starter, then lift your finger to set off a chain reaction. Your goal is to wake every sleeping jelly in eight handcrafted puzzles. Trails can revisit a square to branch, so a single pop can travel in more than one direction. Each puzzle has a limited trail budget; only new squares use it.
+The live enter/return transition preserves the exact battle. Reloading rebuilds randomized island scenery, as the existing survival save system already did: player and enemy positions may be reconciled to nearby walkable ground. In-flight spells, acid and cosmetic effects are cleared during that reload recovery. Pending upgrades, the Palm-to-Ember transition and completed-campaign endless continuation remain supported.
 
-Pops can wake a nearby jelly or ignite another domino. Gold jellies have a larger ripple that can reach across rocks, but your finger and dominoes must go around those rocks. Each puzzle shows a budget and a three-star target. Use no more than the target without a hint for three stars; longer successful routes earn one or two stars.
-
-There is no timer or lives counter. Redraw as often as you like, or use a hint when you need a nudge. A hint caps that attempt at two stars and remains active when you redraw; replay the puzzle for a fresh unhinted attempt. Puzzle completion and best stars are saved on the device. Popwake uses locally bundled Three.js and supports phone play in portrait and landscape.
-
-| Action | Phone | Keyboard / mouse |
-| --- | --- | --- |
-| Draw a trail | Drag from the blue spark across neighboring cells | Drag with the mouse, or press Space and use arrow keys or WASD |
-| Start the chain | Lift your finger | Release the mouse, or press Space / Enter |
-| Redraw / hint | REDRAW / HINT | R / H |
-| Pause / resume | Pause / Keep popping | P / Esc |
-
-The board supports interrupted touches, resizing, reduced motion, background pausing, and WebGL recovery. On touch devices the renderer limits its framebuffer to 420,000 pixels and 1.35× density, avoids multisample antialiasing, and targets 15 frames per second while idle and 30 while drawing or reacting. Reduced motion stops idle rendering while keeping chain reactions visible. Models and effects use reusable Three.js instance batches; actual performance depends on the device.
-
-## Wonderwake mission engine: Moonbounce
-
-A little star gathers moons into an orbit. **Touch and drag anywhere in the play area to move; lift your finger to launch every moon in the orbit.** They seek nearby space creatures and bounce between targets or off the rail. Creatures leave more moons to gather, and nearby pops can set off a chain. Collect the returning moons and send them out again. On a computer, drag and release with the mouse, or use WASD / arrow keys to move and Space to launch. The LAUNCH button also works with touch or a keyboard.
-
-The orbit begins with four moons and holds ten; a power can increase its capacity. Launch six or more at once to create a **Moonstorm**, giving each launched moon extra damage and an extra bounce. Orbiting moons also absorb a close enemy or shot, becoming loose moons that can be picked up again. Move away from enemies and their shots to protect your star. A few moons appear over time if the field gets sparse, so an empty orbit is recoverable. Hitting several creatures close together earns a chain and a score bonus.
-
-Play five waves of increasingly lively creatures. After each of the first four waves, choose one of three powers to keep for the rest of the run: more capacity, stronger moons, extra bounces, faster movement, a larger collection range, or extra health. Each new wave restores some health. Wave five ends with the Big Grump. New runs shuffle the visitor and power sequence. There is a victory screen, best score, replay, optional synthesized sound, help, and local autosave.
-
-The complete game works with one thumb in portrait or landscape, including after a rotation or interrupted touch. It also supports keyboard navigation, reduced motion, background pausing, and WebGL context recovery. On touch devices rendering caps its framebuffer at 420,000 pixels and 1.35× density, avoids multisample antialiasing, and targets 30 fps. Models, moons, shots, and effects use shared Three.js instance batches. The simulation caps loose moons at 80, orbiting moons at 22, launched moons at 96, enemies at 40, and incoming shots and effects at 80 each. Actual frame rate depends on the device.
-
-## Borrowed Tomorrow
-
-An original game built around a **time sail**: you move one corner of a glowing triangle, while your previous two routes move the other corners. The first loop supplies two crystal anchors. Bank that loop, and your route replaces an anchor; bank another, and both corners are past versions of you. Your echoes replay exactly what you did and then wait at their endpoints. Every few seconds you are cooperating with a decision you made earlier.
-
-**Hold SNAP** to catch machines inside the sail and turn them into beats. Put a glowing clockbloom inside the triangle, then snap to feed it those beats. Repair all three blooms to finish the room. Bloom II wakes on loop two, and III on loop three, so learning to leave useful memories is part of the goal. Later chambers require a sail edge to skim the bloom. A wide sail hits harder and turns enemy shots into more beats.
-
-Bank early when your route is useful, or let the loop clock run out. Repairs and beats carry over; machines reset and you recover up to 30 health. You keep only the last two memories. The three starting corners alternate each loop. Leave yourself spread-out endpoints and useful paths rather than a folded triangle. Running out of health or loops ends the attempt.
-
-| Chamber | What changes |
-| --- | --- |
-| 1 · A thread in time | Learn to catch machines, feed blooms, and record a useful route. |
-| 2 · The turning garden | The remaining crystal anchor rotates. Sentries start firing. |
-| 3 · Crosswind engine | Wind pushes the present. Past routes stay fixed. Skim blooms with an edge. |
-| 4 · The narrow hour | Crystal pillars constrain movement; armor and expanding clockwaves demand care. |
-| 5 · Three-body weather | The blooms drift around their orbits while both echoes replay their routes. |
-| 6 · Tomorrow, unbroken | Repair three blooms to expose the Unwinder, then catch its heart in a wide sail. |
-
-**Flow** gives more health, longer loops, slower machines, and more generous bloom edges. **Rift** tightens those margins. All chambers can be selected directly. Win in the room's par number of loops with at most five hits for three stars; finish within par plus two loops for two stars. Replay to improve your records.
-
-| Action | Keyboard / mouse | Phone |
-| --- | --- | --- |
-| Move / reshape sail | WASD, arrows, or click the garden | Left thumb joystick |
-| Snap repeatedly | Hold Space or E, or hold SNAP | Hold SNAP with right thumb |
-| Dash through danger | Shift | DASH |
-| Jump to your farther echo | Q | BORROW, available from loop two |
-| Bank the current route | R | BANK LOOP |
-| Pause / resume | P or Esc | Pause / Keep weaving |
-
-Dash briefly protects you and damages machines you pass through. Borrow jumps to the farther echo's position, which folds the sail until you move away; the jump is preserved in the next recording. Both abilities have cooldowns. The game includes contextual hints, a route preview between loops, optional synthesized sound, help, a final ending, and system reduced-motion support. Leaving the page, losing focus, or losing the WebGL context pauses the game.
-
-Phone controls support simultaneous movement and snapping, pointer cancellation, portrait and landscape, safe-area insets, and rotation during play. Touch rendering caps the framebuffer at 420,000 pixels and 1.35× density, disables multisample antialiasing, and targets 30 fps. Enemies, characters, glows, shots, and particles use shared instance batches. The simulation caps machines at 36, shots at 96, and effects at 72. Menus and paused or finished rooms render only when something changes. These are rendering budgets, not a guarantee of frame rate on every phone.
-
-## Garden Guard
-
-An original Plants vs. Zombies-inspired lane defense game, rendered with the locally bundled Three.js engine. All plants, zombies, lawnmowers, the cottage, and the garden are modeled in code.
-
-Choose any of **five gardens** with the **01 / 05** button. Each has five lanes across eight columns, its own wave schedule, lighting, starting resources, and saved completion stars. Winning offers **Next garden**; replay and direct level selection are available throughout. Each new garden starts with fresh plants, sun, and emergency mowers.
-
-| Level | Garden | Waves | Zombies | Starting sun | Challenge |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Backyard beginnings | 3 | 18 | 200 | Learn to grow sun and defend the lawn. |
-| 2 | Sunny side | 3 | 24 | 225 | Early attacks on the outside lanes, then more armor. |
-| 3 | Runner’s row | 3 | 26 | 250 | Faster runners arrive among the walkers. |
-| 4 | Dusk patrol | 4 | 29 | 225 | Sky sun arrives every nine seconds; protect your blooms. |
-| 5 | Last lawn standing | 5 | 40 | 300 | The longest siege, with tougher enemies and mixed rushes. |
-
-Runs last about two to four minutes. Cone-wearing zombies take more hits; runners wear turquoise and yellow and move faster. Each lane has one emergency lawnmower; a later zombie reaching home ends the run.
-
-| Plant | Cost | Role |
-| --- | --- | --- |
-| Sun bloom | 50 sun | Produces 25 sun, first after seven seconds and then every ten seconds. |
-| Pea pod | 100 sun | Automatically shoots zombies to its right in the same lane. |
-| Shellnut | 75 sun | Blocks zombies and absorbs bites so other plants can keep firing. |
-
-Tap a seed packet, then an empty lawn tile. Tap glowing suns to collect **25 sun**; uncollected suns disappear after fourteen active seconds. Sky suns appear regularly, and Sun blooms grow more. Keep the blooms on the left and put Pea pods in every lane before the larger waves. Seed packets have brief cooldowns. The shovel returns half a removed plant's cost, rounded down.
-
-Mouse and touch use the same controls. On a keyboard, **1–3** select plants, **4** selects the shovel, and **P / Esc** pauses. Tab onto the lawn, use arrow keys to choose a patch, and press Enter or Space to plant. The **1× / 2×** button changes game speed. Help and pause freeze the level; switching browser tabs also pauses it. Best completion stars and time are saved separately from the shooter's settings.
-
-The level includes victory and defeat screens, restart, WebGL context recovery, keyboard dialog navigation, and links back to all games. It works in portrait and landscape; rotating preserves the current run. All five gardens are available from the level picker. Each stores its own best stars and time.
-
-## Soldier vs Zombies
+## Surviving the islands
 
 A third-person island survival shooter with helicopter insertion, a flyable jetpack, Frozen Orb magic, three weapon styles, changing encounters and weather, optional field objectives, and an upgrade build carried through a two-island campaign.
 
@@ -231,6 +96,8 @@ A third-person island survival shooter with helicopter insertion, a flyable jetp
 | Skip insertion | Space or Enter | SKIP INSERTION |
 | Sprint | Hold Shift while moving, without firing | Push the movement stick fully, without firing |
 | Pause / resume | Esc or P | Pause button / Resume |
+| Enter nearby outpost | E | Tap the outpost prompt |
+| Outpost map / waypoint | Tab | Survivor Outposts button |
 | Sound | M or settings | Settings |
 | Helicopter redeploy | H after cooldown | Pause → Helicopter redeploy |
 
@@ -266,128 +133,68 @@ Phone graphics start at a capped resolution and adapt to sustained frame times. 
 
 Supplies use a fixed instance pool: all six together add six draw calls, with none while empty. A commander warning uses two reusable meshes and an uplink reuses three. Acid hazards reuse a three-slot pool, with at most seven draw calls while all warning globs are in flight. The new skies reuse the existing sky draw; Palm rain adds one draw and Ember adds none. These features add no dynamic lights and do not raise the active enemy cap. Important attack warnings remain visible with reduced motion.
 
-## Check changes
 
-Development checks use Node 22.22.2+, 24.15+, or 26+:
+## Piano
+
+The separate piano supports mouse, touch and computer-keyboard playing, octave changes, sustain, volume, instrument choices and reverb. **Songs** opens the searchable practice library. **Wait** mode waits for the correct notes; **Tempo** mode advances in time. **Listen** demonstrates the song, and the sheet-music control shows its notes on a staff. Practice can be stopped, restarted or left without affecting Zombie progress.
+
+Instrument samples are credited in the piano's sound menu. Grand and Old Piano use Alexander Holm's Salamander Grand Piano; other sampled instruments use Frank Wen's FluidR3_GM SoundFont. Both are distributed under CC BY 3.0 through the sources linked in that menu. The built-in synthesizer remains available offline.
+
+## Lantern Vale source assets
+
+The activity's village is authored in `blender/lantern-vale.blend` and exported as `assets/lantern-vale.glb`; `assets/lantern-world.json` describes the playable world. The editable Blender scene retains separate objects. Static web geometry is merged by material, while the flower petals and observatory orrery remain separate for animation.
+
+Moonbloom Sanctuary and Sunspire Observatory retain their own Blender collections, cameras and lighting. `scripts/build-lantern-satellites.py` is composed by the main generator. Regenerate the editable scene and web assets with Blender installed:
+
+```sh
+blender --background --factory-startup --python scripts/build-lantern-world.py
+```
+
+Append `-- --render` to create `test-results/lantern/blender-world.png`. The generation script was tested with Blender 4.5 LTS.
+
+## Development and checks
+
+Use a Node.js version supported by `package.json`: 22.22.2+, 24.15+, or 26+. Install development dependencies and run the simulation/runtime suite:
 
 ```sh
 npm ci
 npm test
 ```
 
-The runtime tests execute the real game modules, DOM, controls, geometry, and raycasts, substituting GPU rendering and audio. They cover deployment, weapons, cover, enemy navigation, acid warnings and damage, momentum scoring, encounter composition, campaign victory and endless continuation, uplinks, pause/resume, upgrades, supply limits, commander slams, low-frame-rate fire cadence, cross-island progression, lava, death/restart, saved settings, and mobile controls.
-
-For actual browser rendering and screenshots:
+These tests execute game rules, DOM controls, real Three.js geometry and raycasts with substituted GPU/audio APIs. Outpost tests cover all 30 placements on both actual island terrains across multiple scenery seeds, collision-free approaches, slope/lava checks, completion state and resource disposal. Browser testing is separate:
 
 ```sh
 npx playwright install chromium
+npm run test:activities
 npm run test:browser
 npm run test:mobile
 npm run test:abilities
-npm run test:garden
-npm run test:phone
-npm run test:campaign
-npm run test:saves
-npm run test:borrowed
-npm run test:moonbounce
-npm run test:popwake
-npm run test:pondpost
-npm run test:prism
-npm run test:ribbon
-npm run test:dewfall
-npm run test:lantern
-npm run test:lantern:space
-npm run test:lantern:expedition
-npm run test:collection
-npm run test:voyage
-npm run test:voyage:legacy
-npm run test:arcade
-npm run test:arcade:action
-npm run test:arcade:puzzles
-npm run test:arcade:skill
+npm run test:piano
 ```
 
-Use `CHROMIUM_PATH=/path/to/chromium npm run test:browser` to use an installed browser. Screenshots go into ignored `test-results/`. The browser check covers both islands, high/medium/low graphics, desktop and mobile layouts, simultaneous touch movement and firing, keyboard dialog navigation, saved preferences, real WebGL context loss/recovery, pause, and returning to the briefing. It needs permission to run Chromium and bind a localhost port. Visual quality, sound, and physical touch controls still benefit from hands-on playtesting.
+`test:activities` exercises the unified entry points, outposts and native controllers. Activity-specific aliases such as `test:upside`, `test:garden`, `test:moonbounce` and `test:lantern` select that activity in the same browser runner. The `test:arcade` and `test:voyage:legacy` aliases select groups. Older script names remain compatibility shortcuts; they no longer imply testing a standalone page or a complete old campaign playthrough.
 
-The mobile suite checks seven emulated phone sizes, notch insets, 44px touch targets, upgrade selection, combat status, debrief layouts, scrolling, and rotating while moving, firing, paused, or choosing an upgrade. Physical iOS/Android devices are still useful for GPU, thermal, audio, and browser-toolbar testing.
+Use `CHROMIUM_PATH=/path/to/chromium` to select an installed browser. Screenshots and measurements go into ignored `test-results/`. Browser checks verify actual rendering, transitions, input and saves; simulation tests exercise additional completion paths. Passing these checks does not establish that every full campaign, audio path or physical phone has been played. Real iOS/Android hardware remains useful for touch, GPU, audio, thermal and browser-toolbar behavior.
 
-The abilities suite checks tap/hold jetpack flight, steering, fuel, touch cancellation, Frozen Orb cooldowns, simultaneous touch controls, and first-person switching in a real browser.
+### Code organization
 
-The garden suite checks the game picker, real WebGL rendering, phones, landscape rotation, touch and keyboard planting, sun collection, shovel refunds, pause, help, victory, defeat, restart, saved completion, graphics restoration, and launching the existing shooter. The campaign suite plays all five levels using only collected sun and legal planting, then checks next-level navigation, the level picker, replay, and saved stars after a reload. The phone suite checks seven phone sizes at 2× or 3× density, simulated notches, 44px main controls, complete lawn visibility, rotation, GPU budgets, and no rendering while paused. Screenshots and measurements are written to `test-results/`.
+| Module | Responsibility |
+| --- | --- |
+| `index.html`, `hub.js`, `hub.css` | Two-destination home and saved-survival continuation. |
+| `soldier.html`, `main.js`, `world.js`, `world2.js` | Survival UI, one root animation loop, combat and island worlds. |
+| `activities/catalog.js` | Thirty activities, six districts, descriptions and stages. |
+| `activities/world.js` | Terrain-safe stations, batched workstation models, completion colors and projected waypoints. |
+| `activities/host.js`, `activities/activities.css` | Briefings, journal, shared controls, pause, lifecycle, rewards and HUD. |
+| `activities/controllers.js`, `activities/upside.js` | Native adapters around the existing game simulations and renderers. |
+| `activities/progress.js` | Expedition validation, persistence and Wonderwake migration. |
+| `voyage/`, `arcade/`, `*-game.js`, `*-scene.js` | Reused activity rules and scenes; historical standalone source remains available for reference. |
+| `activity-redirect.js` | Compatibility entry URLs and selected activity/stage waypoints. |
+| `piano/` | Independent instrument and learning experience. |
 
-The save suite checks real closing/reopening, Continue controls on small portrait and landscape phones, independent game slots, hub continuation, corrupt data, and blocked storage. Unit tests also cover exact lawn restoration, unique restored IDs, pending upgrades, and island transitions.
+Only one activity controller is alive at a time. The zombie renderer and battle remain allocated but suspended while that activity runs. Its renderer is created on entry and disposed on exit; Upside Nib uses Canvas 2D, while other activities reuse their Three.js scenes. All activity updates are scheduled by the zombie loop. Activities must not install another animation loop, global gameplay keyboard handler, or page navigation.
 
-The Borrowed Tomorrow suite completes all six chambers through legal controls in a real WebGL browser, tests keyboard and simultaneous touch input, and covers seven phone sizes with notches, rotation, bank/borrow flows, persistent memories, records, hub continuation, blocked/corrupt storage, and context recovery. A crowded arena test checks draw-call and geometry reuse. Pure simulation tests also complete every chamber in Flow and Rift and compare deterministic clocks and restored futures. Refresh its real-game hub thumbnail with `npm run test:borrowed -- --capture-art`.
+To add content, extend the activity catalog and controller adapter, place it in a district, and verify its save/restore, completion, input cancellation and disposal behavior. Do not add another home-page game card or standalone launch flow.
 
-The Moonbounce suite plays all five waves using legal movement, launches, and offered powers. In a real browser it also checks drag and release, pointer cancellation, backgrounding, rotation, notches, 44px controls, pause, graphics restoration, local saves and upgrade choices, the completed run, and seven phone layouts. It checks the crowded scene's draw calls and reuse of geometry. The simulation tests run multiple seeds and verify deterministic clocks, projectiles, and restores. Refresh the actual 3D hub thumbnail with `npm run test:moonbounce -- --capture-art`.
+For local inspection, `/soldier.html?debug=1` exposes `window.__game`, including `.activities.host`, `.activities.world` and `.activities.progress`. Add `&activity=upside` to track that outpost, `&activityLevel=2` to request a stage, `&level=2` for Ember Isle, or `&q=low`, `&q=medium`, `&q=high` to choose a rendering tier. Tracking an activity does not bypass walking to its station. Debug helpers are development tools, not access controls.
 
-The Popwake suite completes all eight puzzles with legal trails and three-star solutions. Real-browser checks cover keyboard controls, a fully drawn branching trail, interrupted fingers, rotation, safe areas, pause, context recovery, an in-progress reaction restored from local storage, hints and records, blocked/corrupt storage, and seven phone layouts. The preview is captured from a live chain reaction with `npm run test:popwake -- --capture-art`.
-
-The Pond Post suite completes all five routes through legal jumps and compares predicted landings with the actual results. Browser checks cover real touch gestures on seven phone layouts, interruptions and rotation, keyboard controls, a resumed midair flight, missed-jump recovery, independent saves, graphics restoration, and blocked or corrupt storage. Capture its live-game preview with `npm run test:pondpost -- --capture-art`.
-
-Run `npm run test:garden -- --capture-art` to refresh the garden thumbnail and responsive WebP previews. Use `npm run test:garden -- --prepare-previews` to re-encode the existing source previews without running the full suite. The hub serves 480px or 960px images instead of the full PNG sources.
-
-Phone rendering uses instanced plant, zombie, mower, projectile, and shadow batches. Garden Guard caps its framebuffer at 360,000 pixels and 1.25× density, disables multisample antialiasing on touch devices, and renders active play at up to 30 frames per second. The phone menu is static; paused, finished, help, and background screens stop rendering until something changes. Tile geometry is recalculated only after resizing, and the HUD refreshes at ten updates per second. The shooter keeps adaptive graphics and caps touch devices at 60 frames per second in play and 30 in its animated menu. These are resource budgets; actual performance depends on the device.
-
-Each game owns its entry page and UI. The shooter is `soldier.html` with its existing modules. Garden Guard uses `garden.html`, `garden-main.js` (controls and UI), `garden-scene.js` (Three.js rendering), and `garden-game.js` (deterministic rules), and `garden-levels.js` (five level definitions). To add a game, give it a separate entry page and add its link to `index.html`; keep the hub free of gameplay code.
-
-The locally bundled Barlow Condensed display font is licensed under the [SIL Open Font License](assets/fonts/OFL.txt). No external font requests are needed.
-
-For shooter development inspection, `/soldier.html?debug=1` exposes `window.__game`; `?level=2` previews Ember Isle, and `?q=low`, `?q=medium`, or `?q=high` selects a rendering tier. These are local development shortcuts, not access controls.
-
-For Garden Guard, `/garden.html?debug=1` exposes `window.__garden` with the simulation and scene for local inspection. Append `&level=2` through `&level=5` to preview another garden. Normal play does not expose these helpers.
-
-Borrowed Tomorrow follows the same separation: `borrowed.html`, `borrowed.css`, `borrowed-main.js` (input, UI, sound, saves), `borrowed-scene.js` (Three.js), `borrowed-game.js` (fixed-clock simulation), and `borrowed-levels.js` (six chamber definitions). `/borrowed.html?debug=1&level=5` exposes `window.__borrowed` for local inspection. Normal play does not expose this helper.
-
-Moonbounce uses `moonbounce.html`, `moonbounce.css`, `moonbounce-main.js` (input, UI, sound, saves), `moonbounce-scene.js` (Three.js), and `moonbounce-game.js` (fixed-clock simulation and waves). `/moonbounce.html?debug=1&seed=82941` exposes `window.__moonbounce` with a repeatable test seed. Normal play uses a fresh seed and does not expose the helper.
-
-Popwake uses `popwake.html`, `popwake.css`, `popwake-main.js` (input, UI, sound, saves), `popwake-scene.js` (Three.js), and `popwake-game.js` (puzzles and fixed-clock chain reactions). `/popwake.html?debug=1` exposes `window.__popwake` for local inspection. Normal play does not expose this helper.
-
-Pond Post uses `pondpost.html`, `pondpost.css`, `pondpost-main.js` (input, UI, sound, saves), `pondpost-scene.js` (Three.js), and `pondpost-game.js` (fixed-clock flight and routes). `/pondpost.html?debug=1` exposes `window.__pondpost` for local inspection. Normal play does not expose this helper.
-
-Prism Orchard, Ribbon Reef, and Dewdrop Drift each use their own `{slug}.html`, `{slug}.css`, `{slug}-main.js`, `{slug}-scene.js`, and `{slug}-game.js`, with slugs `prism`, `ribbon`, and `dewfall`. Their `?debug=1` pages expose `window.__prism`, `window.__ribbon`, and `window.__dewfall` for local inspection. Normal play does not expose these helpers. The respective browser suites exercise legal completion, real touch controls, phone layouts, interruption and graphics recovery, and storage failures. Their hub previews are captured from the actual Three.js scenes.
-
-Lantern Vale uses `lantern.html`, `lantern.css`, `lantern-main.js`, `lantern-scene.js`, `lantern-ship.js`, `lantern-space.js`, `lantern-expedition-scene.js`, and `lantern-game.js`. `/lantern.html?debug=1` exposes `window.__lantern` for local inspection. Its browser suites fly a legal route through all five lanterns and memories, including below the island, and exercise chase-camera framing, multi-touch steering and boost, old-save migration, exact flight continuation, graphics recovery, and seven phone layouts. The expedition suite verifies both detailed Blender landscapes, legally flies all six activity nodes, checks visible landmark transformations and saved awakenings, and migrates older flight saves. Normal play does not expose the helper.
-
-The collection browser suite checks all six homepage choices, independent standalone and adventure continuation, actual preview loading, 44px phone controls, and notch clearance in small portrait and landscape layouts. `test:voyage` checks the connected campaign shell; `test:voyage:legacy` checks the five adapted mission engines. Pure campaign tests verify island unlocks from distinct friends, festival and full-crew milestones, checkpoint recovery, and storage isolation.
-
-The 20 character mission engines are defined in `arcade/action-games.js`, `arcade/puzzle-games.js`, and `arcade/skill-games.js`. Wonderwake combines them with five original engines through the `voyage/` modules. Its campaign data lives under `games:wonderwake:v1`. The previous `games:save:arcade:<game-id>` checkpoints are preserved; the six-card home page reads campaign progress without loading any 3D engine.
-
-The arcade browser suites test all twenty phone layouts, local checkpoints and complete real-touch play-throughs. Run `node scripts/capture-arcade-art.mjs` to refresh the character previews from the real 3D scenes.
-
-
-### Upside Nib
-
-A gravity-flipping pixel platformer built with Canvas 2D. Nib runs, jumps, stomps and flips between the floor and ceiling across four worlds. Each world now has three optional lantern stars and clear, collector (all three stars), and clean-run (no deaths or retries) medals. Desktop, touch portrait/landscape, and standard gamepads are supported.
-
-- **Controls:** arrows/A-D move; Space/Z/W jump (hold for height); X/Shift run and fire; C/S/Down flip; P/Esc pause; M mute. Touch has a dedicated control deck in portrait. Gamepads use stick/d-pad, A jump, B flip, X/trigger run, and Start pause.
-- **Checkpoints:** light a flag by landing near it. Retrying restores saved blocks, coins, stars, enemies and power; one life is spent in Classic. Elapsed time and deaths stay on the run record. Respawn includes brief protection.
-- **Assist:** unlimited checkpoint retries and a slower countdown. Assisted records are kept separately from Classic records. Change Assist before starting a new run.
-- **Settings:** separate effects/music, reduced motion (respects the OS preference), auto-run, and Assist. Available on the title and pause screens.
-- **Save:** unlocks, best score, per-world records and preferences stay in localStorage. Unavailable or corrupt storage does not prevent play.
-- **Verification:** `npm test`, `UPSIDE_SKIP_CAPTURE=1 npm run test:upside`, and `npm run test:upside:quality`. The replay tests search for a route, then replay its inputs from a fresh simulation without rewinds. Browser checks cover real controls, responsive layout, accessibility, settings, and an accelerated campaign replay.
-
-The twenty improvements in this pass:
-
-| # | Improvement | Player benefit |
-|---|---|---|
-| 1 | Grounded checkpoint activation and world snapshots | Safe recovery without duplicating coins or score. |
-| 2 | Faster respawn, temporary protection and checkpoint retry | Less waiting and fairer recovery. |
-| 3 | Three optional lantern stars in every world | Reasons to explore and master the gravity routes. |
-| 4 | Clear, collector and clean-run medals | Distinct challenges beyond reaching the flag. |
-| 5 | Per-world score, time and star records | Persistent goals, separated by Classic and Assist. |
-| 6 | Assist mode | Unlimited retries and a gentler countdown. |
-| 7 | Physics edge-case repairs | Safe simulation steps, better corner correction and deferred growth. |
-| 8 | Contextual teaching hints | Learn blocks, stomps and air-flip recharge while playing. |
-| 9 | Gap signs | Read where to leap or transfer between worlds. |
-| 10 | Four world palettes and layered scenery | Meadow, sunset, twilight and lantern-night identities. |
-| 11 | Gravity destination guide | See the opposite landing surface before flipping. |
-| 12 | Landing squash, dust and lantern trails | Clearer movement feedback, with reduced-motion support. |
-| 13 | Progress, checkpoint, star and gravity HUD | Understand the route and available flip at a glance. |
-| 14 | Detailed results with retry/next actions | Review performance and immediately try another run. |
-| 15 | Chapter cards with saved records and medals | Choose a world and a personal challenge. |
-| 16 | Portrait control deck and width-aware pixel scaling | At least twenty tiles of look-ahead with separated controls. |
-| 17 | Reliable keyboard and multi-touch input | Aliases, cancelled touches and pause cannot leave controls stuck. |
-| 18 | Standard gamepad support | Play with sticks, d-pad and face buttons. |
-| 19 | Persistent sound, music, motion and auto-run preferences | Tune the experience to the player. |
-| 20 | Accessible help, settings and pause dialogs | Keyboard focus stays in menus; status and controls have readable labels. |
+The locally bundled Three.js engine retains its MIT license. Barlow Condensed is bundled under the [SIL Open Font License](assets/fonts/OFL.txt); no external font requests are needed.

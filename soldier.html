@@ -16,7 +16,7 @@
     <meta name="theme-color" content="#101916" />
     <meta
       name="description"
-      content="Drop into a wild island. Hold your ground against the horde. A third-person survival game."
+      content="Survive the zombie islands and rebuild 30 survivor outposts. Explore, discover activities, and bring the settlement back to life."
     />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="icon-180.png" />
@@ -28,8 +28,9 @@
       type="font/ttf"
       crossorigin
     />
-    <link rel="stylesheet" href="styles.css?v21" />
-    <title>Soldier vs Zombies — Island Survival</title>
+    <link rel="stylesheet" href="styles.css?v22" />
+    <link rel="stylesheet" href="activities/activities.css?v22" />
+    <title>Zombie — Survivor Islands</title>
     <script type="importmap">
       {
         "imports": {
@@ -233,7 +234,7 @@
       <div class="menu-content">
         <section class="hero">
           <p class="eyebrow">
-            <span class="line"></span> OUTNUMBERED. NEVER OUTGUNNED.
+            <span class="line"></span> SURVIVE. EXPLORE. REBUILD.
           </p>
           <h1>
             SOLDIER<span class="title-bottom"
@@ -242,7 +243,7 @@
           </h1>
           <p class="hero-description">
             Paradise is lost.<br />
-            Adapt to the horde. Secure both islands.
+            Fight for the islands. Bring 30 survivor outposts back to life.
           </p>
           <div class="mission-pills">
             <span><i></i> BUILD YOUR RUN</span><span>TWO-ISLAND CAMPAIGN</span>
@@ -321,7 +322,7 @@
           <button id="continueBtn" class="primary-button hide" disabled><span>CONTINUE RUN</span><span aria-hidden="true">→</span></button>
           <p id="savedRunInfo" class="deploy-note hide"></p>
           <button id="startBtn" class="primary-button" disabled>
-            <span>DEPLOY NOW</span><span aria-hidden="true">→</span>
+            <span>EXPLORE THE ISLAND</span><span aria-hidden="true">→</span>
           </button>
           <p id="loadStatus" class="deploy-note" role="status">
             Preparing the island…
@@ -341,6 +342,7 @@
         </section>
       </div>
       <footer class="menu-footer">
+        <p id="outpostStartInfo" class="save-status">30 survivor outposts · E to interact · Tab for map</p>
         <div class="control-guide desktop-guide">
           <span><kbd>W A S D</kbd> MOVE</span><span><kbd>MOUSE</kbd> LOOK</span
           ><span><kbd>CLICK</kbd> HOLD TO AIM & FIRE</span
@@ -473,6 +475,7 @@
             <span><strong>FROZEN ORB</strong> Launch ice shards that damage and slow the horde.</span>
             <span><strong>CAMERA BUTTON</strong> Switch between first-person and third-person views.</span>
           </div>
+          <p>Walk to a glowing outpost and press E or tap its prompt to help the survivors. Tab opens the outpost map; choose a destination to track its beacon. Activities save your progress and pause the island until you return.</p>
           <p>Hold jump to engage the jetpack, steer with movement controls, and release to descend. Land to recharge fuel. Frozen Orb sends out ice shards and ends in a burst; watch its button for the next cast.</p>
           <p>Choose your weapon before deploying. Hold FIRE with any weapon; ammunition is unlimited. Clear waves to upgrade your build.</p>
           <p>Follow the uplink arrow to the beacon. Keep nearby hostiles clear and stay inside for five seconds to earn armor, Overdrive, and bonus points. Uplinks are optional; leave the ring when you need breathing room.</p>
@@ -590,6 +593,6 @@
     </section>
     <div id="fps" class="hide"></div>
     <div id="ver"></div>
-    <script type="module" src="boot.js?v21"></script>
+    <script type="module" src="boot.js?v22"></script>
   </body>
 </html>
