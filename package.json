@@ -38,7 +38,12 @@
     "test:upside:quality": "node tests/activities-browser.mjs --activity=upside",
     "test:activities": "node tests/activities-browser.mjs",
     "test:polish": "node tests/activity-polish-browser.mjs",
-    "test:survival:polish": "node tests/survival-polish-browser.mjs"
+    "test:survival:polish": "node tests/survival-polish-browser.mjs",
+    "test:survival:combat": "node tests/survival-combat-browser.mjs",
+    "test:survival:settings": "node tests/survival-settings-browser.mjs",
+    "test:survival:support": "node tests/survival-support-browser.mjs",
+    "test:outposts": "node tests/activity-directory-browser.mjs",
+    "test:survival:50": "node tests/survival-combat-browser.mjs && node tests/survival-settings-browser.mjs && node tests/survival-support-browser.mjs && node tests/activity-directory-browser.mjs"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

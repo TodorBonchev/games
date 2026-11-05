@@ -1,5 +1,5 @@
-import { restoreRanks } from './progression.js?v21';
-import { createEncounter } from './encounters.js?v21';
+import { restoreRanks } from './progression.js?v25';
+import { createEncounter } from './encounters.js?v25';
 
 // Only data crosses a reload. Three.js objects, held controls and transient
 // projectiles are rebuilt by the game after the saved world data is validated.
@@ -9,6 +9,8 @@ export function parseSoldierSave(saved) {
   const point = value => Array.isArray(value) && value.length === 3 && value.every(n => number(n, -5000, 5000));
   const types = ['walker', 'runner', 'brute', 'spitter', 'fiery'];
   if (!saved || saved.schema !== 1 || ![1, 2].includes(saved.level) || !['play', 'upgrade', 'victory'].includes(saved.phase) || !integer(saved.wave, 1, 999)) return null;
+  if (saved.worldSeed !== undefined && !integer(saved.worldSeed,0,0xffffffff)) return null;
+  if (saved.worldLayoutMobile !== undefined && typeof saved.worldLayoutMobile !== 'boolean') return null;
   const encounter = createEncounter(saved.wave, saved.level);
   if (!integer(saved.score, 0, Number.MAX_SAFE_INTEGER) || !number(saved.hp, 0.001, 100) || !integer(saved.toSpawn, 0, encounter.count) || saved.waveTotal !== encounter.count || !number(saved.waveBreak, -1, 4) || !number(saved.spawnT, 0, 10)) return null;
   if (!['rifle', 'burst', 'scatter'].includes(saved.weapon) || typeof saved.campaignComplete !== 'boolean') return null;
@@ -21,6 +23,7 @@ export function parseSoldierSave(saved) {
   if (saved.recoveryHeld && (saved.phase !== 'play' || saved.waveBreak < 0 || saved.toSpawn !== 0 || saved.zombies.length)) return null;
   if (!Array.isArray(saved.drops) || saved.drops.length > 6 || !saved.drops.every(drop => drop && ['medkit', 'overdrive'].includes(drop.type) && point(drop.position) && number(drop.age, 0, 45))) return null;
   if (saved.field && (!point(saved.field.position) || typeof saved.field.active !== 'boolean' || typeof saved.field.captured !== 'boolean' || !number(saved.field.progress, 0, 5) || !number(saved.field.doneTime, 0, 10000000))) return null;
+  if (saved.field?.edgeGrace !== undefined && !number(saved.field.edgeGrace,0,.35)) return null;
   const choiceIds = ['damage', 'cadence', 'speed', 'armor', 'recovery', 'magnet', 'shield', 'overdrive', 'bounty'];
   if (!Array.isArray(saved.choices) || saved.choices.length > 3 || !saved.choices.every(id => choiceIds.includes(id)) || (saved.phase === 'upgrade' && (saved.choices.length !== 3 || new Set(saved.choices).size !== 3))) return null;
   if (saved.phase === 'victory' && (!saved.campaignComplete || saved.level !== 2)) return null;

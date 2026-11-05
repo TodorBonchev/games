@@ -5,6 +5,7 @@ export function createRecoveryControls({ document, onHold, onReady }) {
   root.setAttribute('aria-label', 'Wave recovery');
   root.innerHTML = '<div><small>AREA SECURED</small><strong id="recoveryStatus"></strong></div><p id="recoveryHint">Collect supplies or finish the uplink.</p><nav aria-label="Recovery choices"><button id="recoveryHold" type="button">Keep scavenging <kbd>C</kbd></button><button id="recoveryReady" type="button">Upgrade now <kbd>N</kbd></button></nav>';
   document.body.append(root);
+  const preview=document.createElement('span');preview.id='recoveryNext';preview.className='recovery-next';root.append(preview);
   const hold = root.querySelector('#recoveryHold'), ready = root.querySelector('#recoveryReady');
   const touches = new Map(), view = document.defaultView;
   let suppressClickUntil = 0, lastState = '';
@@ -32,15 +33,16 @@ export function createRecoveryControls({ document, onHold, onReady }) {
   }
   return {
     cancel() { touches.clear(); },
-    update({ active, held, seconds }) {
+    update({ active, held, seconds, next = '', supply = '' }) {
       root.hidden = !active;
       if (!active) touches.clear();
       document.body.classList.toggle('recovering', active);
-      const remaining = Math.ceil(seconds), state = `${held}:${remaining}`;
+      const remaining = Math.ceil(seconds), state = `${held}:${remaining}:${next}:${supply}`;
       if (state === lastState) return;
       lastState = state;
       root.querySelector('#recoveryStatus').textContent = held ? 'Your next wave can wait.' : `Upgrade in ${remaining}s`;
-      root.querySelector('#recoveryHint').textContent = held ? 'Supplies stay fresh. Explore, then upgrade when ready.' : 'Collect supplies or finish the uplink.';
+      root.querySelector('#recoveryHint').textContent = supply || (held ? 'Supplies stay fresh. Explore, then upgrade when ready.' : 'Collect supplies or finish the uplink.');
+      preview.textContent=next;
       hold.disabled = !!held; hold.setAttribute('aria-pressed', String(!!held));
       hold.firstChild.textContent = held ? 'Scavenging ' : 'Keep scavenging ';
     },

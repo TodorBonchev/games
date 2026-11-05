@@ -1,0 +1,126 @@
+/* One shared, scrollable settings surface is available before and during play. */
+#setPanel.survival-settings-panel .dialog-card,
+.touch #setPanel.survival-settings-panel .dialog-card {
+  display: block;
+  width: min(100%, 620px);
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.survival-settings { margin: 24px 0; text-align: left; }
+.survival-settings-group { border-top: 1px solid #b9c9b43d; }
+.survival-settings-group:last-of-type { border-bottom: 1px solid #b9c9b43d; }
+.survival-settings-group > summary {
+  min-height: 48px;
+  padding: 15px 2px;
+  color: #f2eed8;
+  font: 700 13px/1.4 system-ui, sans-serif;
+  letter-spacing: .01em;
+  cursor: pointer;
+}
+.survival-settings-rows { padding-bottom: 12px; }
+.survival-preference {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #b9c9b418;
+}
+.survival-preference-copy label { display: block; color: #f3f4e8; font: 600 13px/1.4 system-ui, sans-serif; cursor: pointer; }
+.survival-preference-copy small { display: block; margin-top: 4px; color: #bac9ba; font: 11px/1.45 system-ui, sans-serif; }
+.survival-preference-control { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.survival-preference-control output { min-width: 26px; color: #f2d59d; font: 600 11px/1.2 system-ui, sans-serif; text-align: right; }
+.survival-preference input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  border: 0;
+  border-radius: 6px;
+  background: radial-gradient(circle at 13px 50%, #a9b7aa 0 8px, transparent 9px), linear-gradient(#09140f, #09140f) center / 42px 24px no-repeat;
+  cursor: pointer;
+}
+.survival-preference input[type='checkbox']:checked { background: radial-gradient(circle at 31px 50%, #17291e 0 8px, transparent 9px), linear-gradient(#eacb8b, #eacb8b) center / 42px 24px no-repeat; }
+.survival-preference.is-range { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.survival-preference input[type='range'] { flex: 1; min-width: 0; height: 32px; margin: 0; padding: 0; accent-color: #eacb8b; cursor: pointer; }
+.survival-preference input:focus-visible,
+.survival-settings-group > summary:focus-visible { outline: 2px solid #f6d798; outline-offset: 3px; }
+.survival-preference.unavailable { opacity: .55; }
+.survival-preference input:disabled { cursor: default; }
+.survival-settings-note { margin: 12px 0 0; color: #b7c5b6; font: 11px/1.45 system-ui, sans-serif; }
+#setPanel.survival-settings-panel .setting-toggles { margin-top: 16px; }
+#setPanel.survival-settings-panel #setClose {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 18px;
+  box-shadow: 0 0 0 8px #14251e, 0 -12px 22px #14251e;
+}
+body #cross { transform: scale(var(--survival-crosshair-scale, 1)); transform-origin: center; }
+
+/* These settings are visual only; the input layer mirrors movement separately. */
+.touch.survival-left-handed #stick { left: auto; right: calc(var(--action-edge) + env(safe-area-inset-right)); transform-origin: bottom right; }
+.touch.survival-left-handed #fireBtn { right: auto; left: calc(var(--action-edge) + env(safe-area-inset-left)); }
+.touch.survival-left-handed #jumpBtn { right: auto; left: calc(var(--action-edge) + var(--fire-size) + 14px + env(safe-area-inset-left)); }
+.touch.survival-left-handed #orbBtn { right: auto; left: calc(var(--action-edge) + var(--fire-size) + 17px + env(safe-area-inset-left)); }
+.touch.survival-left-handed #jetpackHud,
+.touch.survival-left-handed #weaponHud { right: auto; left: calc(var(--action-edge) + env(safe-area-inset-left)); }
+.touch.survival-toggle-fire #fireBtn::after { content: 'TAP TO START / STOP'; }
+.touch.survival-toggle-sprint #stick::after { content: 'PUSH FULLY TO SPRINT'; }
+@media (orientation: landscape) {
+  .touch.survival-left-handed #orbBtn { left: calc(var(--action-edge) + var(--fire-size) + var(--jump-size) + 28px + env(safe-area-inset-left)); }
+  .touch.survival-left-handed #jetpackHud { left: calc(var(--action-edge) + var(--fire-size) + 14px + env(safe-area-inset-left)); }
+}
+
+.survival-high-contrast #hud,
+.survival-high-contrast #weaponHud,
+.survival-high-contrast #fieldObjective,
+.survival-high-contrast #jetpackHud,
+.survival-high-contrast #eliteHud,
+.survival-high-contrast #overdriveHud,
+.survival-high-contrast #pickupNotice,
+.survival-high-contrast #waveBanner,
+.survival-high-contrast .recovery-panel,
+.survival-high-contrast .combat-target,
+.survival-high-contrast .combat-last,
+.survival-high-contrast .combat-cover,
+.survival-high-contrast .combat-orb-ready,
+.survival-high-contrast #expeditionJournal,
+.survival-high-contrast #expeditionWaypoint {
+  background: #07130f;
+  color: #fff8df;
+  border-color: #e7efda;
+  text-shadow: none;
+}
+.survival-high-contrast #hud { border: 1px solid #e7efda; border-radius: 7px; }
+.survival-high-contrast #hud .hud-stat > span,
+.survival-high-contrast #hud .health-label,
+.survival-high-contrast #encounterHint,
+.survival-high-contrast #weaponHint,
+.survival-high-contrast #fieldStatus { color: #e8f0df; }
+.survival-high-contrast #hpbar { background: #372b28; border: 1px solid #fff8df; }
+.survival-high-contrast #hp { background: #b9eea1; }
+.survival-high-contrast #cross::before,
+.survival-high-contrast #cross::after { border-color: #fff; filter: drop-shadow(0 0 2px #000); }
+.survival-high-contrast #cross i { background: #fff; }
+.survival-high-contrast .utility-button,
+.survival-high-contrast .tb { border-color: #fff8df; color: #fff8df; background-color: #07130f; }
+.survival-high-contrast #expeditionJournal small,
+.survival-high-contrast #expeditionWaypoint small,
+.survival-high-contrast .combat-target-health { color: #e8f0df; }
+.survival-reduced-flashes #vig.hurt { background: radial-gradient(ellipse at center, transparent 48%, #07150e44 100%); }
+.touch.survival-reduced-flashes.overdrive #fireBtn {
+  background: #14291f;
+  border: 2px solid #b9efea;
+  box-shadow: none;
+  animation: none;
+  transition: none;
+}
+@media (max-width: 440px) {
+  #setPanel.survival-settings-panel .dialog-card { padding: 22px 18px; }
+  .survival-preference { gap: 9px; }
+}

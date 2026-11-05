@@ -1,4 +1,6 @@
 // Small, browser-local comfort controls shared by mouse and touch input.
+import { initSurvivalSettings } from './survival-settings.js';
+export { getCombatPreferences, subscribePreferences } from './survival-settings.js';
 const saved = key => { try { return localStorage.getItem(key); } catch { return null; } };
 const save = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
 const clampSensitivity = value => Number.isFinite(value) ? Math.min(1.75, Math.max(.5, value)) : 1;
@@ -10,6 +12,7 @@ export const getLookSensitivity = () => sensitivity;
 export const reducedMotion = () => motion === 'reduced' || systemMotion.matches;
 
 export function initPreferences() {
+  initSurvivalSettings();
   const slider = document.getElementById('lookSensitivity');
   const output = document.getElementById('lookSensitivityValue');
   const motionButton = document.getElementById('motionBtn');

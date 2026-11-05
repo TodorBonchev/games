@@ -232,7 +232,7 @@ export function createActivityWorld({ scene, groundH, islandD, lavaF = () => 0, 
     values.needsUpdate = true; glow.instanceColor.needsUpdate = beams.instanceColor.needsUpdate = true;
     if (Object.hasOwn(next, 'target')) setTarget(next.target);
   }
-  function label(entry, station, player, camera, width, height, isTarget) {
+  function label(entry, station, player, camera, width, height, isTarget, journalRect) {
     if (!station || !camera) { entry.element.hidden = true; return; }
     const distance = Math.hypot(station.x - player.x, station.z - player.z);
     projected.set(station.x, station.y + 3.65, station.z);
@@ -247,8 +247,8 @@ export function createActivityWorld({ scene, groundH, islandD, lavaF = () => 0, 
       const length = Math.max(Math.abs(nx) / .80, Math.abs(ny) / .65, .001); nx /= length; ny /= length;
     }
     const marginX = Math.min(105, width * .30), marginY = Math.min(105, height * .27);
-    const x = Math.max(marginX, Math.min(width - marginX, (nx + 1) * width / 2));
-    const y = Math.max(72, Math.min(height - marginY, (ny + 1) * height / 2));
+    let x = Math.max(marginX, Math.min(width - marginX, (nx + 1) * width / 2));
+    let y = Math.max(72, Math.min(height - marginY, (ny + 1) * height / 2));
     entry.element.hidden = false; entry.element.style.left = `${Math.round(x)}px`; entry.element.style.top = `${Math.round(y)}px`;
     entry.element.classList.toggle('is-target', isTarget); entry.element.classList.toggle('is-complete', station.completed); entry.element.classList.toggle('is-offscreen', outside);
     entry.element.style.setProperty('--activity-color', station.completed ? '#88f4ad' : station.color);
@@ -256,6 +256,17 @@ export function createActivityWorld({ scene, groundH, islandD, lavaF = () => 0, 
     entry.title.textContent = `${station.completed ? '✓ ' : ''}${station.originalTitle}`;
     entry.detail.textContent = `${isTarget ? 'WAYPOINT · ' : ''}${Math.round(distance)} m · ${station.districtTitle}`;
     entry.arrow.hidden = !outside; entry.arrow.style.transform = `rotate(${Math.atan2(ny, nx)}rad)`;
+    // Edge waypoints must remain readable beside the clickable outpost journal.
+    // Measure only when label content or viewport changes; most frames reuse it.
+    const measureKey = `${entry.title.textContent}|${entry.detail.textContent}|${width}|${height}`;
+    if (entry.measureKey !== measureKey) { entry.measureKey = measureKey; entry.labelWidth = entry.element.offsetWidth; entry.labelHeight = entry.element.offsetHeight; }
+    const half = entry.labelWidth / 2, labelHeight = entry.labelHeight;
+    if (journalRect?.width && half && x + half > journalRect.left && x - half < journalRect.right && y > journalRect.top && y - labelHeight < journalRect.bottom) {
+      const beside = journalRect.right + 8 + half;
+      if (beside + half <= width - 8) x = beside;
+      else y = Math.min(height - marginY, journalRect.bottom + 8 + labelHeight);
+      entry.element.style.left = `${Math.round(x)}px`; entry.element.style.top = `${Math.round(y)}px`;
+    }
   }
   function update({ time = 0, player, camera, width = globalThis.innerWidth || 1280, height = globalThis.innerHeight || 720, playing = true } = {}) {
     if (disposed) return;
@@ -265,8 +276,9 @@ export function createActivityWorld({ scene, groundH, islandD, lavaF = () => 0, 
     labels.hidden = !playing || !player;
     if (!playing || !player) return;
     const near = nearest(player, 18);
-    label(labelPool[0], near?.id === target?.id ? null : near, player, camera, width, height, false);
-    label(labelPool[1], target, player, camera, width, height, true);
+    const journalRect = doc.getElementById('expeditionJournal')?.getBoundingClientRect();
+    label(labelPool[0], near?.id === target?.id ? null : near, player, camera, width, height, false, journalRect);
+    label(labelPool[1], target, player, camera, width, height, true, journalRect);
   }
   refresh(progress);
   return {

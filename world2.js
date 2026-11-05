@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import {lowSky,lowTerrainMat,lowWater} from './lowfx.js?v19';
 import {expeditionScenery} from './atmosphere.js?v19';
 import {createEncounterWeather} from './weather.js?v19';
+import {seededRandom} from './world-seed.js';
 export const SUN_DIR=new THREE.Vector3(.45,.42,-.78).normalize(); // moon direction
 export const FOG_COLOR=new THREE.Color(0x343e4d);
 export const LIGHTS={hemi:[0x7f91b7,0x5b2d20,.6],rim:[0xff8a49,.95],rimPos:[-30,8,-40],sun:[0xc5d9ff,2.1],exp:.9,fog:[40,300],name:'EMBER ISLE'};
@@ -27,8 +28,9 @@ export function groundH(x,z){const d=islandD(x,z);if(d>=1)return Math.max(-(d-1)
  const terr=Math.floor((base+3)/1.6)*1.6-3;const b2=base*.6+terr*.4*inl+.4*(1-inl);
  const t=Math.hypot(x-TEMPLE.x,z-TEMPLE.z),flat=sstep(13,8,t);
  return (b2*(1-flat)+1.8*flat)+v*sstep(.98,.7,d)-.9*lavaF(x,z);}
-export function buildWorld(scene,MOBILE,renderer,opt={}){const LOWQ=!!opt.low;
- const solids=[],circles=[],boxes=[],updaters=[];const rnd=(a,b)=>a+Math.random()*(b-a);
+export function buildWorld(scene,MOBILE,renderer,opt={}){const LOWQ=!!opt.low,LAYOUT_MOBILE=typeof opt.layoutMobile==='boolean'?opt.layoutMobile:MOBILE;
+ const solids=[],circles=[],boxes=[],updaters=[];const visualRnd=(a,b)=>a+Math.random()*(b-a),layoutRandom=Number.isInteger(opt.layoutSeed)?seededRandom(opt.layoutSeed):null;
+ const layoutRnd=layoutRandom?(a,b)=>a+layoutRandom()*(b-a):visualRnd;let rnd=visualRnd;
  const fogU={fogColor:{value:FOG_COLOR},fogNear:{value:40},fogFar:{value:300}};
  // ---- sky: eerie purple-red dusk with stars ----
  const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{moon:{value:SUN_DIR},time:{value:0}},
@@ -117,6 +119,8 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
    #include <colorspace_fragment>
   }`}));water.rotation.x=-Math.PI/2;water.position.y=.02;scene.add(water);updaters.push(t=>water.material.uniforms.time.value=t);
  // ---- placement ----
+ // Layout randomness is independent of visual quality and Three.js UUIDs.
+ rnd=layoutRnd;
  const taken=[];const free=(r,dmax=.86,dmin=.1)=>{for(let k=0;k<300;k++){const a=rnd(0,6.283),R=shoreR(a)*Math.sqrt(rnd(dmin*dmin,dmax*dmax)),x=Math.cos(a)*R,z=Math.sin(a)*R;
   if(Math.hypot(x-VOLC.x,z-VOLC.z)<15||Math.hypot(x-TEMPLE.x,z-TEMPLE.z)<11||lavaF(x,z)>0.01||lavaF(x+r,z)>.01||lavaF(x-r,z)>.01||lavaF(x,z+r)>.01||lavaF(x,z-r)>.01)continue;if(taken.some(o=>Math.hypot(o.x-x,o.z-z)<o.r+r))continue;taken.push({x,z,r});return[x,z];}return null;};
  const m4=new THREE.Matrix4(),q=new THREE.Quaternion(),sc=new THREE.Vector3(),pv=new THREE.Vector3(),eu=new THREE.Euler();
@@ -127,11 +131,11 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep,rep);t.colorSpace=THREE.SRGBColorSpace;return t;};
  // ---- basalt column clusters ----
  {const bt=noiseTex(74,80,91,128,1);const bm=new THREE.MeshStandardMaterial({map:bt,bumpMap:bt,bumpScale:.1,roughness:.88,metalness:.02,flatShading:true});
-  const NCl=MOBILE?16:26,per=6;const im=new THREE.InstancedMesh(new THREE.CylinderGeometry(.55,.62,1,6),bm,NCl*per);let n=0;
+  const NCl=LAYOUT_MOBILE?16:26,per=6;const im=new THREE.InstancedMesh(new THREE.CylinderGeometry(.55,.62,1,6),bm,NCl*per);let n=0;
   for(let c=0;c<NCl;c++){const p=free(2.6,.9,.2);if(!p)continue;const[x,z]=p;const base=groundH(x,z);circles.push({x,z,r:1.7});
    for(let k=0;k<per;k++){const a=k/per*6.28+rnd(-.3,.3),rr=k===0?0:rnd(.7,1.3),cx=x+Math.cos(a)*rr,cz=z+Math.sin(a)*rr,hh=k===0?rnd(3.5,6):rnd(1,4);setM(im,n++,cx,base+hh/2-.3,cz,rnd(0,1),rnd(.9,1.3),hh,rnd(-.06,.06),rnd(-.06,.06));}}
   im.count=n;im.castShadow=im.receiveShadow=true;scene.add(im);solids.push(im);
-  const rk=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,1),bm,MOBILE?40:80);for(let i=0;i<rk.count;i++){const p=free(.8,.95,.15);if(!p){setM(rk,i,0,-50,0,0,.01);continue;}const s=rnd(.3,1);setM(rk,i,p[0],groundH(p[0],p[1])+s*.2,p[1],rnd(0,6),s,s*rnd(.5,.8));if(s>.7)circles.push({x:p[0],z:p[1],r:s*.9});}
+  const rk=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,1),bm,LAYOUT_MOBILE?40:80);for(let i=0;i<rk.count;i++){const p=free(.8,.95,.15);if(!p){setM(rk,i,0,-50,0,0,.01);continue;}const s=rnd(.3,1);setM(rk,i,p[0],groundH(p[0],p[1])+s*.2,p[1],rnd(0,6),s,s*rnd(.5,.8));if(s>.7)circles.push({x:p[0],z:p[1],r:s*.9});}
   rk.castShadow=rk.receiveShadow=true;scene.add(rk);}
  // ---- ruined temple ----
  {const st=noiseTex(118,108,118,256,1);const sm=new THREE.MeshStandardMaterial({map:st,bumpMap:st,bumpScale:.12,roughness:.85,color:0xb0a0b8});const T0=TEMPLE,y0=groundH(T0.x,T0.z);
@@ -149,7 +153,7 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
   const cg=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xa050ff,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));cg.scale.set(6,6,1);cr.add(cg);cg.scale.set(5/.7,5/1.4,1);
   updaters.push(t=>{cr.rotation.y=t*.6;cr.position.y=y0+2.4+Math.sin(t*1.3)*.15;});}
  // ---- glowing mushrooms & crystals ----
- {const nCl=MOBILE?14:24,per=MOBILE?5:7,N=nCl*per;const stem=new THREE.InstancedMesh(new THREE.CylinderGeometry(.05,.08,1,6),new THREE.MeshStandardMaterial({color:0xd8d0c0,roughness:.7,emissive:0x3a2a40}),N);
+ {const nCl=LAYOUT_MOBILE?14:24,per=LAYOUT_MOBILE?5:7,N=nCl*per;const stem=new THREE.InstancedMesh(new THREE.CylinderGeometry(.05,.08,1,6),new THREE.MeshStandardMaterial({color:0xd8d0c0,roughness:.7,emissive:0x3a2a40}),N);
   const capG=new THREE.SphereGeometry(.3,12,6,0,6.283,0,1.6);const capM=new THREE.MeshBasicMaterial({color:0xffffff});const caps=new THREE.InstancedMesh(capG,capM,N);
   const cols=[new THREE.Color(.2,1.6,1.4),new THREE.Color(1.5,.4,1.8),new THREE.Color(.5,1.,2.)];let n=0;const glows=[];
   for(let c=0;c<nCl;c++){const p=free(1.5,.88,.15);if(!p)continue;const cc=cols[c%3];
@@ -157,15 +161,16 @@ float fbmS(vec2 p){float s=0.,a=.5;for(int i=0;i<OCT;i++){s+=a*vn(p);p=p*2.03+17
    if(glows.length<(MOBILE?8:16)){const g=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:cc.clone().multiplyScalar(.5),blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));g.position.set(p[0],groundH(p[0],p[1])+.6,p[1]);g.scale.set(4,2.5,1);scene.add(g);glows.push(g);}}
   stem.count=caps.count=n;caps.instanceColor.needsUpdate=true;scene.add(stem,caps);
   updaters.push(t=>glows.forEach((g,i)=>g.material.opacity=.7+.3*Math.sin(t*1.5+i)));
-  const cm=new THREE.MeshStandardMaterial({color:0x247f99,emissive:0x2e8d9a,emissiveIntensity:.55,roughness:.28,metalness:.2,flatShading:true});const cim=new THREE.InstancedMesh(new THREE.OctahedronGeometry(.4,0),cm,MOBILE?30:60);
+  const cm=new THREE.MeshStandardMaterial({color:0x247f99,emissive:0x2e8d9a,emissiveIntensity:.55,roughness:.28,metalness:.2,flatShading:true});const cim=new THREE.InstancedMesh(new THREE.OctahedronGeometry(.4,0),cm,LAYOUT_MOBILE?30:60);
   for(let i=0;i<cim.count;i++){const p=free(.6,.9,.2);if(!p){setM(cim,i,0,-50,0,0,.01);continue;}const s=rnd(.6,1.6);setM(cim,i,p[0],groundH(p[0],p[1])+s*.4,p[1],rnd(0,6),s*.7,s*2,rnd(-.3,.3),rnd(-.3,.3));}
   cim.castShadow=true;scene.add(cim);}
  // ---- dead charred trees ----
- {const tm=new THREE.MeshStandardMaterial({color:0x1a1412,roughness:.95});const parts=[];const NT=MOBILE?10:18;
+ {const tm=new THREE.MeshStandardMaterial({color:0x1a1412,roughness:.95});const parts=[];const NT=LAYOUT_MOBILE?10:18;
   for(let i=0;i<NT;i++){const p=free(1.2,.85,.25);if(!p)continue;const[x,z]=p,y=groundH(x,z),h=rnd(3.5,6);const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=rnd(0,6);scene.add(g);
    const tr=new THREE.Mesh(new THREE.CylinderGeometry(.08,.28,h,7),tm);tr.position.y=h/2;tr.rotation.z=rnd(-.15,.15);tr.castShadow=true;g.add(tr);solids.push(tr);circles.push({x,z,r:.4});
    for(let k=0;k<4;k++){const l=rnd(1,2.2);const b=new THREE.Mesh(new THREE.CylinderGeometry(.03,.09,l,5),tm);const a=k*1.6+rnd(0,.5);b.position.set(Math.cos(a)*l*.35,h*rnd(.55,.9),Math.sin(a)*l*.35);b.rotation.set(Math.sin(a)*.9,0,-Math.cos(a)*.9);b.castShadow=true;g.add(b);}}}
  // ---- volcano smoke + crater glow ----
+ rnd=visualRnd;
  const vy=groundH(VOLC.x,VOLC.z);
  {const cg=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xff5a10,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,fog:false}));cg.position.set(VOLC.x,vy+6,VOLC.z);cg.scale.set(40,22,1);scene.add(cg);
   const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(60,45,55,.8)');gr.addColorStop(1,'rgba(40,30,40,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);

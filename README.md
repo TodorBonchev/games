@@ -4,6 +4,8 @@
 
 The site has two destinations: **Zombie** and **Piano**. Zombie combines the two-island survival campaign with **30 activities discovered in the world**. Walk to survivor outposts, help rebuild the settlement, then return to the same live battle with your position, equipment and campaign intact. Piano remains a separate instrument.
 
+The latest survival pass implements **[50 improvements from self-play](IMPROVEMENTS-50.md)**, with a numbered checklist and verification for every change.
+
 | Destination | Play | Includes |
 | --- | --- | --- |
 | Zombie | [Enter the world](https://todorbonchev.github.io/games/soldier.html) | Survival, exploration, weapons, upgrades, and every former game as an outpost activity. |
@@ -38,7 +40,11 @@ Thirty numbered workstations are placed on safe terrain across six districts on 
 
 Press **Tab** or tap **Survivor Outposts** to see the map and directory. Selecting an activity sets a waypoint and returns you to the island. Follow its compass and beacon, approach on foot, then press **E** or tap the interaction prompt. The map does not launch activities remotely.
 
+Search by activity, survivor task or district; combine district and restoration-status filters, or sort by distance. **Track next unrestored outpost** explicitly chooses nearby unfinished work; **Clear waypoint** remains cleared after a reload. District counts show the settlement's progress, and completing a district celebrates its first restoration once.
+
 The briefing explains the survivor's request and the activity controls. Select any available stage before starting. After a win, **Next stage** continues a longer activity; **Replay stage** and **Return to island** remain available. The first successful restoration of each activity grants **300 score, up to 20 health and 10 reserve armor**. Replays and later stages keep their records without awarding that first-restoration bonus again. Activity restoration persists across new survival runs.
+
+Stage records now remember exactly which stages you won. Skipping ahead no longer marks earlier stages completed, and the next-stage suggestion fills the earliest gap. Old highest-stage records retain that known stage. A checkpoint preview shows its stage and save age; choose **Continue activity** to retain the attempt or **Start fresh** to replace it.
 
 Entering an activity or opening the map freezes the live island. Enemies, projectiles, wave timers, position, equipment and cooldowns do not advance behind the overlay. Returning resumes that same in-memory battle. Activities load within the page, without iframes, another game route or a second animation loop.
 
@@ -117,7 +123,9 @@ Activity checkpoints are recorded while playing, when pausing and when leaving. 
 
 Migration imports compatible Wonderwake completion and checkpoints into the new expedition. Other standalone saves, scores and preferences remain on the device but are not automatically copied into every new activity. Keeping those keys does not make the retired standalone menus accessible.
 
-The live enter/return transition preserves the exact battle. Reloading rebuilds randomized island scenery, as the existing survival save system already did: player and enemy positions may be reconciled to nearby walkable ground. In-flight spells, acid and cosmetic effects are cleared during that reload recovery. Pending upgrades, the Palm-to-Ember transition and completed-campaign endless continuation remain supported.
+Use **Save & return to briefing** from pause or upgrades to keep a run available through Continue. **End run & return** still explicitly ends it. Changing graphics quality during a run saves and resumes it; if saving is unavailable, the run stays open.
+
+The live enter/return transition preserves the exact battle. New saves retain the world-construction seed and layout density. Scenery collisions and outpost positions survive reloads and graphics-quality changes; terrain, lighting and particle detail follow the selected quality. Loading older saves may reconcile player and enemy positions to nearby walkable ground. In-flight spells, acid and cosmetic effects are cleared during reload recovery. Pending upgrades, the Palm-to-Ember transition and completed-campaign endless continuation remain supported.
 
 ## Surviving the islands
 
@@ -160,7 +168,15 @@ Amber chevrons around the crosshair show the direction of nearby enemies within 
 
 Aim assist turns smoothly toward a target. Move the mouse or drag your firing thumb to take over aiming immediately; shots follow the crosshair. After you stop looking, assistance can return to a target in front of you. Releasing and pressing Fire again starts a fresh assisted search.
 
+Assistance searches past blocked candidates and checks barrel clearance as well as the camera's view. A cover cue explains obstructed shots. Target health, pooled hit/kill feedback and the last-hostile compass make combat easier to follow. New arrivals telegraph for 0.65 seconds; overlapping enemies spread apart, and simultaneous melee hits share 0.26 seconds of protection. Acid, lava and commander slams retain their own damage behavior. The debrief identifies the final damage source and gives a relevant tip.
+
+Open **Controls, visibility & audio** before deployment or from pause. Choose assistance strength or fully manual aim, inverted vertical look, toggle fire/sprint, mirrored touch controls, crosshair size, high contrast and reduced flashes. Effects and helicopter/wind volumes are independent; activities follow the effects volume. Settings persist on this device; pausing and entering activities release latched combat inputs.
+
 Every four kills can drop supplies, and elites drop both kinds. Walk close to a **medkit** to recover 30 HP or an **Overdrive cell** for eight seconds of faster, stronger fire. Full-health medkits remain available until needed. Overdrive waits while you pause, choose an upgrade, recover between waves, or redeploy. Supplies expire after 45 active seconds; at most six are present at once.
+
+Cells also remain available when your current Overdrive is already at least eight seconds. New drops favor keeping useful supplies and search clear, safe ground. The weapon HUD and recovery panel guide you to nearby useful items, prioritizing medical care at critical health. In their final eight seconds, supplies have a larger orange halo, with a static cue under reduced motion. Recovery previews the next encounter, while upgrade cards show numerical changes and accept **1 / 2 / 3** after appearing. Offers favor distinct available upgrade roles.
+
+Frozen Orb accepts an input in its final 0.3 seconds of cooldown and casts once when ready. A short readiness cue also announces when the spell is available. Uplinks retain progress through a 0.35-second boundary misstep and explain when altitude, distance or hostiles prevent capture.
 
 The five-wave sequence changes the fight: **First Contact, Cross Fire, Runner Rush, Iron Guard, and Commander**. Cross Fire introduces ranged **Spitters**: their acid globs mark a green warning ring for 1.4 seconds before forming a brief damaging pool. Move clear, jump across the acid, use solid cover, or kill the caster before the glob lands. At most three pools exist; overlapping pools cannot multiply their damage.
 
@@ -215,6 +231,7 @@ npx playwright install chromium
 npm run test:activities
 npm run test:polish
 npm run test:survival:polish
+npm run test:survival:50
 npm run test:browser
 npm run test:mobile
 npm run test:abilities
@@ -226,6 +243,8 @@ npm run test:piano
 `test:polish` checks the new controls in the live zombie host on desktop and phone: undo/replay, seed selection and costs, cooldowns, launching while steering, simultaneous touches, overlapping keyboard/touch holds, pause cleanup, route progress and returning to the island without click-through. The unit suite also checks each activity's new mechanics and existing legal completion paths.
 
 `test:survival:polish` checks threat bearings and hit directions, manual aiming, recovery controls, held recovery across reloads, and phone controls in portrait and landscape.
+
+`test:survival:50` runs the new combat, comfort-settings, supply/save/quality, and outpost-directory browser checks. They use native rendering and input, repeatable setup fixtures, actual legal activity wins, persistent checkpoints, and desktop/portrait/landscape layouts. Each suite also supports `GAMES_TEST_URL` to verify a published copy.
 
 Use `CHROMIUM_PATH=/path/to/chromium` to select an installed browser. Screenshots and measurements go into ignored `test-results/`. Browser checks verify actual rendering, transitions, input and saves; simulation tests exercise additional completion paths. Passing these checks does not establish that every full campaign, audio path or physical phone has been played. Real iOS/Android hardware remains useful for touch, GPU, audio, thermal and browser-toolbar behavior.
 

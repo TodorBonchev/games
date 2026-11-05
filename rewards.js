@@ -143,12 +143,15 @@ export function createRewardPool(scene, { low = false } = {}) {
     const t = Number.isFinite(time) ? time : 0;
     currentTime = t; currentMotion = motion;
     for (const entry of active) {
+      const expiring=(entry.age||0)>=37;
+      if(entry.expiring!==expiring){entry.expiring=expiring;const color=tint.setHex(expiring?0xff8c69:entry.type==='medkit'?0x75e9b5:0xffc46c);ring.setColorAt(entry.index,color);beam.setColorAt(entry.index,color);ring.instanceColor.needsUpdate=beam.instanceColor.needsUpdate=true;}
       const phase = entry.index * 1.7;
       rotation.setFromAxisAngle(axis, .35 + phase + (motion ? t * .32 : 0));
       at.copy(entry.position); at.y += .47 + (motion ? Math.sin(t * 2.2 + phase) * .035 : 0);
       matrix.compose(at, rotation, scale);
       for (const mesh of types[entry.type]) mesh.setMatrixAt(entry.index, matrix);
       matrix.makeTranslation(entry.position.x, entry.position.y + .045, entry.position.z);
+      if(expiring){const pulse=motion?1.16+Math.sin(t*5)*.08:1.2;scale.set(pulse,1,pulse);matrix.scale(scale);scale.set(1,1,1);}
       ring.setMatrixAt(entry.index, matrix); beam.setMatrixAt(entry.index, matrix);
     }
     beamMaterial.opacity = motion ? .18 + Math.sin(t * 1.7) * .025 : .18;
@@ -170,7 +173,7 @@ export function createRewardPool(scene, { low = false } = {}) {
     spawn(type, position) {
       if (disposed || (type !== 'medkit' && type !== 'overdrive') || !position || ![position.x, position.y, position.z].every(Number.isFinite)) return null;
       const entry = slots.find(slot => !slot.used); if (!entry) return null;
-      entry.used = entry.mesh.visible = true; entry.id = nextId++; entry.type = type; entry.age = 0;
+      entry.used = entry.mesh.visible = true; entry.id = nextId++; entry.type = type; entry.age = 0;entry.expiring=undefined;
       entry.position.copy(position); entry.mesh.userData.rewardType = type;
       const color = tint.setHex(type === 'medkit' ? 0x75e9b5 : 0xffc46c);
       ring.setColorAt(entry.index, color); beam.setColorAt(entry.index, color);

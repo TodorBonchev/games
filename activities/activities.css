@@ -75,3 +75,24 @@ body:not(.playing) .expedition-hud,body:not(.playing) .activity-interact,body:no
 
 .near-outpost #weaponHud,.near-outpost #fieldObjective,.near-outpost #waveBanner{display:none!important;}
 @media(max-width:600px){.playing:not(.near-outpost) #waveBanner{top:calc(var(--outpost-top,105px) + 105px);}}
+
+/* Search and route planning stay inside the paused outpost journal. */
+.expedition-search,.expedition-directory-options label { display:flex;flex-direction:column;gap:7px;font:600 11px var(--sans);color:#d6e1cc; }
+.expedition-search { margin-bottom:16px; }
+.expedition-search input,.expedition-directory-options select { box-sizing:border-box;min-width:0;min-height:44px;border:1px solid #b9c9aa66;border-radius:5px;background:#15251f;color:#edf3e5;padding:10px 12px;font:14px var(--sans); }
+.expedition-search input::placeholder { color:#a9b9a0; }
+.expedition-directory-options { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 10px; }
+.expedition-directory-options select { width:100%; }
+#expeditionResultCount { font:11px/1.5 var(--mono);color:#bacbb1;margin:12px 0; }
+.expedition-entry .expedition-entry-detail { display:block;line-height:1.5;margin-top:5px;color:#d4dfbd; }
+.expedition-empty { grid-column:1/-1;padding:24px 18px;border:1px dashed #a7bc9766;border-radius:6px;color:#d4dfca; }
+.expedition-empty p { font:14px/1.6 var(--sans);margin:0 0 14px; }
+.expedition-empty button,.expedition-guidance button { min-height:44px;padding:10px 13px;font:600 11px var(--sans);letter-spacing:0; }
+.expedition-guidance { display:flex;flex-wrap:wrap;gap:8px;margin:18px 0; }
+.expedition-guidance p { flex-basis:100%;margin:0 0 5px; }
+.expedition-guidance button:disabled { opacity:.5;cursor:default; }
+.activity-card .activity-checkpoint-preview { font:12px/1.6 var(--sans);padding:11px 13px;border:1px solid #afc89355;border-radius:5px;background:#1a2b22; }
+.activity-level-select select { min-height:44px; }
+.activity-card .activity-district-milestone { color:#d8efb1;border-left:3px solid #b8db8c;padding:11px 14px;background:#23402c;font:600 13px/1.6 var(--sans); }
+.expedition-directory nav button { min-height:44px; }
+@media(max-width:600px){.expedition-guidance{margin:12px 0 22px;}.expedition-search{margin-top:4px;}.expedition-directory-options{gap:8px;}.expedition-directory-options select{font-size:12px;padding:10px 8px;}}

@@ -49,8 +49,8 @@ export function createFieldUplink(scene, groundH) {
   const ring = new THREE.Mesh(ringGeometry, ringMaterial); ring.frustumCulled = false; root.add(ring);
   root.traverse(object => { object.raycast = () => {}; });
   const position = root.position;
-  let active = false, captured = false, progress = 0, inside = false, blocked = false, doneTime = 0, tint = '';
-  function reset() { active = captured = inside = blocked = false; progress = doneTime = 0; root.visible = false; tint = ''; }
+  let active = false, captured = false, progress = 0, inside = false, blocked = false, doneTime = 0, edgeGrace = 0, reason = 'distance', tint = '';
+  function reset() { active = captured = inside = blocked = false; progress = doneTime = edgeGrace = 0; reason = 'distance'; root.visible = false; tint = ''; }
   function place(point) {
     reset(); position.copy(point); active = root.visible = true;
     const attr = ringGeometry.attributes.position;
@@ -70,10 +70,13 @@ export function createFieldUplink(scene, groundH) {
   function update(dt, player, contested = false) {
     if (!active) return false;
     if (captured) { doneTime += dt; if (doneTime > 4) root.visible = false; return false; }
-    inside = Math.hypot(player.x - position.x, player.z - position.z) <= UPLINK_RADIUS && Math.abs(player.y - groundH(player.x, player.z)) < 2;
+    const inRadius = Math.hypot(player.x - position.x, player.z - position.z) <= UPLINK_RADIUS;
+    const grounded = Math.abs(player.y - groundH(player.x, player.z)) < 2;
+    inside = inRadius && grounded;
     blocked = inside && contested;
-    if (inside && !blocked) progress = Math.min(UPLINK_SECONDS, progress + dt);
-    else if (!inside) progress = Math.max(0, progress - dt * .5);
+    reason = !inRadius ? 'distance' : !grounded ? 'altitude' : blocked ? 'hostiles' : 'capturing';
+    if (inside) { edgeGrace = .35; if (!blocked) progress = Math.min(UPLINK_SECONDS, progress + dt); }
+    else { const decay = Math.max(0, dt - edgeGrace); edgeGrace = Math.max(0, edgeGrace - dt); progress = Math.max(0, progress - decay * .5); }
     if (progress >= UPLINK_SECONDS - 1e-7) { progress = UPLINK_SECONDS; captured = true; }
     updateColor(); return captured;
   }
@@ -86,10 +89,11 @@ export function createFieldUplink(scene, groundH) {
       captured = !!saved.captured;
       progress = Math.max(0, Math.min(UPLINK_SECONDS, saved.progress || 0));
       doneTime = Math.max(0, saved.doneTime || 0);
+      edgeGrace = Math.max(0, Math.min(.35, saved.edgeGrace || 0));
       root.visible = !captured || doneTime <= 4;
       updateColor();
     },
-    get state() { return { active, captured, progress, inside, contested: blocked, doneTime, radius: UPLINK_RADIUS, duration: UPLINK_SECONDS }; },
+    get state() { return { active, captured, progress, inside, contested: blocked, doneTime, edgeGrace, reason, radius: UPLINK_RADIUS, duration: UPLINK_SECONDS }; },
     dispose() { reset(); root.removeFromParent(); for (const mesh of [body, glow, ring]) { mesh.geometry.dispose(); mesh.material.dispose(); } },
   };
 }

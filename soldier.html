@@ -28,10 +28,13 @@
       type="font/ttf"
       crossorigin
     />
-    <link rel="stylesheet" href="styles.css?v24" />
-    <link rel="stylesheet" href="activities/activities.css?v24" />
-    <link rel="stylesheet" href="combat-awareness.css?v24" />
-    <link rel="stylesheet" href="recovery.css?v24" />
+    <link rel="stylesheet" href="styles.css?v25" />
+    <link rel="stylesheet" href="activities/activities.css?v25" />
+    <link rel="stylesheet" href="combat-awareness.css?v25" />
+    <link rel="stylesheet" href="recovery.css?v25" />
+    <link rel="stylesheet" href="combat-director.css?v25" />
+    <link rel="stylesheet" href="survival-support.css?v25" />
+    <link rel="stylesheet" href="survival-settings.css?v25" />
     <title>Zombie — Survivor Islands</title>
     <script type="importmap">
       {
@@ -329,6 +332,7 @@
           <p id="loadStatus" class="deploy-note" role="status">
             Preparing the island…
           </p>
+          <button id="briefSettingsBtn" class="secondary-button" type="button">CONTROLS, VISIBILITY & AUDIO</button>
           <details class="menu-settings">
             <summary>DISPLAY & AUDIO <span aria-hidden="true">+</span></summary>
             <div class="qrow">
@@ -372,7 +376,7 @@
     >
       <div class="dialog-card">
         <p class="eyebrow">FIELD CONFIGURATION</p>
-        <h1 id="settingsTitle">Settings</h1>
+        <h1 id="settingsTitle" tabindex="-1">Settings</h1>
         <p class="dialog-intro">Make the island feel right.</p>
         <div class="setting-group">
           <div class="qrow">
@@ -454,6 +458,7 @@
             END RUN & RETURN
           </button>
         </div>
+        <button id="pauseSaveBtn" class="secondary-button save-exit">SAVE & RETURN TO BRIEFING</button>
         <a class="games-return" href="./">← All games</a>
         <details class="pause-controls">
           <summary>
@@ -532,6 +537,7 @@
         <footer class="upgrade-footer">
           <div class="upgrade-build"><span>YOUR FIELD KIT</span><p id="upgradeBuild">Your first upgrade starts here.</p></div>
           <button id="upgradeMenuBtn" class="secondary-button">END RUN & RETURN</button>
+          <button id="upgradeSaveBtn" class="secondary-button">SAVE & RETURN</button>
         </footer>
       </div>
     </section>
@@ -584,6 +590,7 @@
           </div>
         </dl>
         <details class="debrief-build"><summary><span>FIELD REPORT <i aria-hidden="true">+</i></span><span><b id="finalElites">0</b> ELITES · <b id="finalUplinks">0</b> UPLINKS</span></summary><p id="finalBuild">Standard issue</p></details>
+        <p id="deathCause"></p>
         <p id="final" class="debrief-tip"></p>
         <div class="debrief-actions">
           <a class="games-return" href="./">← All games</a>
@@ -597,6 +604,6 @@
     </section>
     <div id="fps" class="hide"></div>
     <div id="ver"></div>
-    <script type="module" src="boot.js?v24"></script>
+    <script type="module" src="boot.js?v25"></script>
   </body>
 </html>

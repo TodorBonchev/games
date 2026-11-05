@@ -1,11 +1,12 @@
 import { ACTIVITIES, DISTRICTS, byId } from './catalog.js';
-import { completeActivity, writeProgress } from './progress.js';
+import { completeActivity, writeProgress, claimDistrictMilestone } from './progress.js?v25';
+import { completedStages, nextUnfinishedStage, districtProgress, directoryEntries, nearestUnrestored, checkpointSummary } from './directory.js?v25';
 import { createKeyboardPointer } from './keyboard-pointer.js';
 import { createActivityGamepad } from './gamepad.js';
 
 // The zombie loop owns time. Activities never create a second animation loop,
 // navigate away, or replace the live survival state.
-export function createActivityHost({ world, progress, canEnter, onEnter, onExit, onReward, onSave, getPosition, isMuted, onMute, initialLevel = 1 }) {
+export function createActivityHost({ world, progress, canEnter, onEnter, onExit, onReward, onSave, getPosition, isMuted, onMute, getEffectsVolume = () => 1, initialLevel = 1 }) {
   const root = document.createElement('section');
   root.id = 'activityShell'; root.className = 'activity-shell'; root.hidden = true;
   root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'Survivor outpost');
@@ -18,6 +19,7 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
   const prompt = document.createElement('button'); prompt.id = 'activityInteract'; prompt.className = 'activity-interact'; prompt.hidden = true;
   document.body.append(prompt);
   let active = false, phase = 'closed', current = null, controller = null, level = 1, seed = 1, generation = 0, elapsed = 0, saveClock = 0, finished = false, previousFocus = null, selectedDistrict = 'all', lost = false;
+  let directoryQuery = '', directoryStatus = 'all', directorySort = 'nearest';
   const gamepad=createActivityGamepad();
   const keyboardPointer=createKeyboardPointer({stage,onPointer:(...args)=>controller?.pointer?.(...args)});
   let actionSignature='',worldLayout='', routeSignature='',suppressTouchClickUntil=0;
@@ -30,7 +32,9 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
   const persist = () => { const saved = writeProgress(progress); $('activitySaveWarning').hidden = saved; return saved; };
   function sound(frequency = 440, duration = .07, wave = 'sine', volume = .06) {
     if (isMuted?.() || phase !== 'playing') return;
-    try { audio ||= new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); const oscillator = audio.createOscillator(), gain = audio.createGain(); oscillator.type = ['sine','triangle','square','sawtooth'].includes(wave) ? wave : 'sine'; oscillator.frequency.value = Math.max(30, Math.min(14000, frequency)); gain.gain.setValueAtTime(Math.min(.12, volume), audio.currentTime); gain.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + duration); oscillator.connect(gain); gain.connect(audio.destination); oscillator.start(); oscillator.stop(audio.currentTime + duration); } catch {}
+    const gainValue = Math.max(0, Math.min(.12, volume)) * Math.max(0, Math.min(1, Number(getEffectsVolume()) || 0));
+    if (!gainValue) return;
+    try { audio ||= new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); const oscillator = audio.createOscillator(), gain = audio.createGain(); oscillator.type = ['sine','triangle','square','sawtooth'].includes(wave) ? wave : 'sine'; oscillator.frequency.value = Math.max(30, Math.min(14000, frequency)); gain.gain.setValueAtTime(gainValue, audio.currentTime); gain.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + duration); oscillator.connect(gain); gain.connect(audio.destination); oscillator.start(); oscillator.stop(audio.currentTime + duration); } catch {}
   }
   function clearInput() {
     for (const key of Object.keys(held)) delete held[key]; for(const key of Object.keys(pressed))delete pressed[key]; directions.clear();
@@ -43,7 +47,7 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
   }
   function checkpoint() {
     if (controller && current && !finished && !lost) {
-      try { const state = controller.snapshot(); if (state) progress.checkpoints[current.id] = { id: current.id, level, seed, state }; } catch {}
+      try { const state = controller.snapshot(); if (state) progress.checkpoints[current.id] = { id: current.id, level, seed, state, savedAt: Date.now() }; } catch {}
     }
     persist(); onSave?.();
   }
@@ -79,14 +83,25 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
   }
   function open(id, requestedLevel) {
     const activity = byId.get(id); if (!activity || active || !canEnter(id)) return false;
-    current = activity; level = Math.max(1, Math.min(activity.levelCount, requestedLevel || progress.checkpoints[id]?.level || Math.min(activity.levelCount, (progress.levels[id] || 0) + 1) || initialLevel));
+    current = activity; level = Math.max(1, Math.min(activity.levelCount, requestedLevel || progress.checkpoints[id]?.level || nextUnfinishedStage(progress, id) || 1));
     if (initialLevel > 1 && !requestedLevel && !progress.checkpoints[id]) { level = Math.min(activity.levelCount, Math.floor(initialLevel)); initialLevel = 1; }
     heading(activity); enterShell(); setPhase('brief'); finished = false;
-    showCard(`${progress.completed.includes(id) ? 'OUTPOST RESTORED · REPLAY' : 'SURVIVOR REQUEST'} · ${activity.category}`, activity.task, `${activity.description}\n\n${instructions(activity)}`, [makeButton(progress.checkpoints[id] ? 'Continue activity' : 'Begin activity', () => launch(level, true), 'primary'), makeButton('Back to island', close)]);
+    const begin = makeButton('', () => launch(level, true), 'primary'); begin.id = 'activityBegin';
+    const fresh = makeButton('Start fresh', () => launch(level, false)); fresh.id = 'activityStartFresh';
+    showCard(`${progress.completed.includes(id) ? 'OUTPOST RESTORED · REPLAY' : 'SURVIVOR REQUEST'} · ${activity.category}`, activity.task, `${activity.description}\n\n${instructions(activity)}`, [begin, fresh, makeButton('Back to island', close)]);
+    const preview = document.createElement('p'); preview.id = 'activityCheckpointPreview'; preview.className = 'activity-checkpoint-preview';
+    card.insertBefore(preview, card.lastChild);
+    const refreshPreview = () => {
+      const saved = progress.checkpoints[id], resumable = saved?.level === level;
+      begin.textContent = resumable ? 'Continue activity' : 'Begin activity'; fresh.hidden = !resumable;
+      preview.textContent = saved ? `${checkpointSummary(saved)}${resumable ? ' · Continue keeps this attempt. Start fresh replaces it.' : ' · Select that stage to continue.'}` : `Stage ${level} · ${completedStages(progress, id).includes(level) ? 'Replay a completed stage' : 'Ready for a new attempt'}`;
+    };
+    refreshPreview();
     if (activity.levelCount > 1) {
       const label = document.createElement('label'); label.className = 'activity-level-select'; label.textContent = 'Stage '; const select = document.createElement('select'); select.setAttribute('aria-label', 'Activity stage');
-      for (let n = 1; n <= activity.levelCount; n++) { const option = document.createElement('option'); option.value = n; option.textContent = `${n} / ${activity.levelCount}${(progress.levels[id] || 0) >= n ? ' · completed' : ''}`; select.append(option); }
-      select.value = level; select.addEventListener('change', () => { level = Number(select.value); card.querySelector('.primary').textContent = progress.checkpoints[id]?.level === level ? 'Continue activity' : 'Begin activity'; }); label.append(select); card.insertBefore(label, card.lastChild);
+      const won = completedStages(progress, id), recommended = nextUnfinishedStage(progress, id);
+      for (let n = 1; n <= activity.levelCount; n++) { const option = document.createElement('option'); option.value = n; option.textContent = `${n} / ${activity.levelCount}${won.includes(n) ? ' · completed' : n === recommended ? ' · next unfinished' : ''}`; select.append(option); }
+      select.value = level; select.addEventListener('change', () => { level = Number(select.value); refreshPreview(); }); label.append(select); card.insertBefore(label, card.lastChild);
     }
     const reward = document.createElement('p'); reward.className = 'activity-reward'; reward.textContent = progress.completed.includes(id) ? 'Your work here is remembered. Explore every stage or replay for practice.' : 'First restoration: +300 score · +20 health · +10 armor'; card.append(reward); return true;
   }
@@ -117,15 +132,22 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
   function resume() { if (phase !== 'paused' || lost) return; clearInput(); setPhase('playing'); $('activityPause').textContent = 'Pause'; stage.focus(); audio?.resume?.(); }
   function finish(won) {
     if (finished) return; finished = true; clearInput();
-    let first = false;
-    if (won) { first = completeActivity(progress, current.id, level); persist(); if (first) onReward(current); refresh(); onSave?.(); }
+    let first = false, milestone = null;
+    if (won) { first = completeActivity(progress, current.id, level); if (first) milestone = claimDistrictMilestone(progress, current.district); persist(); if (first) onReward(current); refresh(); onSave?.(); }
     else { delete progress.checkpoints[current.id]; persist(); }
     setPhase(won ? 'won' : 'lost');
     const buttons = [];
-    if (won && level < current.levelCount) buttons.push(makeButton('Next stage', () => launch(level + 1), 'primary'));
+    const nextStage = nextUnfinishedStage(progress, current.id);
+    if (won && nextStage !== null) buttons.push(makeButton('Next stage', () => launch(nextStage), 'primary'));
     buttons.push(makeButton(won ? 'Return to island' : 'Try again', won ? close : () => launch(level), buttons.length ? '' : 'primary'));
     buttons.push(makeButton(won ? 'Replay stage' : 'Return to island', won ? () => launch(level) : close));
+    if (won && nearestUnrestored(progress, world.stations, getPosition())) buttons.push(makeButton('Track next unrestored outpost', trackNext));
     showCard(won ? `${progress.completed.length} / 30 OUTPOSTS RESTORED` : 'YOUR SURVIVAL RUN IS SAFE', won ? first ? 'A little more hope.' : 'Good work, survivor.' : 'Every attempt helps.', won ? `${current.task} — complete. ${first ? '+300 score · +20 health · +10 armor. The outpost beacon now shines green.' : 'Keep exploring the remaining stages, or head back to the island.'}${progress.completed.length === 30 ? ' All 30 outposts are restored. The settlement is alive again.' : ''}` : 'Retry this activity at no cost, or return to your exact spot on the island.', buttons);
+    if (milestone) {
+      const notice = document.createElement('p'); notice.id = 'activityDistrictMilestone'; notice.className = 'activity-district-milestone'; notice.setAttribute('role', 'status');
+      notice.textContent = `${milestone.title} restored · All ${milestone.missions.length} outposts are back in service. ${milestone.description}`;
+      card.insertBefore(notice, card.lastChild);
+    }
   }
   function setupControls() {
     actionSignature=''; hudCache=''; routeSignature=''; route.hidden=true;
@@ -188,7 +210,12 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
     for (const name of ['pointerup','pointercancel','lostpointercapture','blur']) button.addEventListener(name, release);
     button.addEventListener('keydown', e => { if (['Space','Enter'].includes(e.code) && !e.repeat && phase === 'playing'&&!button.disabled&&enabled()) { e.preventDefault();button.classList.add('held'); down(e); } }); button.addEventListener('keyup', e => { if (['Space','Enter'].includes(e.code)&&enabled()) { e.preventDefault(); release(e); } });
   }
-  function setTarget(id) { if (!byId.has(id)) return false; progress.target = id; world.setTarget(id); persist(); return true; }
+  function setTarget(id) { if (id !== null && !byId.has(id)) return false; progress.target = id; progress.targetCleared = id === null; world.setTarget(id); persist(); return true; }
+  function trackNext() {
+    const next = nearestUnrestored(progress, world.stations, getPosition());
+    if (!next) return false;
+    setTarget(next.id); close(); return true;
+  }
   function journal() {
     if (active || !canEnter(null)) return false;
     current = null; enterShell(); heading(null); setPhase('journal'); renderJournal(); return true;
@@ -201,16 +228,68 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
     shape('circle',{cx:0,cy:0,r:51,fill:'#253b37',stroke:'#6a8574','stroke-dasharray':'1 2'});
     for (const station of world.stations) { const circle = shape('circle',{cx:station.x,cy:station.z,r:progress.target===station.id?2.7:1.7,fill:progress.completed.includes(station.id)?'#b6efa2':byId.get(station.id).color}); const title = document.createElementNS(map.namespaceURI,'title'); title.textContent = byId.get(station.id).title; circle.append(title); }
     const p = getPosition(); shape('circle',{cx:p.x,cy:p.z,r:2.2,fill:'#fff',stroke:'#111','stroke-width':.8}); intro.append(map); journal.append(intro);
-    const content = document.createElement('div'); content.className = 'expedition-directory'; const filters = document.createElement('nav'); filters.setAttribute('aria-label','Outpost districts');
-    for (const district of [{id:'all',title:'All outposts'},...DISTRICTS]) { const b=makeButton(district.title,()=>{selectedDistrict=district.id;renderJournal();}); b.classList.toggle('selected',selectedDistrict===district.id); b.setAttribute('aria-pressed',String(selectedDistrict===district.id));filters.append(b); } content.append(filters);
-    const list = document.createElement('div'); list.className='expedition-list';
-    for (const a of ACTIVITIES.filter(a=>selectedDistrict==='all'||a.district===selectedDistrict)) { const station=world.stations.find(s=>s.id===a.id),distance=Math.round(Math.hypot(station.x-p.x,station.z-p.z)); const row=makeButton('',()=>{setTarget(a.id);close();}); row.className='expedition-entry';row.dataset.activity=a.id; row.style.setProperty('--entry-color',a.color); const title=document.createElement('strong'),task=document.createElement('span'),meta=document.createElement('small'); title.textContent=a.title;task.textContent=a.task;meta.textContent=`${progress.completed.includes(a.id)?'✓ Restored':progress.checkpoints[a.id]?'◐ In progress':'◇ Explore'} · ${distance} m${progress.target===a.id?' · Tracked':''}`;row.append(title,task,meta);list.append(row); }content.append(list);journal.append(content);
+    const guidance = document.createElement('div'); guidance.className = 'expedition-guidance';
+    const next = nearestUnrestored(progress, world.stations, p);
+    const track = makeButton('Track next unrestored outpost', trackNext); track.id = 'expeditionTrackNext'; track.disabled = !next;
+    const clear = makeButton('Clear waypoint', () => { setTarget(null); renderJournal(); }); clear.id = 'expeditionClearTarget'; clear.disabled = !progress.target;
+    const targetText = document.createElement('p'); targetText.id = 'expeditionTarget';
+    targetText.textContent = progress.target ? `Tracking ${byId.get(progress.target).title}. Choose another outpost below to change your route.` : next ? `Nearest unrestored: ${next.title} · ${Math.round(next.distance)} m. Choose a waypoint to find it on foot.` : 'Every outpost is restored. Choose any activity to revisit.';
+    guidance.append(targetText, track, clear); intro.insertBefore(guidance, map);
+    const content = document.createElement('div'); content.className = 'expedition-directory';
+    const searchLabel = document.createElement('label'); searchLabel.className = 'expedition-search'; searchLabel.textContent = 'Find an outpost';
+    const search = document.createElement('input'); search.type = 'search'; search.id = 'expeditionSearch'; search.placeholder = 'Name, task, or district'; search.value = directoryQuery; search.autocomplete = 'off';
+    searchLabel.append(search); content.append(searchLabel);
+    const filters = document.createElement('nav'); filters.setAttribute('aria-label','Outpost districts');
+    for (const district of [{id:'all',title:'All outposts',count:progress.completed.length,total:ACTIVITIES.length},...districtProgress(progress)]) {
+      const button = makeButton(`${district.title} · ${district.count}/${district.total}`, () => { selectedDistrict = district.id; updateDirectory(); });
+      button.dataset.district = district.id; filters.append(button);
+    }
+    content.append(filters);
+    const options = document.createElement('div'); options.className = 'expedition-directory-options';
+    const select = (id, caption, entries, selected, change) => {
+      const label = document.createElement('label'); label.textContent = caption;
+      const input = document.createElement('select'); input.id = id;
+      for (const [value, title] of entries) { const option = document.createElement('option'); option.value = value; option.textContent = title; input.append(option); }
+      input.value = selected; input.addEventListener('change', () => { change(input.value); updateDirectory(); }); label.append(input); options.append(label); return input;
+    };
+    const status = select('expeditionStatus', 'Show', [['all','All statuses'],['unrestored','Unrestored'],['in-progress','In progress'],['restored','Restored']], directoryStatus, value => { directoryStatus = value; });
+    const sort = select('expeditionSort', 'Order', [['nearest','Nearest first'],['catalog','District order']], directorySort, value => { directorySort = value; });
+    content.append(options);
+    const count = document.createElement('p'); count.id = 'expeditionResultCount'; count.setAttribute('role','status'); count.setAttribute('aria-live','polite');
+    const list = document.createElement('div'); list.className = 'expedition-list';
+    content.append(count, list); journal.append(content);
+    function updateDirectory() {
+      for (const button of filters.children) { const selected = button.dataset.district === selectedDistrict; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', String(selected)); }
+      const entries = directoryEntries({ progress, stations: world.stations, position: p, query: directoryQuery, district: selectedDistrict, status: directoryStatus, sort: directorySort });
+      count.textContent = `${entries.length} of ${ACTIVITIES.length} outposts · ${directorySort === 'nearest' ? 'nearest first' : 'district order'}`;
+      list.replaceChildren();
+      for (const entry of entries) {
+        const row = makeButton('', () => { setTarget(entry.id); close(); }); row.className = 'expedition-entry'; row.dataset.activity = entry.id; row.style.setProperty('--entry-color', entry.color);
+        const title = document.createElement('strong'), task = document.createElement('span'), meta = document.createElement('small');
+        title.textContent = entry.title; task.textContent = entry.task;
+        const stage = nextUnfinishedStage(progress, entry.id), exact = completedStages(progress, entry.id).length;
+        meta.textContent = `${entry.restored ? '✓ Restored' : '◇ Unrestored'} · ${Number.isFinite(entry.distance) ? Math.round(entry.distance)+' m' : 'Distance unavailable'}${progress.target === entry.id ? ' · Tracked' : ''}`;
+        row.append(title, task, meta);
+        const detail = document.createElement('small'); detail.className = 'expedition-entry-detail';
+        detail.textContent = entry.checkpoint ? `◐ In progress · ${checkpointSummary(entry.checkpoint)}` : `${exact}/${entry.levelCount} stages completed${stage === null ? ' · All stages complete' : ` · Next unfinished: ${stage}`}`;
+        row.append(detail); list.append(row);
+      }
+      if (!entries.length) {
+        const empty = document.createElement('div'); empty.className = 'expedition-empty';
+        const text = document.createElement('p'); text.textContent = 'No outposts match this search and these filters.';
+        const reset = makeButton('Reset search and filters', () => {
+          directoryQuery = ''; directoryStatus = selectedDistrict = 'all'; directorySort = 'nearest'; search.value = ''; status.value = 'all'; sort.value = 'nearest'; updateDirectory(); search.focus();
+        }); reset.id = 'expeditionResetFilters'; empty.append(text, reset); list.append(empty);
+      }
+    }
+    search.addEventListener('input', () => { directoryQuery = search.value; updateDirectory(); });
+    updateDirectory();
   }
   function updateWorld({ playing, yaw = 0 }) {
     if (active) return;
     hud.hidden = !playing;
-    const layoutKey=`${innerWidth}:${innerHeight}:${playing}`;
-    if(playing&&worldLayout!==layoutKey){worldLayout=layoutKey;const battle=document.getElementById('hud')?.getBoundingClientRect(),field=document.getElementById('fieldObjective')?.getBoundingClientRect();let bottom=battle?.bottom||120;if(field?.height&&field.top<innerHeight*.55&&field.bottom<innerHeight-145)bottom=Math.max(bottom,field.bottom);hud.style.top=`${Math.round(bottom+9)}px`;document.body.style.setProperty('--outpost-top',hud.style.top);}
+    const recovering=document.body.classList.contains('recovering'),layoutKey=`${innerWidth}:${innerHeight}:${playing}:${recovering}`;
+    if(playing&&worldLayout!==layoutKey){worldLayout=layoutKey;const battle=document.getElementById('hud')?.getBoundingClientRect(),field=document.getElementById('fieldObjective')?.getBoundingClientRect();let bottom=battle?.bottom||120;if(!recovering&&field?.height&&field.top<innerHeight*.55&&field.bottom<innerHeight-145)bottom=Math.max(bottom,field.bottom);hud.style.top=`${Math.round(bottom+9)}px`;document.body.style.setProperty('--outpost-top',hud.style.top);}
     nearest = playing ? world.nearest(getPosition(), 3.8) : null;
     if (nearest && Math.abs(getPosition().y-nearest.y)>2) nearest=null;
     prompt.hidden = !nearest;document.body.classList.toggle('near-outpost',!!nearest);
@@ -248,7 +327,8 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
   addEventListener('click',event=>{if(performance.now()<suppressTouchClickUntil&&event.detail!==0&&event.pointerType!=='mouse'){suppressTouchClickUntil=0;event.preventDefault();event.stopImmediatePropagation();}},true);
   addEventListener('keydown',e=>{
     if(!active)return;
-    if(e.code==='Tab'){clearInput();const nodes=[...root.querySelectorAll('button,a,select,[tabindex="0"]')].filter(n=>!n.disabled&&!n.hidden&&n.getClientRects().length);if(nodes.length){const i=nodes.indexOf(document.activeElement);nodes[(i+(e.shiftKey?-1:1)+nodes.length)%nodes.length].focus();}e.preventDefault();e.stopImmediatePropagation();return;}
+    if(e.code==='Tab'){clearInput();const nodes=[...root.querySelectorAll('button,a,input,select,[tabindex="0"]')].filter(n=>!n.disabled&&!n.hidden&&n.getClientRects().length);if(nodes.length){const i=nodes.indexOf(document.activeElement);nodes[(i+(e.shiftKey?-1:1)+nodes.length)%nodes.length].focus();}e.preventDefault();e.stopImmediatePropagation();return;}
+    if(e.target.matches?.('input,textarea,[contenteditable=true]')&&e.code!=='Escape'){e.stopImmediatePropagation();return;}
     if(e.target.matches?.('select')||(e.target.closest?.('button,a')&&['Space','Enter'].includes(e.code)))return;
     const action=phase==='playing'&&controller?.actions?.find(a=>a.shortcut===e.code);
     if(action){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat&&!action.disabled){if(action.hold)pressAction(action.id,e.code);else controller.action?.(action.id,true);}return;}
