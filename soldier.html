@@ -35,6 +35,9 @@
     <link rel="stylesheet" href="combat-director.css?v25" />
     <link rel="stylesheet" href="survival-support.css?v25" />
     <link rel="stylesheet" href="survival-settings.css?v25" />
+    <link rel="stylesheet" href="evasion.css?v26" />
+    <link rel="stylesheet" href="touch-movement.css?v26" />
+    <link rel="stylesheet" href="mobile-hud.css?v26" />
     <title>Zombie — Survivor Islands</title>
     <script type="importmap">
       {
@@ -217,6 +220,10 @@
       </svg>
       <span id="orbLabel">FROZEN ORB</span><small id="orbCooldown">READY</small><kbd aria-hidden="true">F</kbd>
     </button>
+    <button id="evadeBtn" class="tb" type="button" aria-label="Evade (Q)" title="Quick ground dash (Q)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 5 7 7-7 7M5 5l7 7-7 7M2 12h6" /></svg>
+      <span>EVADE</span><small id="evadeCooldown">READY</small><kbd aria-hidden="true">Q</kbd>
+    </button>
     <div id="jetpackHud" role="progressbar" aria-label="Jetpack fuel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
       <div class="jetpack-heading"><span>JETPACK</span><b id="jetpackValue">100%</b></div>
       <div class="jetpack-track" aria-hidden="true"><div id="jetpackFill"></div></div>
@@ -354,14 +361,16 @@
           ><span><kbd>CLICK</kbd> HOLD TO AIM & FIRE</span
           ><span><kbd>SPACE</kbd> JUMP / HOLD TO FLY</span
           ><span><kbd>F</kbd> FROZEN ORB</span
+          ><span><kbd>Q</kbd> EVADE</span
           ><span><kbd>V</kbd> CAMERA VIEW</span
           ><span><kbd>SHIFT</kbd> SPRINT</span>
         </div>
         <div class="control-guide mobile-guide">
-          <span>LEFT THUMB <b>MOVE + SPRINT</b></span
-          ><span>DRAG RIGHT <b>LOOK</b></span
+          <span>MOVE PAD <b>DRAG + SPRINT</b></span
+          ><span>LOOK SIDE <b>DRAG TO AIM</b></span
           ><span>HOLD FIRE <b>AUTO-AIM</b></span
           ><span>HOLD JUMP <b>JETPACK</b></span>
+          <span>EVADE <b>GROUND DASH</b></span>
         </div>
         <span class="footer-status"><i></i> READY FOR DEPLOYMENT</span>
       </footer>
@@ -470,22 +479,25 @@
             <span><kbd>CLICK</kbd> Hold to aim & fire</span
             ><span><kbd>SPACE</kbd> Tap to jump; hold to fly</span>
             <span><kbd>F</kbd> Cast Frozen Orb</span>
+            <span><kbd>Q</kbd> Evade in your movement direction</span>
             <span><kbd>V</kbd> Switch camera view</span>
             <span><kbd>SHIFT</kbd> Sprint</span
             ><span><kbd>H</kbd> Helicopter redeploy</span>
           </div>
           <div class="controls-reference touch-reference">
-            <span><strong>LEFT THUMB</strong> Move; push fully to sprint.</span>
-            <span><strong>DRAG RIGHT</strong> Look around the island.</span>
+            <span><strong>MOVE PAD</strong> Touch, then drag to move; push fully to sprint. Mirrored controls swap sides.</span>
+            <span><strong>LOOK SIDE</strong> Drag opposite the movement pad to look around.</span>
             <span><strong>HOLD FIRE</strong> Track targets and shoot.</span>
-            <span><strong>JUMP / FLY</strong> Tap to jump; hold to fly. Steer with the left joystick.</span>
+            <span><strong>JUMP / FLY</strong> Tap to jump; hold to fly. Steer with the movement pad.</span>
             <span><strong>FROZEN ORB</strong> Launch ice shards that damage and slow the horde.</span>
+            <span><strong>EVADE</strong> Dash along your movement direction; ready again in four seconds.</span>
             <span><strong>CAMERA BUTTON</strong> Switch between first-person and third-person views.</span>
           </div>
           <p>Walk to a glowing outpost and press E or tap its prompt to help the survivors. Tab opens the outpost map; choose a destination to track its beacon. Activities save your progress and pause the island until you return.</p>
           <p>Hold jump to engage the jetpack, steer with movement controls, and release to descend. Land to recharge fuel. Frozen Orb sends out ice shards and ends in a burst; watch its button for the next cast.</p>
           <p>Choose your weapon before deploying. Hold FIRE with any weapon; ammunition is unlimited. Clear waves to upgrade your build.</p>
           <p>Look while firing to take control of your aim. Amber chevrons show nearby enemies; red warnings mean danger close, and a bright bracket shows where a hit came from.</p>
+          <p>Evade on the ground to escape a melee strike. Walls, ledges and lava stop the dash; acid and slam warnings still require a safe route. Aim assistance preserves a held movement thumb's travel direction; drag to look when you want to steer.</p>
           <p>After a wave, press C or Keep scavenging to collect supplies and finish the uplink at your pace. Press N or Upgrade now when ready. Your recovery choice is saved.</p>
           <p>Follow the uplink arrow to the beacon. Keep nearby hostiles clear and stay inside for five seconds to earn armor, Overdrive, and bonus points. Uplinks are optional; leave the ring when you need breathing room.</p>
           <p>Collect field supplies. Jump or leave the commander's warning ring before the slam lands.</p>
@@ -604,6 +616,6 @@
     </section>
     <div id="fps" class="hide"></div>
     <div id="ver"></div>
-    <script type="module" src="boot.js?v25.1"></script>
+    <script type="module" src="boot.js?v26"></script>
   </body>
 </html>

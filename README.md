@@ -133,12 +133,13 @@ A third-person island survival shooter with helicopter insertion, a flyable jetp
 
 | Action | Keyboard / mouse | Touch |
 | --- | --- | --- |
-| Move | WASD or arrow keys | Left thumb stick |
-| Look | Mouse (click the scene to capture) | Drag right side |
+| Move | WASD or arrow keys | Touch the movement pad, then drag |
+| Look | Mouse (click the scene to capture) | Drag opposite the movement pad |
 | Aim and fire | Hold left mouse button | Hold FIRE |
 | Jump / fly | Tap / hold Space | Tap / hold JUMP / FLY |
-| Steer in flight | WASD or arrow keys | Left thumb stick |
+| Steer in flight | WASD or arrow keys | Movement pad |
 | Frozen Orb | F | FROZEN ORB |
+| Evade | Q | EVADE |
 | First / third person | V or camera button | Camera button |
 | Skip insertion | Space or Enter | SKIP INSERTION |
 | Sprint | Hold Shift while moving, without firing | Push the movement stick fully, without firing |
@@ -157,6 +158,10 @@ Tap **Jump / Fly** for a normal jump, or hold it to ignite the soldier's twin-th
 Switch between **first person** and **third person** using **V**, the HUD camera button, or the View option in settings. Your choice is saved. First person includes a visible weapon and supports flying, firing, and casting; helicopter insertion keeps its cinematic camera.
 
 Cast **Frozen Orb** with **F** or its HUD button. Aim with the crosshair: the icy orb travels through enemies, sheds radial ice shards, then bursts into a final ring. Hits damage enemies and chill them for three seconds, slowing movement and attacks. Scenery blocks the spell, and aiming down from the air bursts it near the ground. Its eight-second cooldown pauses with the game. Spell kills award normal score and rewards without changing rifle accuracy.
+
+**Evade** with **Q** or its button for a 3.5-metre ground dash along your movement direction, or forward when stationary. It lasts 0.22 seconds and recharges over four active seconds. It avoids melee during the burst; acid, lava and commander slams retain their damage. Walls, dangerous drops and lava stop the dash. Pausing, rotating, entering an outpost or reloading cancels the motion while preserving its saved cooldown.
+
+On phones, the HUD uses one compact vitals rail and one priority context dock above a four-action thumb cluster. Fuel appears inside Jump and the weapon label inside Fire. Mirrored controls swap the movement and action sides. The floating movement pad starts neutral wherever your thumb lands; its deadzone filters small accidental movements. Automatic aim keeps your held movement direction stable in the world. Drag to look, or return the pad to neutral, to reorient deliberately.
 
 Each wave also offers an optional **field uplink**. Follow its compass arrow to the turquoise station, enter the marked ring, and hold it for **five seconds**. Enemies inside the zone pause capture; leaving slowly loses progress. Securing it awards **125 score, 20 reserve armor, and ten seconds of Overdrive**. Armor absorbs damage before health and stacks up to 60 points. The uplink never blocks wave progression, and no extra interaction button is needed.
 
@@ -234,6 +239,8 @@ npm run test:survival:polish
 npm run test:survival:50
 npm run test:browser
 npm run test:mobile
+npm run test:mobile:hud
+npm run test:mobile:movement
 npm run test:abilities
 npm run test:piano
 ```
@@ -243,6 +250,8 @@ npm run test:piano
 `test:polish` checks the new controls in the live zombie host on desktop and phone: undo/replay, seed selection and costs, cooldowns, launching while steering, simultaneous touches, overlapping keyboard/touch holds, pause cleanup, route progress and returning to the island without click-through. The unit suite also checks each activity's new mechanics and existing legal completion paths.
 
 `test:survival:polish` checks threat bearings and hit directions, manual aiming, recovery controls, held recovery across reloads, and phone controls in portrait and landscape.
+
+`test:mobile:hud` checks native utilities and all four combat actions, second-finger taps, a minigame round trip, and twelve safe-area/handedness layouts. `test:mobile:movement` checks neutral touchdown, analog walk/sprint, stable movement through aim-assist turns, deliberate look steering, independent finger release, pause and rotation.
 
 `test:survival:50` runs the new combat, comfort-settings, supply/save/quality, and outpost-directory browser checks. They use native rendering and input, repeatable setup fixtures, actual legal activity wins, persistent checkpoints, and desktop/portrait/landscape layouts. Each suite also supports `GAMES_TEST_URL` to verify a published copy.
 

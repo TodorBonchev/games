@@ -144,9 +144,13 @@ try {
   for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
     const context = await browser.newContext({ viewport, isMobile: true, hasTouch: true, deviceScaleFactor: 1 }), phone = await boot(context, true);
     await fixture(phone, [[0, -8]]); const touch = await fireStart(phone, true); await gameTime(phone, .8);
-    assert.equal(await phone.locator('#combatTarget').isVisible(), true); assert.equal(await phone.locator('#lastEnemy').isVisible(), true);
+    assert.equal(await phone.locator('#combatTarget').isVisible(), true);
+    assert.equal(await phone.locator('#lastEnemy').evaluate(node => !node.hidden), true, 'the native last-hostile guide remains available');
+    const contextChoice = await phone.locator('#mobileContextDock').getAttribute('data-context');
+    assert.ok(['outpost', 'cover', 'elite', 'field', 'last'].includes(contextChoice), 'combat and nearby interaction take priority over the route');
+    assert.equal(await phone.locator('#lastEnemy').isVisible(), contextChoice === 'last', 'the dock shows only the highest-priority context');
     assert.ok(await phone.evaluate(() => window.__game.combat.hits > 0)); assert.ok(await phone.locator('.combat-number:not([hidden])').count() <= 6);
-    for (const selector of ['#combatTarget', '#lastEnemy']) await bounds(phone, selector, ['#fireBtn', '#jumpBtn', '#orbBtn', '#stick', '#pauseBtn', '#expeditionJournalBtn']);
+    for (const selector of ['#combatTarget', '#lastEnemy']) if (await phone.locator(selector).isVisible()) await bounds(phone, selector, ['#fireBtn', '#jumpBtn', '#orbBtn', '#evadeBtn', '#stick', '#pauseBtn', '#expeditionJournal']);
     if (await phone.locator('.activity-interact').isVisible()) await bounds(phone, '.activity-interact', ['#orbBtn', '#fireBtn', '#jumpBtn', '#stick']);
     const waypoint = phone.locator('.activity-world-label.is-target:not([hidden])');
     if (await waypoint.isVisible()) await bounds(phone, '.activity-world-label.is-target:not([hidden])', ['#expeditionJournal']);

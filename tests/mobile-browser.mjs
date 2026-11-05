@@ -43,7 +43,7 @@ async function deploy(page) {
   await page.waitForFunction(() => window.__game.mode === 'play');
 }
 async function checkGameLayout(page, spec, label) {
-  const controls = await boxes(page, '.hud-actions button, .tb, #stick');
+  const controls = await boxes(page, '.hud-actions button, #mobileUtilities > button, .tb, #stick');
   hitTargets(controls, label);
   const inset = spec.insets || {};
   for (const control of controls) {
@@ -124,18 +124,25 @@ try {
       document.getElementById('momentumFill').style.width = '80%';
     });
     const controls = await checkGameLayout(page, spec, label);
-    const statusBoxes = await boxes(page, '#eliteHud, #overdriveHud, #fieldObjective, #weaponHud, #momentumHud');
+    const statusBoxes = await boxes(page, '#eliteHud, #mobileStatusNotice, #fieldObjective, #weaponHud, #momentumHud');
     for (const status of statusBoxes) {
       check(status.x >= (spec.insets?.left || 0) && status.x + status.width <= spec.width - (spec.insets?.right || 0) + 1, `${label}: ${status.id} leaves the safe width`);
-      for (const control of controls) check(!overlapping(status, control), `${label}: ${status.id} overlaps ${control.id}`);
+      for (const control of controls) {
+        // The weapon name is intentionally integrated into the Fire target.
+        if (status.id === 'weaponHud' && control.id === 'fireBtn') {
+          check(status.x >= control.x && status.y >= control.y && status.x + status.width <= control.x + control.width + 1 && status.y + status.height <= control.y + control.height + 1, `${label}: weapon label leaves Fire target`);
+        } else check(!overlapping(status, control), `${label}: ${status.id} overlaps ${control.id}`);
+      }
     }
     for (let i = 0; i < statusBoxes.length; i++) for (let j = i + 1; j < statusBoxes.length; j++) check(!overlapping(statusBoxes[i], statusBoxes[j]), `${label}: ${statusBoxes[i].id} overlaps ${statusBoxes[j].id}`);
     await page.screenshot({ path: resolve(output, `${spec.width}-play.png`) });
 
     if (spec.width === 390) {
       const stick = await page.locator('#stick').boundingBox(), fire = await page.locator('#fireBtn').boundingBox();
-      const touches = [{ x: stick.x + stick.width / 2, y: stick.y + stick.height * .15, id: 1 }, { x: fire.x + fire.width / 2, y: fire.y + fire.height / 2, id: 2 }];
+      const touches = [{ x: stick.x + stick.width / 2, y: stick.y + stick.height / 2, id: 1 }, { x: fire.x + fire.width / 2, y: fire.y + fire.height / 2, id: 2 }];
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: touches });
+      touches[0].y -= stick.height * .35;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: touches });
       await waitGame(page, .1);
       check(await page.evaluate(() => window.__game.firing), `${label}: simultaneous joystick and fire did not engage`);
       const landscape = { width: 844, height: 390, insets: { top: 0, bottom: 21, left: 47, right: 47 } };

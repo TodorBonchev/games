@@ -295,7 +295,7 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
     prompt.hidden = !nearest;document.body.classList.toggle('near-outpost',!!nearest);
     if (nearest) { const a=byId.get(nearest.id),copy=`<kbd>E</kbd><span><small>${progress.completed.includes(a.id)?'RESTORED OUTPOST · REPLAY':'SURVIVOR OUTPOST · INTERACT'}</small><strong>${a.title}</strong><em>${a.task}</em></span><b>↗</b>`;if(prompt.innerHTML!==copy)prompt.innerHTML=copy; }
     const target=world.stations.find(s=>s.id===progress.target), waypoint=document.getElementById('expeditionWaypoint');
-    if(target&&playing&&innerHeight>=450){const p=getPosition(),angle=(Math.atan2(-(target.x-p.x),-(target.z-p.z))-yaw)*-180/Math.PI;waypoint.hidden=false;waypoint.innerHTML=`<i style="transform:rotate(${angle}deg)">↑</i><span>${byId.get(target.id).title}<small>${Math.round(Math.hypot(target.x-p.x,target.z-p.z))} m · follow the beacon</small></span>`;}else waypoint.hidden=true;
+    if(target&&playing&&(innerHeight>=450||document.body.classList.contains('touch'))){const p=getPosition(),angle=(Math.atan2(-(target.x-p.x),-(target.z-p.z))-yaw)*-180/Math.PI;waypoint.hidden=false;waypoint.innerHTML=`<i style="transform:rotate(${angle}deg)">↑</i><span>${byId.get(target.id).title}<small>${Math.round(Math.hypot(target.x-p.x,target.z-p.z))} m · follow the beacon</small></span>`;}else waypoint.hidden=true;
   }
   function update(dt) {
     if (!active || !controller) return;

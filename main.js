@@ -1,12 +1,15 @@
 import {readGameSave,writeGameSave,removeGameSave} from './save-store.js';
-import {parseSoldierSave} from './soldier-save.js?v25';
+import {parseSoldierSave} from './soldier-save.js?v26';
 import {createRecoveryControls} from './recovery.js?v25';
 import {createCombatAwareness} from './combat-awareness.js';
 import {createCombatDirector,ARRIVAL_SECONDS,findSafeSpawn,separateEnemies} from './combat-director.js';
+import {createEvasion,moveEvasion} from './evasion.js';
+import {createEvasionTrail} from './evasion-view.js';
+import {createMobileHud} from './mobile-hud.js';
 import {newWorldSeed,withWorldSeed} from './world-seed.js';
 import {usefulSupply,supplyToReplace,nearestSupply,supplyDescription,recoveryPreview,createSupplyGuide} from './survival-support.js';
 import {createActivityWorld} from './activities/world.js?v25';
-import {createActivityHost} from './activities/host.js?v25.1';
+import {createActivityHost} from './activities/host.js?v26';
 import {readProgress as readExpedition,writeProgress as writeExpedition} from './activities/progress.js?v25';
 import {byId as activityById,DISTRICTS} from './activities/catalog.js';
 import {getWeapon,shotInterval,weaponDamage} from './weapons.js?v25';
@@ -17,12 +20,13 @@ import {createFieldUplink,UPLINK_RADIUS} from './field.js?v25';
 import {createEncounter,createMomentum,rateOperation} from './encounters.js?v25';
 import {createFrozenOrb} from './frozen-orb.js?v25';
 import {createFlightCollision} from './flight-collision.js?v25';
+import {createTouchMovement,floatingStickAnchor} from './touch-movement.js';
 import {createFirstPersonView} from './first-person.js?v25';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 const LEVEL=new URLSearchParams(location.search).get('level')==='2'?2:1;
 const WM=LEVEL===2?await import('./world2.js?v25'):await import('./world.js?v25');const {buildWorld,groundH,islandD,shoreR,SUN_DIR,FOG_COLOR,iceF,lavaF,LIGHTS}=WM;
-export const BUILD='v25.1 · survivor field upgrade';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
+export const BUILD='v26 · mobile fieldcraft';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
 const MOBILE=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;if(MOBILE)document.body.classList.add('touch');
 // ---------- quality tiers ----------
 const QL=['auto','low','medium','high'];const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){return null;}};
@@ -102,6 +106,8 @@ const setGain=(n,v)=>n&&n.g.gain.setTargetAtTime(v,ac.currentTime,.15);
 let yaw=0,pitch=-.1,firing=false,running=false,mode='menu',introDone=false,gamePaused=false,pauseStarted=0;const keys={};let activityHost=null,activityWorld=null;const expedition=readExpedition();
 let jumpPointer=null,jumpButtonHeld=false,jetHeldTime=0,jetFuel=1,jetActive=false,jetLocked=false;
 let sprintLatched=false,touchSprint=false,settingsFromMenu=false,settingsOpener=null;
+let mobileHud=null;
+const evasion=createEvasion(),evasionTrail=createEvasionTrail(scene);
 const combatAwareness=createCombatAwareness({container:document.body});
 const combatDirector=createCombatDirector({container:document.body,onOrbReady:()=>snd(660,.12,'sine',.06,1.3)});
 const supplyGuide=createSupplyGuide(document);
@@ -124,6 +130,7 @@ addEventListener('keydown',e=>{
  if((e.code==='ShiftLeft'||e.code==='ShiftRight')&&!e.repeat&&getCombatPreferences().toggleSprint)sprintLatched=!sprintLatched;
  if(e.code==='Space'){if(!e.repeat)jump();e.preventDefault();}
  if(e.code==='KeyF'){if(!e.repeat)castFrozenOrb();e.preventDefault();}
+ if(e.code==='KeyQ'){if(!e.repeat)evade();e.preventDefault();}
  if(e.code==='KeyV'){if(!e.repeat)setCameraView(cameraMode==='first'?'third':'first');e.preventDefault();}
  if(e.code.startsWith('Arrow'))e.preventDefault();
 });addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space'){jetHeldTime=0;jetLocked=false;if(!jumpButtonHeld){jetActive=false;player.userData.setJetpack(false);document.body.classList.remove('jetpacking');}}});
@@ -145,16 +152,17 @@ const lockPointer=()=>{if(MOBILE||document.pointerLockElement===cv)return;try{co
 cv.addEventListener('mousedown',e=>{if(gamePaused||e.button!==0)return;if(mode==='intro'){lockPointer();return;}if(!running||MOBILE)return;lockPointer();firing=getCombatPreferences().toggleFire?!firing:true;});
 addEventListener('mouseup',()=>{if(!getCombatPreferences().toggleFire)firing=false;});
 addEventListener('mousemove',e=>{if(!gamePaused&&document.pointerLockElement===cv&&Math.abs(e.movementX)<150&&Math.abs(e.movementY)<150)look(e.movementX,e.movementY,.0025*getLookSensitivity());});
-const look=(dx,dy,k)=>{if(running&&mode==='play'&&(Math.abs(dx)+Math.abs(dy)>.01))yieldAimToPlayer();yaw-=dx*k;pitch=THREE.MathUtils.clamp(pitch-dy*k*(getCombatPreferences().invertY?-1:1),mode==='intro'?-1.45:cameraMode==='first'?-1.35:-.7,mode==='intro'?.6:cameraMode==='first'?1.35:.55);};
-const stick={id:null,ox:0,oy:0,x:0,y:0},lk={id:null,x:0,y:0};let fireId=null;const knob=$('stick').querySelector('i');
+const look=(dx,dy,k)=>{if(running&&mode==='play'&&(Math.abs(dx)+Math.abs(dy)>.01))yieldAimToPlayer();const turn=-dx*k;yaw+=turn;touchMovement.manualTurn(turn);pitch=THREE.MathUtils.clamp(pitch-dy*k*(getCombatPreferences().invertY?-1:1),mode==='intro'?-1.45:cameraMode==='first'?-1.35:-.7,mode==='intro'?.6:cameraMode==='first'?1.35:.55);};
+const touchMovement=createTouchMovement(),stick=touchMovement.state,lk={id:null,x:0,y:0};let fireId=null;const knob=$('stick').querySelector('i');
 addEventListener('touchstart',e=>{if(e.target.closest?.('button,.ov'))return;if(gamePaused||(mode!=='intro'&&mode!=='play'))return;e.preventDefault();document.body.classList.add('touch');
  for(const t of e.changedTouches){const el=t.target.closest?.('.tb')||t.target;if(el.id==='jumpBtn'){jump();continue;}
   if(el.id==='fireBtn'){fireId=t.identifier;if(getCombatPreferences().toggleFire)firing=!firing;$('fireBtn').classList.toggle('active',fireRequested());if(lk.id===null)Object.assign(lk,{id:t.identifier,x:t.clientX,y:t.clientY});continue;}
-  if((getCombatPreferences().leftHanded?t.clientX>=innerWidth/2:t.clientX<innerWidth/2)&&stick.id===null){const r=$('stick').getBoundingClientRect();Object.assign(stick,{id:t.identifier,ox:r.left+r.width/2,oy:r.top+r.height/2});$('stick').classList.add('active');moveStick(t);}
+  if((getCombatPreferences().leftHanded?t.clientX>=innerWidth/2:t.clientX<innerWidth/2)&&stick.id===null){const el=$('stick'),r=el.getBoundingClientRect(),leftHanded=getCombatPreferences().leftHanded;touchMovement.begin(t.identifier,{x:t.clientX,y:t.clientY},yaw,r.width*.4);const anchor=floatingStickAnchor({x:t.clientX,y:t.clientY,width:innerWidth,height:innerHeight,size:r.width,leftHanded,edge:Math.max(12,leftHanded?innerWidth-r.left-r.width:r.left),bottom:Math.max(18,innerHeight-r.top-r.height)});el.style.setProperty('--stick-offset-x',`${anchor.x-r.left-r.width/2}px`);el.style.setProperty('--stick-offset-y',`${anchor.y-r.top-r.height/2}px`);el.classList.add('active');}
   else if(lk.id===null)Object.assign(lk,{id:t.identifier,x:t.clientX,y:t.clientY});}},{passive:false});
-function moveStick(t){const el=$('stick'),r=el.getBoundingClientRect(),scale=r.width/(el.offsetWidth||r.width||1),radius=Math.max(1,r.width*.4);let dx=t.clientX-stick.ox,dy=t.clientY-stick.oy;const d=Math.hypot(dx,dy);if(d>radius){dx*=radius/d;dy*=radius/d;}stick.x=dx/radius;stick.y=dy/radius;knob.style.transform=`translate(${dx/scale}px,${dy/scale}px)`;}
+function moveStick(t){if(!touchMovement.move(t.identifier,{x:t.clientX,y:t.clientY},yaw))return;const el=$('stick'),r=el.getBoundingClientRect(),scale=r.width/(el.offsetWidth||r.width||1);knob.style.transform=`translate(${stick.dx/scale}px,${stick.dy/scale}px)`;el.classList.toggle('touch-moving',stick.magnitude>0);}
+function resetTouchMovement(){touchMovement.reset();knob.style.transform='';const el=$('stick');el.classList.remove('active','touch-moving');el.style.removeProperty('--stick-offset-x');el.style.removeProperty('--stick-offset-y');}
 addEventListener('touchmove',e=>{if(e.target.closest?.('.ov')||gamePaused||(mode!=='intro'&&mode!=='play'))return;e.preventDefault();for(const t of e.changedTouches){if(t.identifier===stick.id)moveStick(t);if(t.identifier===lk.id){look(t.clientX-lk.x,t.clientY-lk.y,2.4*getLookSensitivity()/Math.min(innerWidth,innerHeight));lk.x=t.clientX;lk.y=t.clientY;}}},{passive:false});
-const tend=e=>{if(e.type==='touchcancel'){firing=false;touchSprint=false;}for(const t of e.changedTouches){if(t.identifier===stick.id){stick.id=null;stick.x=stick.y=0;knob.style.transform='';$('stick').classList.remove('active');}if(t.identifier===lk.id)lk.id=null;if(t.identifier===fireId){fireId=null;$('fireBtn').classList.toggle('active',firing);}}};
+const tend=e=>{if(e.type==='touchcancel'){firing=false;touchSprint=false;}for(const t of e.changedTouches){if(t.identifier===stick.id){resetTouchMovement();touchSprint=false;}if(t.identifier===lk.id)lk.id=null;if(t.identifier===fireId){fireId=null;$('fireBtn').classList.toggle('active',firing);}}};
 addEventListener('touchend',tend);addEventListener('touchcancel',tend);
 function releaseJump(){jumpPointer=null;jumpButtonHeld=false;jetHeldTime=0;jetActive=false;jetLocked=false;$('jumpBtn').classList.remove('active');player.userData.setJetpack(false);document.body.classList.remove('jetpacking');}
 const jumpButton=$('jumpBtn');
@@ -166,7 +174,9 @@ jumpButton.addEventListener('blur',releaseJump);
 jumpButton.addEventListener('click',e=>{e.preventDefault();if(e.detail===0&&!jumpButtonHeld)jump();});
 $('orbBtn')?.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();e.stopPropagation();castFrozenOrb();});
 $('orbBtn')?.addEventListener('click',e=>{e.stopPropagation();if(e.detail===0)castFrozenOrb();});
-function clearInput(){Object.keys(keys).forEach(k=>delete keys[k]);releaseJump();firing=false;fireId=null;sprintLatched=touchSprint=false;stick.id=lk.id=null;stick.x=stick.y=0;knob.style.transform='';$('stick').classList.remove('active');$('fireBtn').classList.remove('active');document.body.classList.remove('sprinting');curSpeed=0;jumpBuffer=coyoteTime=0;lockT=null;swing=null;wasFiring=false;aligned=false;burstRound=0;manualAimTime=0;manualAimCone=false;combatAwareness.clear();combatDirector.clear();supplyGuide.clear();recoveryControls.cancel();}
+$('evadeBtn')?.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();e.stopPropagation();evade();});
+$('evadeBtn')?.addEventListener('click',e=>{e.stopPropagation();if(e.detail===0)evade();});
+function clearInput(){Object.keys(keys).forEach(k=>delete keys[k]);releaseJump();firing=false;fireId=null;sprintLatched=touchSprint=false;resetTouchMovement();lk.id=null;$('fireBtn').classList.remove('active');document.body.classList.remove('sprinting');curSpeed=0;jumpBuffer=coyoteTime=0;lockT=null;swing=null;wasFiring=false;aligned=false;burstRound=0;manualAimTime=0;manualAimCone=false;combatAwareness.clear();combatDirector.clear();supplyGuide.clear();recoveryControls.cancel();evasion.cancel();evasionTrail.clear();if(mode==='play')player.rotation.x=player.rotation.z=0;document.body.classList.remove('evading');mobileHud?.update({active:false,mobile:MOBILE});}
 function focusSettings(){const panel=$('setPanel');panel.scrollTop=0;panel.querySelector('.dialog-card').scrollTop=0;$('settingsTitle').focus({preventScroll:true});}
 function closeSettings(){if(settingsFromMenu){settingsFromMenu=false;$('setPanel').classList.add('hide');document.body.classList.remove('briefing-settings-open');settingsOpener?.focus();}else if(gamePaused)resumeGame();else $('setPanel').classList.add('hide');}
 function pauseGame(settings=false){if(activityHost?.active){activityHost.pause();return;}if(mode==='menu'&&settings){settingsFromMenu=true;settingsOpener=document.activeElement;document.body.classList.add('briefing-settings-open');$('setPanel').classList.remove('hide');$('setClose').firstElementChild.textContent='BACK TO BRIEFING';focusSettings();return;}if(mode!=='play'&&mode!=='intro')return;if(settings){settingsOpener=document.activeElement;$('setClose').firstElementChild.textContent='BACK TO GAME';}if(!gamePaused){gamePaused=true;pauseStarted=performance.now();running=false;clearInput();document.body.classList.add('paused');syncAudio();document.exitPointerLock?.();}updRejump();$('pausePanel')?.classList.toggle('hide',settings);$('setPanel').classList.toggle('hide',!settings);if(settings)focusSettings();else $('resumeBtn')?.focus();saveRun();}
@@ -190,8 +200,9 @@ const onResize=()=>{const changed=view.width!==innerWidth||view.height!==innerHe
 addEventListener('resize',onResize);addEventListener('orientationchange',()=>setTimeout(onResize,100));window.visualViewport?.addEventListener('resize',onResize);onResize();syncCameraView();
 const _mv=new THREE.Vector3(),_mr=new THREE.Vector3(),_zd=new THREE.Vector3(),_c1=new THREE.Vector3(),_c2=new THREE.Vector3(),_c3=new THREE.Vector3(),_c4=new THREE.Vector3();
 function moveInput(){let mx=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0),sx=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);
- if(stick.id!==null){mx-=stick.y;sx+=stick.x;}const v=_mv.set(-Math.sin(yaw),0,-Math.cos(yaw)).multiplyScalar(mx).addScaledVector(_mr.set(Math.cos(yaw),0,-Math.sin(yaw)),sx);
- const m=v.length();if(m>1)v.divideScalar(m);return m<.15?v.set(0,0,0):v;}
+ const v=_mv.set(-Math.sin(yaw),0,-Math.cos(yaw)).multiplyScalar(mx).addScaledVector(_mr.set(Math.cos(yaw),0,-Math.sin(yaw)),sx);
+ if(stick.id!==null){v.x+=Math.sin(stick.heading)*stick.y+Math.cos(stick.heading)*stick.x;v.z+=Math.cos(stick.heading)*stick.y-Math.sin(stick.heading)*stick.x;}
+ const m=v.length();if(m>1)v.divideScalar(m);return v;}
 // ---------- zombies ----------
 // ---------- zombies: hunched fantasy undead, 3 types ----------
 const rotTex=(()=>{const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle='#8a9a6a';g.fillRect(0,0,256,256);
@@ -251,12 +262,25 @@ function castFrozenOrb(){
  orbDirection.copy(orbAim).sub(orbFrom).normalize();
  const cast=frozenOrb.cast(orbFrom,orbDirection);updateAbilityHud();return cast;
 }
+function evasionGrounded(){const p=player.position;return !jetActive&&!jumpButtonHeld&&!keys.Space&&vy<=.5&&Math.abs(p.y-flightCollision.surfaceAt(p.x,p.z,p.y))<.1;}
+function safeEvasionPoint(x,z,y){return islandD(x,z)<.94&&lavaF(x,z)<.2&&y>.05;}
+function evade(){
+ const p=player.position,allowed=running&&mode==='play'&&!gamePaused&&!graphicsLost&&!activityHost?.active&&safeEvasionPoint(p.x,p.z,p.y);
+ const movement=moveInput(),direction=movement.lengthSq()>.001?movement:{x:-Math.sin(yaw),z:-Math.cos(yaw)};
+ if(!evasion.request(direction,{allowed,grounded:evasionGrounded()}))return false;
+ jumpBuffer=0;vy=0;snd(240,.16,'triangle',.07,.5);updateAbilityHud();saveRun();return true;
+}
 function updateAbilityHud(){
  const fuel=Math.ceil(jetFuel*100),state=frozenOrb.state,seconds=Math.ceil(state.cooldown),button=$('orbBtn'),meter=$('jetpackHud');
  textAt('jetpackValue',fuel+'%');if($('jetpackFill'))$('jetpackFill').style.width=fuel+'%';
  if(meter){meter.setAttribute('aria-valuenow',String(fuel));meter.classList.toggle('active',jetActive);meter.classList.toggle('empty',jetFuel<.01);}
  if(button){button.disabled=!running||gamePaused||state.cooldown>.3;button.classList.toggle('cd',!state.ready);button.classList.toggle('active',state.active);button.setAttribute('aria-label',state.ready?'Cast Frozen Orb (F)':state.cooldown<=.3?'Queue Frozen Orb (F)':'Frozen Orb recharging: '+seconds+' seconds');}
  textAt('orbCooldown',state.ready?'READY':seconds+'s');
+ const dodge=evasion.state,evadeButton=$('evadeBtn'),onGround=evasionGrounded()&&safeEvasionPoint(player.position.x,player.position.z,player.position.y);
+ const evadeText=dodge.active?'DASH':!dodge.ready?Math.ceil(dodge.cooldown)+'s':onGround?'READY':'LAND';
+ textAt('evadeCooldown',evadeText);
+ if(evadeButton){evadeButton.disabled=!running||gamePaused||!dodge.ready||!onGround;evadeButton.classList.toggle('active',dodge.active);evadeButton.setAttribute('aria-label',dodge.active?'Evading':!dodge.ready?'Evade recharging: '+Math.ceil(dodge.cooldown)+' seconds':!onGround?'Land on safe ground to evade':'Evade in movement direction (Q)');}
+ document.body.classList.toggle('evading',dodge.active);
 }
 function updateAcidThreats(dt){const damage=acidThreats.update(dt,player.position,!reducedMotion());if(damage){const source=acidThreats.active.find(pool=>!pool.warning&&Math.hypot(pool.position[0]-player.position.x,pool.position[2]-player.position.z)<pool.radius);hurt(damage,source?.position,'acid');if(running)pickupNotice('ACID POOL · MOVE OR JUMP CLEAR');}}
 const fieldUplink=createFieldUplink(scene,groundH);let runUplinks=0,fieldHudClock=0;
@@ -375,7 +399,7 @@ function continueEndless(){
 function textAt(id,value){const el=$(id),s=String(value);if(el&&el.textContent!==s)el.textContent=s;}
 function announce(message,seconds=2.8){textAt('waveBanner',message);$('waveBanner')?.classList.add('show');bannerTime=seconds;}
 function rememberScore(){if(score>bestScore){bestScore=score;LS('szBest',String(bestScore));}}
-function hurt(amount,source,kind='damage'){if(!running||!combatDirector.acceptDamage(kind,amount))return;momentum.clear();updateMomentumHud();if(source)combatAwareness.hit(source,player.position);amount*=loadout.armor;const absorbed=Math.min(reserveArmor,amount);reserveArmor-=absorbed;amount-=absorbed;hp=Math.max(0,hp-amount);damageTime=.3;if(!getCombatPreferences().reduceFlashes)$('vig').classList.add('hurt');updHud();if(hp<=0)die();}
+function hurt(amount,source,kind='damage'){if(!running||(kind==='melee'&&evasion.state.active)||!combatDirector.acceptDamage(kind,amount))return;momentum.clear();updateMomentumHud();if(source)combatAwareness.hit(source,player.position);amount*=loadout.armor;const absorbed=Math.min(reserveArmor,amount);reserveArmor-=absorbed;amount-=absorbed;hp=Math.max(0,hp-amount);damageTime=.3;if(!getCombatPreferences().reduceFlashes)$('vig').classList.add('hurt');updHud();if(hp<=0)die();}
 function onLand(x,z,clear=.6){if(islandD(x,z)>.88)return false;for(const c of W.circles)if(Math.hypot(c.x-x,c.z-z)<c.r+clear)return false;for(const b of W.boxes)if(Math.abs(b.x-x)<b.hx+clear&&Math.abs(b.z-z)<b.hz+clear)return false;return true;}
 function spawn(elite=null,forcedType=null){const r0=Math.random(),type=elite?'brute':forcedType&&ZT[forcedType]?forcedType:LEVEL===2?(r0<.22?'fiery':r0<.4?'brute':r0<.7?'runner':'walker'):(r0<.13?'brute':r0<.38?'runner':'walker');
  const point=findSafeSpawn({position:player.position,minRadius:elite?10:18,maxRadius:elite?14:36,shoreRadius:shoreR,isValid:(x,z)=>onLand(x,z,elite?.85:.6)&&lavaF(x,z)<.05&&zombies.every(enemy=>enemy.userData.dead||Math.hypot(enemy.position.x-x,enemy.position.z-z)>1.2)});if(!point)return null;
@@ -386,8 +410,9 @@ function collide(p,r){for(const c of W.circles){const dx=p.x-c.x,dz=p.z-c.z,d=Ma
  for(const b of W.boxes){const cx=THREE.MathUtils.clamp(p.x,b.x-b.hx,b.x+b.hx),cz=THREE.MathUtils.clamp(p.z,b.z-b.hz,b.z+b.hz);const dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);if(d<r){if(d>1e-4){p.x=cx+dx/d*r;p.z=cz+dz/d*r;}else p.x+=r;}}
  constrainShore(p);}
 function constrainShore(p){const R=Math.hypot(p.x,p.z),lim=shoreR(Math.atan2(p.z,p.x))*.97;if(R>lim){p.x*=lim/R;p.z*=lim/R;}}
-function jump(){if(running&&mode==='play')jumpBuffer=.14;}
+function jump(){if(running&&mode==='play'&&!evasion.state.active)jumpBuffer=.14;}
 function updateJump(dt){
+ if(evasion.state.active){jumpBuffer=jetHeldTime=0;jetActive=false;player.userData.setJetpack(false);document.body.classList.remove('jetpacking');return;}
  // Small downhill terrain gaps should not eat a jump tap. A short buffer also
  // accepts taps just before landing, without allowing a second jump in midair.
  const ground=flightMovement?flightCollision.surfaceAt(player.position.x,player.position.z,player.position.y):groundH(player.position.x,player.position.z);
@@ -552,7 +577,7 @@ function updRejump(){const el=$('rejumpBtn'),pauseEl=$('pauseRejumpBtn');const v
 $('skipBtn').addEventListener('click',e=>{e.stopPropagation();if(gamePaused)return;skipIntro();document.activeElement?.blur();lockPointer();});
 // ---------- game flow ----------
 let levelTimer=null;
-function reset(){clearInput();combatDirector.reset();flightMovement=false;jetFuel=1;frozenOrb.reset();acidThreats.clear();acidHintShown=false;momentum.reset();updateMomentumHud();campaignComplete=false;showOutcome(false);W.setEncounter?.(0,{immediate:true,motion:!reducedMotion()});fieldUplink.reset();runUplinks=0;updateFieldHud();ranks=restoreRanks();loadout=bonuses(ranks);offeredUpgrades=[];overdriveMax=8;overdrive=reserveArmor=eliteKills=pickupNoticeTime=0;elitePending=null;rewards.clear();slamWarning.hide();$('upgradePanel')?.classList.add('hide');$('pickupNotice')?.classList.remove('show');document.body.classList.remove('upgrading','overdrive');flashTime=0;player.userData.flash.visible=false;player.userData.flashLight.intensity=0;impacts.clear();waveTotal=runKills=runSeconds=runShots=runHits=0;runBestStart=bestScore;gamePaused=false;waveBreak=-1;recoveryHeld=false;recoil=hitTime=bannerTime=damageTime=0;heliOn=false;heli.visible=false;setGain(rotor,0);setGain(wind,0);document.body.classList.remove('paused','low-health');$('pausePanel')?.classList.add('hide');$('setPanel').classList.add('hide');$('hitmarker')?.classList.remove('show');$('waveBanner')?.classList.remove('show');$('vig').classList.remove('burn','hurt');toSpawn=0;debris.forEach(d=>disposeModel(d.o));debris=[];zombies.forEach(disposeZombie);zombies=[];TP.forEach(t=>t.visible=false);score=0;wave=0;hp=100;vy=0;updHud();}
+function reset(){clearInput();evasion.reset();combatDirector.reset();flightMovement=false;jetFuel=1;frozenOrb.reset();acidThreats.clear();acidHintShown=false;momentum.reset();updateMomentumHud();campaignComplete=false;showOutcome(false);W.setEncounter?.(0,{immediate:true,motion:!reducedMotion()});fieldUplink.reset();runUplinks=0;updateFieldHud();ranks=restoreRanks();loadout=bonuses(ranks);offeredUpgrades=[];overdriveMax=8;overdrive=reserveArmor=eliteKills=pickupNoticeTime=0;elitePending=null;rewards.clear();slamWarning.hide();$('upgradePanel')?.classList.add('hide');$('pickupNotice')?.classList.remove('show');document.body.classList.remove('upgrading','overdrive');flashTime=0;player.userData.flash.visible=false;player.userData.flashLight.intensity=0;impacts.clear();waveTotal=runKills=runSeconds=runShots=runHits=0;runBestStart=bestScore;gamePaused=false;waveBreak=-1;recoveryHeld=false;recoil=hitTime=bannerTime=damageTime=0;heliOn=false;heli.visible=false;setGain(rotor,0);setGain(wind,0);document.body.classList.remove('paused','low-health');$('pausePanel')?.classList.add('hide');$('setPanel').classList.add('hide');$('hitmarker')?.classList.remove('show');$('waveBanner')?.classList.remove('show');$('vig').classList.remove('burn','hurt');toSpawn=0;debris.forEach(d=>disposeModel(d.o));debris=[];zombies.forEach(disposeZombie);zombies=[];TP.forEach(t=>t.visible=false);score=0;wave=0;hp=100;vy=0;updHud();}
 function saveAndReturn(){if(!saveRun()){textAt('upgradeRecovery','Saving is unavailable. Your run is still open.');return false;}returnToMenu(true);return true;}
 function returnToMenu(preserve=false){
  if(preserve!==true)removeGameSave('soldier');
@@ -607,7 +632,7 @@ function runSnapshot() {
   player:{position:position.toArray(),height:mode==='intro'?0:Math.max(0,Math.min(100,player.position.y-groundH(player.position.x,player.position.z))),yaw,pitch,fuel:jetFuel,velocity:mode==='intro'?0:vy},
   stats:{runKills,runShots,runHits,runSeconds,runBestStart,eliteKills,runUplinks},
   armor:reserveArmor,overdrive,overdriveMax,momentum:momentum.state,time:gT,
-  frozenCooldown:frozenOrb.state.cooldown,redeployCooldown:Math.max(0,Math.min(3,(rjReady-(gamePaused?pauseStarted:performance.now()))/1000)),
+  evasionCooldown:evasion.state.cooldown,frozenCooldown:frozenOrb.state.cooldown,redeployCooldown:Math.max(0,Math.min(3,(rjReady-(gamePaused?pauseStarted:performance.now()))/1000)),
   choices:offeredUpgrades.map(choice=>choice.id),
   field:fresh?null:{...fieldUplink.state,position:fieldUplink.position.toArray()},
   drops:rewards.active.map(drop=>({type:drop.type,position:drop.position.toArray(),age:drop.age||0})),
@@ -642,7 +667,7 @@ function runSnapshotForTransition() {
  if(!carry)return null;
  const encounter=createEncounter(1,2);
  return {...carry,worldSeed:(worldSeed^0x9e3779b9)>>>0,level:2,phase:'play',wave:1,waveTotal:encounter.count,toSpawn:encounter.count,spawnT:1.5,waveBreak:-1,recoveryHeld:false,elitePending:encounter.elite,
-  zombies:[],drops:[],choices:[],field:null,lastRecovery:0,frozenCooldown:0,redeployCooldown:3,
+  zombies:[],drops:[],choices:[],field:null,lastRecovery:0,evasionCooldown:0,frozenCooldown:0,redeployCooldown:3,
   player:{position:[0,0,0],height:0,yaw:0,pitch:-.1,fuel:1,velocity:0}};
 }
 function refreshRunUi() {
@@ -680,7 +705,7 @@ function continueSavedRun() {
   gT=saved.time;W.setEncounter?.(wave,{immediate:true,motion:!reducedMotion()});momentum.restore(saved.momentum,{active:true});
   restoreGroundPoint(player.position,saved.player.position,saved.player.height);yaw=saved.player.yaw;pitch=saved.player.pitch;jetFuel=saved.player.fuel;vy=saved.player.velocity;
   flightMovement=player.position.y-groundH(player.position.x,player.position.z)>.05;player.rotation.set(0,yaw+Math.PI,0);view.follow=view.boom;
-  rjReady=performance.now()+saved.redeployCooldown*1000;rjShown=-1;frozenOrb.restore(saved.frozenCooldown);
+  rjReady=performance.now()+saved.redeployCooldown*1000;rjShown=-1;frozenOrb.restore(saved.frozenCooldown);evasion.restore(saved.evasionCooldown);
   for(const enemy of saved.zombies){
    const z=spawn(enemy.elite,enemy.type);if(!z)continue;const u=z.userData;u.arrivalTime=0;
    restoreGroundPoint(z.position,enemy.position);u.hp=enemy.hp;u.maxHp=enemy.maxHp;u.speed=enemy.speed;
@@ -716,6 +741,7 @@ activityHost=createActivityHost({world:activityWorld,progress:expedition,initial
  onSave:saveRun
 });
 const outpostCopy=document.getElementById('outpostStartInfo');if(outpostCopy)outpostCopy.textContent=requestedActivity?`Waypoint set: ${activityById.get(requestedActivity).title}. Deploy, walk to its beacon, and press E or tap to enter.`:`30 survivor outposts · ${expedition.completed.length} restored · E to interact / Tab for map`;
+mobileHud=createMobileHud({document});mobileHud.update({active:false,mobile:MOBILE});
 // ---------- loop ----------
 const camRc=new THREE.Raycaster(),camAnchor=new THREE.Vector3(),camSight=new THREE.Vector3(),clock=new THREE.Clock(),closeup=Q.get('view')==='closeup';let camOverride=null;
 spawnPlayer();
@@ -728,7 +754,7 @@ function loop(){requestAnimationFrame(loop);const _t0=performance.now();
  flashTime=Math.max(0,flashTime-dt);if(!flashTime){player.userData.flash.visible=false;player.userData.flashLight.intensity=0;}impacts.update(dt);recoil*=Math.exp(-16*dt);hitTime=Math.max(0,hitTime-dt);bannerTime=Math.max(0,bannerTime-dt);damageTime=Math.max(0,damageTime-dt);
  if(!hitTime)$('hitmarker')?.classList.remove('show');if(!bannerTime)$('waveBanner')?.classList.remove('show');if(!damageTime)$('vig').classList.remove('hurt');
  if(mode==='intro')intro(dt);updHeli(dt);
- if(running){flightFrom.copy(P);if(!recoveryHeld)runSeconds+=dt;updateFieldObjective(dt);updateRewards(dt);updateJump(dt);const v=moveInput();const m=v.length();if(MOBILE&&getCombatPreferences().toggleSprint){if(stick.id===null)touchSprint=false;else if(m>.92)touchSprint=true;}const gh0=groundH(P.x,P.z),sprinting=(getCombatPreferences().toggleSprint?sprintLatched||(MOBILE&&stick.id!==null&&m>.1&&touchSprint):keys.ShiftLeft||keys.ShiftRight||(MOBILE&&stick.id!==null&&m>.92))&&!fireRequested()&&m>.1;document.body.classList.toggle('sprinting',!!sprinting);const spd=(jetActive?8.5:gh0<.3?4:sprinting?9.4:6.5)*loadout.movement;flightMovement=flightMovement||jetActive||P.y-gh0>1.5;P.addScaledVector(v,spd*dt);if(flightMovement)constrainShore(P);else collide(P,.4);curSpeed=m*(sprinting?1.25:1);
+ if(running){flightFrom.copy(P);if(!recoveryHeld)runSeconds+=dt;updateFieldObjective(dt);updateRewards(dt);updateJump(dt);const v=moveInput();const m=v.length();if(MOBILE&&getCombatPreferences().toggleSprint){if(stick.id===null)touchSprint=false;else if(m>.92)touchSprint=true;}const gh0=groundH(P.x,P.z),sprinting=(getCombatPreferences().toggleSprint?sprintLatched||(MOBILE&&stick.id!==null&&m>.1&&touchSprint):keys.ShiftLeft||keys.ShiftRight||(MOBILE&&stick.id!==null&&m>.92))&&!fireRequested()&&m>.1;document.body.classList.toggle('sprinting',!!sprinting);const spd=(jetActive?8.5:gh0<.3?4:sprinting?9.4:6.5)*loadout.movement;flightMovement=flightMovement||jetActive||P.y-gh0>1.5;const wasEvading=evasion.state.active,burst=evasion.update(dt);if(wasEvading){const travel=moveEvasion(P,burst,{surfaceAt:(x,z,feet)=>flightCollision.surfaceAt(x,z,feet),safeAt:safeEvasionPoint,resolve:(from,to)=>{if(flightMovement){flightCollision.move(from,to);constrainShore(to);}else collide(to,.4);}});if(travel.blocked)evasion.cancel();}else{P.addScaledVector(v,spd*dt);if(flightMovement)constrainShore(P);else collide(P,.4);}curSpeed=wasEvading?1.5:m*(sprinting?1.25:1);
   const gh=groundH(P.x,P.z);if(jetActive){const lift=THREE.MathUtils.clamp((18-(P.y-gh))*2,-3,5.5);vy=THREE.MathUtils.lerp(vy,lift,1-Math.exp(-9*dt));}else vy=Math.max(-12,vy-20*dt);P.y+=vy*dt;if(flightMovement){const contact=flightCollision.move(flightFrom,P);if((contact.grounded&&vy<0)||(contact.ceiling&&vy>0))vy=0;if(contact.grounded&&P.y<=groundH(P.x,P.z)+.025)flightMovement=false;}else if(P.y<=gh){P.y=gh;vy=0;}player.rotation.y=yaw+Math.PI;
   if(P.y<=gh+.05&&lavaF(P.x,P.z)>.5){hurt(34*dt,null,'lava');lavaHurt+=dt;$('vig').classList.add('burn');if(Math.random()<dt*4)snd(140,.25,'sawtooth',.1,.4);if(!running)return;}else $('vig').classList.remove('burn');
   if(waveBreak<0){updateAcidThreats(dt);if(!running)return;momentum.update(dt);updateMomentumHud();}autoAim(dt);updateWeaponFire(dt);frozenOrb.update(dt,zombies,{motion:!reducedMotion()});
@@ -754,6 +780,7 @@ function loop(){requestAnimationFrame(loop);const _t0=performance.now();
  combatAwareness.update(dt,{position:P,yaw,enemies:zombies,active:running&&mode==='play'&&waveBreak<0,reducedMotion:reducedMotion()});
  updDebris(dt);updLock();
  player.userData.animate(T,mode==='intro'?0:curSpeed,mode==='intro'?(iPhase==='free'||iPhase==='chute'):P.y>groundH(P.x,P.z)+.05,dt,!reducedMotion());
+ const evadePose=evasion.state;if(mode==='play')player.rotation.x=evadePose.active&&!reducedMotion()?-.16*Math.sin(evadePose.progress*Math.PI):0;evasionTrail.update(dt,P,{active:running&&evadePose.active,motion:!reducedMotion()});
  for(const t of TP)if(t.visible){t.userData.life-=dt;t.material.opacity=t.userData.life/.06;if(t.userData.life<=0)t.visible=false;}
  if(pBlob){pBlob.visible=mode!=='intro'||iPhase==='land';if(pBlob.visible){const ground=groundH(P.x,P.z),height=Math.max(0,P.y-ground);pBlob.position.set(P.x,ground+.05,P.z);shadowNormal.set(-(groundH(P.x+.3,P.z)-groundH(P.x-.3,P.z))/.6,1,-(groundH(P.x,P.z+.3)-groundH(P.x,P.z-.3))/.6).normalize();pBlob.quaternion.setFromUnitVectors(shadowUp,shadowNormal);pBlob.scale.setScalar(1.15+height*.16);pBlob.material.opacity=.85/Math.max(1,1+height*.8);}}
  player.visible=true;firstPerson.root.visible=false;
@@ -778,7 +805,7 @@ function loop(){requestAnimationFrame(loop);const _t0=performance.now();
  const nn=alt>150?1.5:.1;if(cam.near!==nn){cam.near=nn;cam.updateProjectionMatrix();}
  const sc=mode==='intro'?(iPhase==='heli'?heli.position:P):P;sun.position.copy(sc).addScaledVector(SUN_DIR,90);sun.target.position.copy(sc);
  if(MEDQ&&(frameN++&1)===0)renderer.shadowMap.needsUpdate=true;
- W.update(T,cam,!reducedMotion());cam.updateMatrixWorld();combatDirector.update(dt,{active:running&&mode==='play',combat:waveBreak<0,position:P,yaw,enemies:zombies,toSpawn,camera:cam,reducedMotion:reducedMotion(),orbCooldown:frozenOrb.state.cooldown,castOrb:castFrozenOrb});activityWorld.update({time:reducedMotion()?0:T,player:P,camera:cam,width:innerWidth,height:innerHeight,playing:mode==='play'&&running});activityHost.updateWorld({playing:mode==='play'&&running,yaw});renderFrame();PF.calls=renderer.info.render.calls;PF.tris=renderer.info.render.triangles;PF.ms.push(performance.now()-_t0);if(PF.ms.length>600)PF.ms.shift();if(performance.now()-lastRunSaveAt>=5000)saveRun();}
+ W.update(T,cam,!reducedMotion());cam.updateMatrixWorld();combatDirector.update(dt,{active:running&&mode==='play',combat:waveBreak<0,position:P,yaw,enemies:zombies,toSpawn,camera:cam,reducedMotion:reducedMotion(),orbCooldown:frozenOrb.state.cooldown,castOrb:castFrozenOrb});activityWorld.update({time:reducedMotion()?0:T,player:P,camera:cam,width:innerWidth,height:innerHeight,playing:mode==='play'&&running});activityHost.updateWorld({playing:mode==='play'&&running,yaw});mobileHud?.update({active:mode==='play'&&running,mobile:MOBILE});renderFrame();PF.calls=renderer.info.render.calls;PF.tris=renderer.info.render.triangles;PF.ms.push(performance.now()-_t0);if(PF.ms.length>600)PF.ms.shift();if(performance.now()-lastRunSaveAt>=5000)saveRun();}
 $('ver').textContent='build '+BUILD+' · '+TIER;
 // ---------- dynamic resolution scaler (hysteresis) + auto tier downgrade + FPS counter ----------
 let lastNow=performance.now(),winSum=0,winN=0,slowW=0,fastW=0,degraded=0;const NOSCALE=Q.get('noscale')==='1';
@@ -810,7 +837,7 @@ function prewarm(){const zs=Object.keys(ZT).map(t=>{const z=makeZombie(t);z.posi
  heli.visible=chute.visible=false;TP.forEach(t=>t.visible=false);}
 prewarm();
 if(closeup){$('start').classList.add('hide');$('hud').classList.add('hide');}
-if(DEBUG)window.__game={activities:{host:activityHost,world:activityWorld,progress:expedition},save:saveRun,continueRun:continueSavedRun,get cameraMode(){return cameraMode},setCameraView,get jetpack(){return{active:jetActive,fuel:jetFuel,held:!!keys.Space||jumpButtonHeld,velocity:vy}},get frozenOrb(){return frozenOrb.state},castFrozenOrb,get encounter(){return{id:currentEncounter.id,name:currentEncounter.name,roster:[...currentEncounter.roster],gap:currentEncounter.gap}},get momentum(){return momentum.state},get campaignComplete(){return campaignComplete},get weather(){return W.weather?.state||null},get threats(){return acidThreats.active},spawnSpitter(){const z=spawn(null,'spitter');if(!z)return null;z.userData.arrivalTime=0;z.position.copy(player.position).add(new THREE.Vector3(0,0,-12));z.position.y=groundH(z.position.x,z.position.z);return z;},get field(){return{...fieldUplink.state,position:fieldUplink.position.toArray(),completed:runUplinks}},get progression(){return{ranks:{...ranks},choices:offeredUpgrades.map(({id,rank})=>({id,rank})),overdrive,shield:reserveArmor,eliteKills,drops:rewards.active.map(e=>({id:e.id,type:e.type,position:e.position.toArray(),age:e.age})),elites:zombies.filter(z=>z.userData.elite&&!z.userData.dead).map(z=>({name:z.userData.eliteName,hp:z.userData.hp,maxHp:z.userData.maxHp,slamWind:z.userData.slamWind||0,slamCooldown:z.userData.slamCooldown||0})),bonuses:{...loadout}}},spawnDrop(type='medkit',offset=2){return dropReward(type,player.position.clone().add(new THREE.Vector3(offset,0,0)))?.id;},spawnElite(commander=false){const z=spawn(commander?'commander':'elite');if(!z)return null;z.userData.arrivalTime=0;z.position.copy(player.position).add(new THREE.Vector3(0,0,-5));z.position.y=groundH(z.position.x,z.position.z);return z;},get weapon(){return{id:weapon.id,name:weapon.name,pellets:weapon.pellets.length,range:weapon.range,assistRange:weapon.assistRange,burstRound,cooldown:fireT}},get graphicsLost(){return graphicsLost},get combat(){return{kills:runKills,seconds:runSeconds,shots:runShots,hits:runHits,waveTotal,impacts:impacts.active,impactCapacity:impacts.capacity}},colliders:{circles:W.circles,boxes:W.boxes},get mode(){return mode},get phase(){return iPhase},get paused(){return gamePaused},pause:pauseGame,resume:resumeGame,returnToMenu,saveAndReturn,get worldSeed(){return worldSeed},get combatDirector(){return combatDirector.state},get audioMix(){return{master:masterGain?.gain.value,effects:effectsGain?.gain.value,ambience:ambienceGain?.gain.value,state:ac?.state,time:ac?.currentTime,preferences:getCombatPreferences()}},get pitch(){return pitch},get muted(){return muted},get toSpawn(){return toSpawn},get waveBreak(){return waveBreak},get recoveryHeld(){return recoveryHeld},get bestScore(){return bestScore},get time(){return gT},get firing(){return fireRequested()},get score(){return score},set score(v){score=v;rememberScore();updHud();},get heads(){return headsDetached},get yaw(){return yaw},get alt(){return player.position.y},aimLog,level:LEVEL,scene,player,camera:cam,setView(y,p=-.1){yaw=y;pitch=THREE.MathUtils.clamp(p,cameraMode==='first'?-1.35:-.7,cameraMode==='first'?1.35:.55);},get zombies(){return zombies},PF,tier:TIER,qSet,detect:DETECT,merge:MERGE,get scale(){return rScale},get programs(){return renderer.info.programs.length},landed,get drop(){return[DT.x,DT.z]},get hp(){return hp},set hp(v){hp=Math.max(0,Math.min(100,v));updHud();},get rjCD(){return (rjReady-performance.now())/1000},set rjCD(v){rjReady=performance.now()+v*1000},get lavaHurt(){return lavaHurt},get wave(){return wave},get pos(){return[player.position.x,player.position.y,player.position.z]},
+if(DEBUG)window.__game={activities:{host:activityHost,world:activityWorld,progress:expedition},save:saveRun,continueRun:continueSavedRun,get cameraMode(){return cameraMode},setCameraView,get jetpack(){return{active:jetActive,fuel:jetFuel,held:!!keys.Space||jumpButtonHeld,velocity:vy}},get frozenOrb(){return frozenOrb.state},castFrozenOrb,get evasion(){return evasion.state},evade,get encounter(){return{id:currentEncounter.id,name:currentEncounter.name,roster:[...currentEncounter.roster],gap:currentEncounter.gap}},get momentum(){return momentum.state},get campaignComplete(){return campaignComplete},get weather(){return W.weather?.state||null},get threats(){return acidThreats.active},spawnSpitter(){const z=spawn(null,'spitter');if(!z)return null;z.userData.arrivalTime=0;z.position.copy(player.position).add(new THREE.Vector3(0,0,-12));z.position.y=groundH(z.position.x,z.position.z);return z;},get field(){return{...fieldUplink.state,position:fieldUplink.position.toArray(),completed:runUplinks}},get progression(){return{ranks:{...ranks},choices:offeredUpgrades.map(({id,rank})=>({id,rank})),overdrive,shield:reserveArmor,eliteKills,drops:rewards.active.map(e=>({id:e.id,type:e.type,position:e.position.toArray(),age:e.age})),elites:zombies.filter(z=>z.userData.elite&&!z.userData.dead).map(z=>({name:z.userData.eliteName,hp:z.userData.hp,maxHp:z.userData.maxHp,slamWind:z.userData.slamWind||0,slamCooldown:z.userData.slamCooldown||0})),bonuses:{...loadout}}},spawnDrop(type='medkit',offset=2){return dropReward(type,player.position.clone().add(new THREE.Vector3(offset,0,0)))?.id;},spawnElite(commander=false){const z=spawn(commander?'commander':'elite');if(!z)return null;z.userData.arrivalTime=0;z.position.copy(player.position).add(new THREE.Vector3(0,0,-5));z.position.y=groundH(z.position.x,z.position.z);return z;},get weapon(){return{id:weapon.id,name:weapon.name,pellets:weapon.pellets.length,range:weapon.range,assistRange:weapon.assistRange,burstRound,cooldown:fireT}},get graphicsLost(){return graphicsLost},get combat(){return{kills:runKills,seconds:runSeconds,shots:runShots,hits:runHits,waveTotal,impacts:impacts.active,impactCapacity:impacts.capacity}},colliders:{circles:W.circles,boxes:W.boxes},get mode(){return mode},get phase(){return iPhase},get paused(){return gamePaused},pause:pauseGame,resume:resumeGame,returnToMenu,saveAndReturn,get worldSeed(){return worldSeed},get combatDirector(){return combatDirector.state},get audioMix(){return{master:masterGain?.gain.value,effects:effectsGain?.gain.value,ambience:ambienceGain?.gain.value,state:ac?.state,time:ac?.currentTime,preferences:getCombatPreferences()}},get pitch(){return pitch},get muted(){return muted},get toSpawn(){return toSpawn},get waveBreak(){return waveBreak},get recoveryHeld(){return recoveryHeld},get bestScore(){return bestScore},get time(){return gT},get firing(){return fireRequested()},get score(){return score},set score(v){score=v;rememberScore();updHud();},get heads(){return headsDetached},get yaw(){return yaw},get alt(){return player.position.y},aimLog,level:LEVEL,scene,player,camera:cam,setView(y,p=-.1){yaw=y;pitch=THREE.MathUtils.clamp(p,cameraMode==='first'?-1.35:-.7,cameraMode==='first'?1.35:.55);},get zombies(){return zombies},PF,tier:TIER,qSet,detect:DETECT,merge:MERGE,get scale(){return rScale},get programs(){return renderer.info.programs.length},landed,get drop(){return[DT.x,DT.z]},get hp(){return hp},set hp(v){hp=Math.max(0,Math.min(100,v));updHud();},get rjCD(){return (rjReady-performance.now())/1000},set rjCD(v){rjReady=performance.now()+v*1000},get lavaHurt(){return lavaHurt},get wave(){return wave},get pos(){return[player.position.x,player.position.y,player.position.z]},
  clearWave(){zombies.forEach(disposeZombie);zombies=[];toSpawn=0;waveBreak=-1;updHud();},damage(amount){hurt(amount);},
  setPos(x,z){player.position.set(x,groundH(x,z),z);},lavaSpot(){for(let k=0;k<5000;k++){const x=rnd(-60,60),z=rnd(-60,60);if(lavaF(x,z)>.95&&islandD(x,z)<.8&&lavaF(x+1.5,z)>.9&&lavaF(x-1.5,z)>.9)return[x,z];}return null;},winLevel(){goLevel2();},rejump(){rejump();},
  setAlt(y){player.position.y=y;},overview(on){camOverride=on?[new THREE.Vector3(...on[0]),new THREE.Vector3(...on[1])]:null;},

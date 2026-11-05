@@ -10,6 +10,8 @@
     "test": "node --experimental-vm-modules --test tests/*.test.mjs",
     "test:browser": "node tests/smoke.mjs",
     "test:mobile": "node tests/mobile-browser.mjs",
+    "test:mobile:hud": "node tests/mobile-hud-browser.mjs",
+    "test:mobile:movement": "node tests/touch-movement-browser.mjs",
     "test:abilities": "node tests/abilities-browser.mjs",
     "test:garden": "node tests/activities-browser.mjs --activity=garden",
     "test:phone": "node tests/activities-browser.mjs --phone-only",

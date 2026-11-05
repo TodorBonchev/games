@@ -11,6 +11,7 @@ export function parseSoldierSave(saved) {
   if (!saved || saved.schema !== 1 || ![1, 2].includes(saved.level) || !['play', 'upgrade', 'victory'].includes(saved.phase) || !integer(saved.wave, 1, 999)) return null;
   if (saved.worldSeed !== undefined && !integer(saved.worldSeed,0,0xffffffff)) return null;
   if (saved.worldLayoutMobile !== undefined && typeof saved.worldLayoutMobile !== 'boolean') return null;
+  if (saved.evasionCooldown !== undefined && !number(saved.evasionCooldown,0,4)) return null;
   const encounter = createEncounter(saved.wave, saved.level);
   if (!integer(saved.score, 0, Number.MAX_SAFE_INTEGER) || !number(saved.hp, 0.001, 100) || !integer(saved.toSpawn, 0, encounter.count) || saved.waveTotal !== encounter.count || !number(saved.waveBreak, -1, 4) || !number(saved.spawnT, 0, 10)) return null;
   if (!['rifle', 'burst', 'scatter'].includes(saved.weapon) || typeof saved.campaignComplete !== 'boolean') return null;
@@ -28,7 +29,7 @@ export function parseSoldierSave(saved) {
   if (!Array.isArray(saved.choices) || saved.choices.length > 3 || !saved.choices.every(id => choiceIds.includes(id)) || (saved.phase === 'upgrade' && (saved.choices.length !== 3 || new Set(saved.choices).size !== 3))) return null;
   if (saved.phase === 'victory' && (!saved.campaignComplete || saved.level !== 2)) return null;
   return {
-    ...saved, recoveryHeld: saved.recoveryHeld ?? false, ranks: restoreRanks(saved.ranks),
+    ...saved, evasionCooldown: saved.evasionCooldown ?? 0, recoveryHeld: saved.recoveryHeld ?? false, ranks: restoreRanks(saved.ranks),
     player: { ...saved.player, position: [...saved.player.position] },
     zombies: saved.zombies.map(enemy => ({ ...enemy, position: [...enemy.position], slamCenter: enemy.slamCenter ? [...enemy.slamCenter] : null })),
     drops: saved.drops.map(drop => ({ ...drop, position: [...drop.position] })),

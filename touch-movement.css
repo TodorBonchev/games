@@ -1,0 +1,7 @@
+.touch #stick.active { border-color: rgba(139, 219, 247, .72); }
+.touch #stick.touch-moving i { box-shadow: 0 0 18px rgba(92, 214, 249, .2), inset 0 1px 0 rgba(255, 255, 255, .24); }
+.touch #stick:not(.touch-moving).active i { opacity: .76; }
+.touch #stick.active::after { content: 'DRAG TO MOVE'; }
+.touch #stick.touch-moving::after { content: 'LOOK TO STEER'; }
+.touch.sprinting #stick.touch-moving::after { content: 'SPRINTING'; }
+.touch.jetpacking #stick.touch-moving::after { content: 'STEER YOUR FLIGHT'; }

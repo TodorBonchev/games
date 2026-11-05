@@ -1,0 +1,9 @@
+#evadeBtn { display:none;position:fixed;z-index:20;right:208px;bottom:max(28px,env(safe-area-inset-bottom));width:74px;height:64px;padding:7px 4px;border:1px solid #c5deb68c;border-radius:8px;background:#1c3529ed;color:#e2f1d1;box-shadow:inset 0 0 0 4px #d1efb508;font:600 10px/1.3 var(--mono);letter-spacing:.04em;touch-action:none; }
+.playing #evadeBtn { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px; }
+#evadeBtn svg { position:static;width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.6; }
+#evadeBtn small { font:9px var(--mono);color:#b8d5a8; }
+#evadeBtn kbd { position:absolute;right:4px;top:4px;font:8px var(--mono);padding:1px 3px; }
+#evadeBtn:disabled { background:#15251def;border-color:#71866a6b;opacity:.85; }
+#evadeBtn.active { border-color:#e2f5cd;background:#2b4935; }
+.paused #evadeBtn,.activity-open #evadeBtn,.upgrading #evadeBtn,.intro #evadeBtn { display:none!important; }
+.recovering:not(.touch) #evadeBtn { right:28px;bottom:184px; }
