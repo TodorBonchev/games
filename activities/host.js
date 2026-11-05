@@ -288,8 +288,8 @@ export function createActivityHost({ world, progress, canEnter, onEnter, onExit,
   function updateWorld({ playing, yaw = 0 }) {
     if (active) return;
     hud.hidden = !playing;
-    const recovering=document.body.classList.contains('recovering'),layoutKey=`${innerWidth}:${innerHeight}:${playing}:${recovering}`;
-    if(playing&&worldLayout!==layoutKey){worldLayout=layoutKey;const battle=document.getElementById('hud')?.getBoundingClientRect(),field=document.getElementById('fieldObjective')?.getBoundingClientRect();let bottom=battle?.bottom||120;if(!recovering&&field?.height&&field.top<innerHeight*.55&&field.bottom<innerHeight-145)bottom=Math.max(bottom,field.bottom);hud.style.top=`${Math.round(bottom+9)}px`;document.body.style.setProperty('--outpost-top',hud.style.top);}
+    const recovering=document.body.classList.contains('recovering'),nearOutpost=document.body.classList.contains('near-outpost'),fieldVisible=!document.getElementById('fieldObjective')?.classList.contains('hide'),layoutKey=`${innerWidth}:${innerHeight}:${playing}:${recovering}:${nearOutpost}:${fieldVisible}`;
+    if(playing&&worldLayout!==layoutKey){worldLayout=layoutKey;const battle=document.getElementById('hud')?.getBoundingClientRect(),field=document.getElementById('fieldObjective')?.getBoundingClientRect();let bottom=battle?.bottom||120;if((!recovering||!document.body.classList.contains('touch'))&&field?.height&&field.top<innerHeight*.55&&field.bottom<innerHeight-145)bottom=Math.max(bottom,field.bottom);hud.style.top=`${Math.round(bottom+9)}px`;document.body.style.setProperty('--outpost-top',hud.style.top);}
     nearest = playing ? world.nearest(getPosition(), 3.8) : null;
     if (nearest && Math.abs(getPosition().y-nearest.y)>2) nearest=null;
     prompt.hidden = !nearest;document.body.classList.toggle('near-outpost',!!nearest);

@@ -87,7 +87,7 @@ try {
 
   await fixture(page, [[0, -10]]);
   const barrelFixture = await page.evaluate(async () => {
-    const { Raycaster, Vector3 } = await import('/vendor/three/build/three.module.js');
+    const { Raycaster, Vector3 } = await import('three');
     const g = window.__game, trunks = g.scene.getObjectByName('palm-trunks'), muzzle = new Vector3(), head = new Vector3(), ray = new Raycaster();
     g.player.userData.muzzle.getWorldPosition(muzzle); g.zombies[0].userData.head.getWorldPosition(head);
     const intersects = origin => { ray.set(origin, head.clone().sub(origin).normalize()); ray.far = origin.distanceTo(head) - .3; return ray.intersectObject(trunks, false).length > 0; };

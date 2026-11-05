@@ -149,6 +149,7 @@ try {
     const staticHalo = await halo(page); assert.equal(staticHalo.color, 0xff8c69); assert.equal(staticHalo.visible, true);
     await waitGame(page, .45); assert.deepEqual(await halo(page), staticHalo, 'reduced-motion expiry halo/body remain static while the native game clock advances');
     await layout(page, '#recoveryPanel', ['#fieldObjective', '#expeditionJournal', '#stick', '#fireBtn', '#jumpBtn', '#orbBtn']);
+    if(await page.locator('#fieldObjective').isVisible())await layout(page, '#fieldObjective', ['#expeditionJournal', '#expeditionWaypoint']);
     await page.screenshot({ path: `${output}/${spec.name}-held-expiring-supply.png` });
     console.log(`${spec.name}: useful supply guidance, scenery-safe drop, age-42 static red halo, encounter preview, held save and world-seed reload passed.`);
 
@@ -156,6 +157,7 @@ try {
       for (const viewport of [{ width: 844, height: 390 }, { width: 390, height: 844 }]) {
         await page.setViewportSize(viewport); await waitGame(page, .15);
         await layout(page, '#recoveryPanel', ['#fieldObjective', '#expeditionJournal', '#stick', '#fireBtn', '#jumpBtn', '#orbBtn']);
+        if(await page.locator('#fieldObjective').isVisible())await layout(page, '#fieldObjective', ['#expeditionJournal', '#expeditionWaypoint']);
         await page.screenshot({ path: `${output}/phone-recovery-${viewport.width}x${viewport.height}.png` });
         await page.evaluate(() => { const s = __game.activities.world.stations.find(s => s.id === 'garden'); __game.setPos(s.x, s.z); });
         await page.locator('#activityInteract').waitFor({ state: 'visible' }); await waitGame(page, .1);

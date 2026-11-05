@@ -6,7 +6,7 @@ import {createCombatDirector,ARRIVAL_SECONDS,findSafeSpawn,separateEnemies} from
 import {newWorldSeed,withWorldSeed} from './world-seed.js';
 import {usefulSupply,supplyToReplace,nearestSupply,supplyDescription,recoveryPreview,createSupplyGuide} from './survival-support.js';
 import {createActivityWorld} from './activities/world.js?v25';
-import {createActivityHost} from './activities/host.js?v25';
+import {createActivityHost} from './activities/host.js?v25.1';
 import {readProgress as readExpedition,writeProgress as writeExpedition} from './activities/progress.js?v25';
 import {byId as activityById,DISTRICTS} from './activities/catalog.js';
 import {getWeapon,shotInterval,weaponDamage} from './weapons.js?v25';
@@ -22,7 +22,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 const LEVEL=new URLSearchParams(location.search).get('level')==='2'?2:1;
 const WM=LEVEL===2?await import('./world2.js?v25'):await import('./world.js?v25');const {buildWorld,groundH,islandD,shoreR,SUN_DIR,FOG_COLOR,iceF,lavaF,LIGHTS}=WM;
-export const BUILD='v25 · survivor field upgrade';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
+export const BUILD='v25.1 · survivor field upgrade';const $=id=>document.getElementById(id),Q=new URLSearchParams(location.search),DEBUG=Q.get('debug')==='1';
 const MOBILE=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;if(MOBILE)document.body.classList.add('touch');
 // ---------- quality tiers ----------
 const QL=['auto','low','medium','high'];const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){return null;}};
