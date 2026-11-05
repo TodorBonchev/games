@@ -208,6 +208,8 @@ The separate piano supports mouse, touch and computer-keyboard playing, octave c
 
 All **49 songs** include **Right hand** melody practice and a **Left hand** simplified bass accompaniment. Choose **Practice hand** in the song picker or use the hand selector beside the lesson controls. The choice is remembered for every song. Changing hands restarts that part cleanly; Wait, Tempo, Listen, progress, and completion use the selected hand. Sheet music switches between treble and bass clefs, and the keyboard automatically moves to the selected part's octave. Left-hand parts are beginner practice arrangements, not full published piano scores.
 
+Use **Listen speed** beside **Listen** to hear either hand at **25%, 50%, 75%, or 100%** of the song's tempo. Pitch stays unchanged while the note names, key highlights and sheet cursor follow the slower playback, so you can follow along on a real piano. Your speed choice is remembered across songs and reloads. Changing speed during Listen repeats the current note at the new rate; Stop returns to your original practice position. This setting controls Listen only; Wait and Tempo practice keep their existing behavior. On narrow phones, swipe the lesson controls horizontally to reach it.
+
 Instrument samples are credited in the piano's sound menu. Grand and Old Piano use Alexander Holm's Salamander Grand Piano; other sampled instruments use Frank Wen's FluidR3_GM SoundFont. Both are distributed under CC BY 3.0 through the sources linked in that menu. The built-in synthesizer remains available offline.
 
 ## Lantern Vale source assets
@@ -246,6 +248,7 @@ npm run test:mobile:movement
 npm run test:abilities
 npm run test:piano
 npm run test:piano:hands
+npm run test:piano:speed
 ```
 
 `test:activities` exercises the unified entry points, outposts and native controllers. Activity-specific aliases such as `test:upside`, `test:garden`, `test:moonbounce` and `test:lantern` select that activity in the same browser runner. The `test:arcade` and `test:voyage:legacy` aliases select groups. Older script names remain compatibility shortcuts; they no longer imply testing a standalone page or a complete old campaign playthrough.

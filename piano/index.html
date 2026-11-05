@@ -113,8 +113,12 @@ body.staffon #staff.has{display:block}
 #lstate{font-size:11px;line-height:16px;padding:0 6px}
 .lesson-controls{display:flex;align-items:center;gap:6px;min-height:44px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none}
 #lbar button{height:44px;min-width:44px;padding:0 9px}
-#lhand,#songHand{height:44px;min-width:112px;flex-shrink:0;border:1px solid #6ba4b8;border-radius:8px;background:#24404a;color:#fff;padding:0 9px;font:inherit;font-size:13px;touch-action:manipulation}
-#lhand:focus-visible,#songHand:focus-visible{outline:3px solid #39d0ff;outline-offset:1px}
+#lhand,#songHand,#lspeed{height:44px;min-width:112px;flex-shrink:0;border:1px solid #6ba4b8;border-radius:8px;background:#24404a;color:#fff;padding:0 9px;font:inherit;font-size:13px;touch-action:manipulation}
+#lhand:focus-visible,#songHand:focus-visible,#lspeed:focus-visible{outline:3px solid #39d0ff;outline-offset:1px}
+.listen-speed{position:relative;flex-shrink:0;height:44px}
+.listen-speed>span{position:absolute;left:9px;top:3px;font:500 10px/12px system-ui;color:#c8dfe8;pointer-events:none}
+#lspeed{min-width:104px;padding-top:13px}
+#lstep{white-space:nowrap}
 #sheet .panel{width:min(640px,calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right) - 16px));max-height:calc(100% - env(safe-area-inset-top) - 12px)}
 #sheet h2{gap:8px;margin-bottom:8px}
 #sheet h2 button{height:44px;min-width:44px;flex-shrink:0}
@@ -151,7 +155,7 @@ body.staffon #staff.has{display:block}
   <span id="lstate" data-state="ready">Ready</span></div>
   <div class="lesson-controls"><select id="lhand" aria-label="Practice hand"><option value="right">Right hand</option><option value="left">Left hand</option></select>
   <button id="lplay">▶ Start</button><button id="lstop" aria-label="Stop">■</button>
-  <button id="lmode" title="Wait: the song waits for you. Tempo: it moves on in time">Wait</button><button id="ldemo">♪ Listen</button><button id="lsheet" title="Show the notes on a staff" aria-pressed="false" aria-label="Sheet music">♫</button><button id="lrestart" aria-label="Restart">↺</button><button id="lexit" aria-label="Exit song">✕</button></div></div>
+  <button id="lmode" title="Wait: the song waits for you. Tempo: it moves on in time">Wait</button><button id="ldemo">♪ Listen</button><label class="listen-speed" for="lspeed"><span>Listen speed</span><select id="lspeed" aria-label="Listening speed" title="Changes Listen playback only, keeping the original pitch. Changing speed repeats the current note."><option value="0.25">25%</option><option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option></select></label><button id="lsheet" title="Show the notes on a staff" aria-pressed="false" aria-label="Sheet music">♫</button><button id="lrestart" aria-label="Restart">↺</button><button id="lexit" aria-label="Exit song">✕</button></div></div>
  <div id="staff" aria-label="Sheet music"></div>
  <div id="kb"></div>
 </div>
@@ -515,10 +519,23 @@ const SONGS = window.PIANO_SONGS || [];
 const toMidi = s => { const m = /^([A-G])(#|b)?(\d)$/.exec(s); return (m[3]*1+1)*12 + [0,2,4,5,7,9,11]['CDEFGAB'.indexOf(m[1])] + (m[2]==='#'?1:m[2]==='b'?-1:0); };
 // state: 'ready' (waiting to start/first key) | 'playing' | 'paused' | 'listening' | 'done'
 const savedHand = (()=>{try{return localStorage.getItem('piano.hand')==='left'?'left':'right';}catch(_){return 'right';}})();
-const L = { song:null, hand:savedHand, notes:[], steps:[], pos:0, follow:false, state:'ready', demo:null, demoNotes:new Set(), timer:null, resumePos:0, hits:0, misses:0, autoShift:true };
+const LISTEN_SPEEDS=[.25,.5,.75,1];
+const savedListenSpeed=(()=>{try{const speed=Number(localStorage.getItem('piano.listenSpeed'));return LISTEN_SPEEDS.includes(speed)?speed:1;}catch(_){return 1;}})();
+const L = { song:null, hand:savedHand, listenSpeed:savedListenSpeed, notes:[], steps:[], pos:0, follow:false, state:'ready', demo:null, demoNotes:new Set(), timer:null, resumePos:0, hits:0, misses:0, autoShift:true };
 window.__learn = L;
 const sheet = $('sheet'), list = $('songlist');
 const CATS = window.PIANO_CATEGORIES || [];
+$('lspeed').value=String(L.listenSpeed);
+function setListenSpeed(value){
+  const speed=typeof value==='number'||typeof value==='string'?Number(value):NaN;
+  if(!LISTEN_SPEEDS.includes(speed))return false;
+  const changed=L.listenSpeed!==speed,from=L.demoPos,listening=!!L.demo;
+  L.listenSpeed=speed;$('lspeed').value=String(speed);
+  try{localStorage.setItem('piano.listenSpeed',String(speed));}catch(_){}
+  if(changed&&listening){stopDemo(false);scheduleDemo(from);}
+  return true;
+}
+$('lspeed').addEventListener('change',e=>setListenSpeed(e.target.value));
 function syncHandControls(){
   $('lhand').value=$('songHand').value=L.hand;
   document.body.dataset.practiceHand=L.hand;
@@ -604,7 +621,7 @@ function render(){
   $('lmode').classList.toggle('on',L.follow);
   document.body.dataset.learn = L.state;
   markStaff(p);
-  if (L.state==='listening'){ hint(0); $('lstep').textContent=`${Math.min(L.demoPos+1,n)}/${n}`; return; }
+  if (L.state==='listening'){ hint(0); const heard=L.steps[L.demoPos]; $('lstep').textContent=`${heard?nm(heard.midi)+' • ':''}${Math.min(L.demoPos+1,n)}/${n}`; return; }
   if (!st){ hint(0); $('lstep').textContent='Done! 🎉 '+n+'/'+n; return; }
   const vis = ensureVisible(st.midi), i = keyOf(st.midi); L.needShift=false;
   hint(vis?0:(i<0?-1:1));
@@ -659,18 +676,23 @@ function listen(){
   if (L.demo){ stopDemo(); return; }
   audio(); clearTimeout(L.timer); L.timer=null; hideDone();
   L.prevState=L.state; L.resumePos = L.state==='done'?0:L.pos;
-  const from = L.resumePos, s0 = L.steps[from].beat, ms=spb();
-  L.demo=[]; L.demoPos=from; L.state='listening'; render();
+  scheduleDemo(L.resumePos);
+}
+// Keep the learning checkpoint separate from the currently demonstrated note.
+function scheduleDemo(from){
+  const s0=L.steps[from].beat,ms=spb()/L.listenSpeed,session=[];
+  L.demo=session; L.demoPos=from; L.state='listening'; render();
   for (let k=from;k<L.steps.length;k++){ const st=L.steps[k];
-    L.demo.push(setTimeout(()=>{
+    session.push(setTimeout(()=>{
+      if(L.demo!==session)return;
       L.demoPos=k; L.needShift=true; ensureVisible(st.midi); L.needShift=false; render(); const i=keyOf(st.midi); if(!keys[i]) return;
       clearMarks(); keys[i].classList.add('next');
-      noteOn(i,0.8); L.demoNotes.add(i);
-      L.demo && L.demo.push(setTimeout(()=>{ if(!L.demoNotes.has(i)) return; L.demoNotes.delete(i); keys[i].classList.remove('down'); if(!held.has(i) && !sustain) release(i); }, Math.max(90, st.dur*ms*0.9)));
+      noteOn(i,0.8); const voice=voices.get(i); L.demoNotes.add(i);
+      session.push(setTimeout(()=>{ if(L.demo!==session||!L.demoNotes.has(i)||voices.get(i)!==voice)return; L.demoNotes.delete(i); keys[i].classList.remove('down'); if(!held.has(i) && !sustain) release(i); }, Math.max(90, st.dur*ms*0.9)));
     }, (st.beat-s0)*ms+80));
   }
   const last=L.steps[L.steps.length-1];
-  L.demo.push(setTimeout(()=>{ stopDemo(); window.__demoDone=true; }, (last.beat+last.dur-s0)*ms+300));
+  session.push(setTimeout(()=>{ if(L.demo!==session)return; stopDemo(); window.__demoDone=true; }, (last.beat+last.dur-s0)*ms+300));
 }
 function showDone(){
   const n=L.steps.length, acc=Math.round(100*L.hits/Math.max(1,L.hits+L.misses));
@@ -770,7 +792,7 @@ function jumpTo(k){
 }
 staffEl.addEventListener('click', e=>{ const g=e.target.closest('.n'); if (g) jumpTo(+g.dataset.k); });
 setStaff(staffOn);
-window.__piano={jumpTo,setStaff,setHand,startSong,keyDown,keyUp,L,songs:SONGS,play,pause,stop,listen,restart,exitSong};
+window.__piano={jumpTo,setStaff,setHand,setListenSpeed,startSong,keyDown,keyUp,L,songs:SONGS,play,pause,stop,listen,restart,exitSong};
 const _labels = labels; labels = function(){ _labels(); if(L && L.song) render(); };
 $('rotgo').onclick=()=>document.body.classList.add('portraitok');
 build();
