@@ -36,6 +36,7 @@
     "test:lantern:space": "node tests/activities-browser.mjs --activity=lantern",
     "test:upside": "node tests/activities-browser.mjs --activity=upside",
     "test:piano": "node tests/piano-wait-browser.mjs",
+    "test:piano:hands": "node tests/piano-hands-browser.mjs",
     "test:lantern:expedition": "node tests/activities-browser.mjs --activity=lantern",
     "test:upside:quality": "node tests/activities-browser.mjs --activity=upside",
     "test:activities": "node tests/activities-browser.mjs",

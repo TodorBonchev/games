@@ -206,6 +206,8 @@ Supplies use a fixed instance pool: all six together add six draw calls, with no
 
 The separate piano supports mouse, touch and computer-keyboard playing, octave changes, sustain, volume, instrument choices and reverb. **Songs** opens the searchable practice library. **Wait** mode waits for the correct notes; **Tempo** mode advances in time. **Listen** demonstrates the song, and the sheet-music control shows its notes on a staff. Practice can be stopped, restarted or left without affecting Zombie progress.
 
+All **49 songs** include **Right hand** melody practice and a **Left hand** simplified bass accompaniment. Choose **Practice hand** in the song picker or use the hand selector beside the lesson controls. The choice is remembered for every song. Changing hands restarts that part cleanly; Wait, Tempo, Listen, progress, and completion use the selected hand. Sheet music switches between treble and bass clefs, and the keyboard automatically moves to the selected part's octave. Left-hand parts are beginner practice arrangements, not full published piano scores.
+
 Instrument samples are credited in the piano's sound menu. Grand and Old Piano use Alexander Holm's Salamander Grand Piano; other sampled instruments use Frank Wen's FluidR3_GM SoundFont. Both are distributed under CC BY 3.0 through the sources linked in that menu. The built-in synthesizer remains available offline.
 
 ## Lantern Vale source assets
@@ -243,6 +245,7 @@ npm run test:mobile:hud
 npm run test:mobile:movement
 npm run test:abilities
 npm run test:piano
+npm run test:piano:hands
 ```
 
 `test:activities` exercises the unified entry points, outposts and native controllers. Activity-specific aliases such as `test:upside`, `test:garden`, `test:moonbounce` and `test:lantern` select that activity in the same browser runner. The `test:arcade` and `test:voyage:legacy` aliases select groups. Older script names remain compatibility shortcuts; they no longer imply testing a standalone page or a complete old campaign playthrough.

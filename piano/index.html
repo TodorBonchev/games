@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Piano">
 <link rel="manifest" href="manifest.json?v5">
 <link rel="apple-touch-icon" href="../icon-180.png">
+<link rel="icon" type="image/png" href="../icon-192.png">
 <title>Piano</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -100,6 +101,37 @@ body.staffon #staff.has{display:block}
 #sndMenu .credit a{color:inherit}
 #sndMenu .credit .src{white-space:nowrap;text-decoration:none;opacity:.85;margin-left:4px}
 #sndStat{font-size:11px;opacity:.7;font-weight:500}
+/* Keep the hand choice and lesson actions usable above a phone keyboard. */
+#bar{height:44px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none}
+#bar>a,#bar>button,#bar>input,#bar>#oct{flex-shrink:0}
+#bar>a,#bar>button{height:44px;min-width:44px}
+#bar::-webkit-scrollbar,.lesson-controls::-webkit-scrollbar{display:none}
+#lbar{height:auto;flex-direction:column;align-items:stretch;gap:0;padding:2px 8px}
+.lesson-overview{display:flex;align-items:center;gap:8px;height:20px;min-width:0}
+#ltitle{max-width:32%;min-width:0}
+#lstep{font-size:12px;min-width:90px}
+#lstate{font-size:11px;line-height:16px;padding:0 6px}
+.lesson-controls{display:flex;align-items:center;gap:6px;min-height:44px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none}
+#lbar button{height:44px;min-width:44px;padding:0 9px}
+#lhand,#songHand{height:44px;min-width:112px;flex-shrink:0;border:1px solid #6ba4b8;border-radius:8px;background:#24404a;color:#fff;padding:0 9px;font:inherit;font-size:13px;touch-action:manipulation}
+#lhand:focus-visible,#songHand:focus-visible{outline:3px solid #39d0ff;outline-offset:1px}
+#sheet .panel{width:min(640px,calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right) - 16px));max-height:calc(100% - env(safe-area-inset-top) - 12px)}
+#sheet h2{gap:8px;margin-bottom:8px}
+#sheet h2 button{height:44px;min-width:44px;flex-shrink:0}
+#songq{display:block;width:100%;height:44px;margin:0 0 10px}
+.hand-setting{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px}
+#handHelp{font-size:12px;font-weight:400;color:#bdd2dc;line-height:1.4;margin:6px 0 12px}
+@media(max-width:600px){#vol{display:none}#lstate{display:none}#ltitle{flex:1;max-width:40%}#lprog{min-width:24px}}
+@media(orientation:landscape) and (max-height:430px){#staff{flex-basis:48px}}
+@media(orientation:landscape) and (max-height:360px){
+ #lbar{flex-direction:row;gap:8px}
+ .lesson-overview{flex:0 0 140px;display:flex;flex-direction:column;align-items:stretch;justify-content:center;height:44px;gap:2px}
+ #ltitle{max-width:100%;font-size:12px;flex:none}
+ #lstep{text-align:left;font-size:11px;min-width:0}
+ #lprog,#lstate{display:none}
+ .lesson-controls{min-width:0;flex:1}
+}
+@media(orientation:portrait) and (max-width:820px){#lbar{flex-wrap:nowrap;padding:2px 8px}#ltitle{flex-basis:auto}}
 </style>
 </head>
 <body>
@@ -115,21 +147,22 @@ body.staffon #staff.has{display:block}
   <span class="sp"></span>
   <button id="fs" aria-label="Fullscreen" hidden>⛶</button>
  </div>
- <div id="lbar"><span id="ltitle"></span><div id="lprog"><i></i></div><span id="lstep"></span>
-  <span id="lstate" data-state="ready">Ready</span>
+ <div id="lbar"><div class="lesson-overview"><span id="ltitle"></span><div id="lprog"><i></i></div><span id="lstep"></span>
+  <span id="lstate" data-state="ready">Ready</span></div>
+  <div class="lesson-controls"><select id="lhand" aria-label="Practice hand"><option value="right">Right hand</option><option value="left">Left hand</option></select>
   <button id="lplay">▶ Start</button><button id="lstop" aria-label="Stop">■</button>
-  <button id="lmode" title="Wait: the song waits for you. Tempo: it moves on in time">Wait</button><button id="ldemo">♪ Listen</button><button id="lsheet" title="Show the notes on a staff" aria-pressed="false" aria-label="Sheet music">♫</button><button id="lrestart" aria-label="Restart">↺</button><button id="lexit" aria-label="Exit song">✕</button></div>
+  <button id="lmode" title="Wait: the song waits for you. Tempo: it moves on in time">Wait</button><button id="ldemo">♪ Listen</button><button id="lsheet" title="Show the notes on a staff" aria-pressed="false" aria-label="Sheet music">♫</button><button id="lrestart" aria-label="Restart">↺</button><button id="lexit" aria-label="Exit song">✕</button></div></div>
  <div id="staff" aria-label="Sheet music"></div>
  <div id="kb"></div>
 </div>
-<div id="sheet"><div class="panel"><h2>Learn a song <input id="songq" type="search" placeholder="Search songs…" autocomplete="off" aria-label="Search songs"> <button id="sheetX" aria-label="Close">✕</button></h2><div id="songlist"></div></div></div>
+<div id="sheet"><div class="panel"><h2>Learn a song <button id="sheetX" aria-label="Close">✕</button></h2><input id="songq" type="search" placeholder="Search songs…" autocomplete="off" aria-label="Search songs"><label class="hand-setting" for="songHand">Practice hand <select id="songHand"><option value="right">Right hand · melody</option><option value="left">Left hand · bass</option></select></label><p id="handHelp">Choose a hand for every song.</p><div id="songlist"></div></div></div>
 <div id="done"><div class="panel"><div class="big">🎉 Well done!</div><div id="dtitle"></div><div id="dstats"></div>
  <div class="row"><button id="dagain">↻ Play again</button><button id="dsongs">♪ Songs</button><button id="dclose">Close</button></div></div></div>
 <div id="sndMenu" role="dialog" aria-label="Choose a sound"><div class="panel"><div id="sndList" style="display:contents"></div>
  <div class="row"><button id="rvb" aria-pressed="false">Reverb</button><span id="sndStat"></span></div>
  <div class="credit">Grand &amp; Old Piano: <a href="https://archive.org/details/SalamanderGrandPianoV3" target="_blank" rel="noopener">Salamander Grand Piano</a> by Alexander Holm (CC BY 3.0), via <a href="https://github.com/Tonejs/audio" target="_blank" rel="noopener">Tone.js audio</a>. Other sounds: FluidR3_GM SoundFont by Frank Wen, via <a href="https://github.com/gleitz/midi-js-soundfonts" target="_blank" rel="noopener">gleitz/midi-js-soundfonts</a> — CC BY 3.0. Falls back to the built-in synth when offline. <a class="src" href="https://github.com/TodorBonchev/games" target="_blank" rel="noopener" aria-label="Source code on GitHub"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" style="vertical-align:-2px;fill:currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.6 7.6 0 0 1 8 3.87c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg> Source</a></div></div></div>
 <div id="rot"><div>📱</div>Rotate your phone to play<button id="rotgo">Play in portrait</button></div>
-<script src="songs.js?v11"></script>
+<script src="songs.js?v12"></script>
 <script>
 (() => {
 const kb = document.getElementById('kb');
@@ -416,7 +449,7 @@ function up(e){
 }
 ['pointerup','pointercancel','pointerleave'].forEach(t=>kb.addEventListener(t,up));
 // block gestures / menus
-['touchstart','touchmove','gesturestart','dblclick'].forEach(t=>document.addEventListener(t,e=>{ if(!e.target.closest("button,a,input,#sheet .panel,#sndMenu,#staff")) e.preventDefault(); },{passive:false}));
+['touchstart','touchmove','gesturestart','dblclick'].forEach(t=>document.addEventListener(t,e=>{ if(!e.target.closest("button,a,input,select,#sheet .panel,#sndMenu,#staff,.lesson-controls,#bar")) e.preventDefault(); },{passive:false}));
 document.addEventListener('contextmenu',e=>e.preventDefault());
 // unlock on first touch (iOS)
 const unlock = ()=>{ audio(); const b=ctx.createBuffer(1,1,22050), s=ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination); s.start(0); };
@@ -464,7 +497,8 @@ if ((root.requestFullscreen || root.webkitRequestFullscreen) && !/iPhone|iPad|iP
 const MAP = 'zsxdcvgbhnjmq2w3er5t6y7ui';   // 25 keys C4..C6
 const kdown = new Set();
 addEventListener('keydown', e=>{
-  if (e.repeat || e.ctrlKey || e.metaKey || e.target.closest?.('input')) return;
+  if (e.repeat || e.ctrlKey || e.metaKey || e.target.closest?.('input,select,textarea,[contenteditable=true]')) return;
+  if (e.key===' ' && e.target.closest?.('button')) return;
   if (e.key===' '){ e.preventDefault(); $('sus').click(); return; }
   if (e.key==='ArrowLeft') return $('od').click();
   if (e.key==='ArrowRight') return $('ou').click();
@@ -480,10 +514,26 @@ addEventListener('blur', ()=>{ [...held].forEach(keyUp); kdown.clear(); ptr.clea
 const SONGS = window.PIANO_SONGS || [];
 const toMidi = s => { const m = /^([A-G])(#|b)?(\d)$/.exec(s); return (m[3]*1+1)*12 + [0,2,4,5,7,9,11]['CDEFGAB'.indexOf(m[1])] + (m[2]==='#'?1:m[2]==='b'?-1:0); };
 // state: 'ready' (waiting to start/first key) | 'playing' | 'paused' | 'listening' | 'done'
-const L = { song:null, steps:[], pos:0, follow:false, state:'ready', demo:null, demoNotes:new Set(), timer:null, resumePos:0, hits:0, misses:0, autoShift:true };
+const savedHand = (()=>{try{return localStorage.getItem('piano.hand')==='left'?'left':'right';}catch(_){return 'right';}})();
+const L = { song:null, hand:savedHand, notes:[], steps:[], pos:0, follow:false, state:'ready', demo:null, demoNotes:new Set(), timer:null, resumePos:0, hits:0, misses:0, autoShift:true };
 window.__learn = L;
 const sheet = $('sheet'), list = $('songlist');
 const CATS = window.PIANO_CATEGORIES || [];
+function syncHandControls(){
+  $('lhand').value=$('songHand').value=L.hand;
+  document.body.dataset.practiceHand=L.hand;
+  $('handHelp').textContent=L.hand==='left'?'Practice a simplified bass accompaniment for any song.':'Practice the melody for any song. Switch to Left hand to learn its bass accompaniment.';
+}
+function setHand(hand){
+  if(hand!=='right'&&hand!=='left')return false;
+  const changed=L.hand!==hand;L.hand=hand;
+  try{localStorage.setItem('piano.hand',hand);}catch(_){}
+  syncHandControls();
+  if(changed&&L.song)startSong(L.song);
+  return true;
+}
+for(const id of ['lhand','songHand'])$(id).addEventListener('change',e=>setHand(e.target.value));
+syncHandControls();
 function renderList(q=''){
   q=q.trim().toLowerCase(); list.innerHTML='';
   const match = sg => !q || (sg.title+' '+(sg.subtitle||'')+' '+sg.category+' '+sg.level).toLowerCase().includes(q);
@@ -507,15 +557,16 @@ $('sheetX').onclick=()=>sheet.classList.remove('show');
 sheet.addEventListener('pointerdown',e=>{ if(e.target===sheet) sheet.classList.remove('show'); });
 const spb = ()=>60000/(L.song?.tempo||100);
 function startSong(sg){
-  stopDemo(false); clearTimeout(L.timer); allOff(); L.song=sg;
-  let ms = sg.notes.filter(x=>!x.rest).map(x=>toMidi(x.note));
+  stopDemo(false); clearTimeout(L.timer); L.timer=null; releaseAllKeys(); allOff(); L.song=sg;
+  L.notes=L.hand==='left'?sg.leftNotes:sg.notes;
+  let ms = L.notes.filter(x=>!x.rest).map(x=>toMidi(x.note));
   let t = 0; const lo=Math.min(...ms), hi=Math.max(...ms);
   if (hi-lo<=24){ while(lo+t<36) t+=12; while(hi+t>96) t-=12; }
   let sh = Math.max(-3,Math.min(2,Math.floor((lo+t-BASE)/12)));
   if (hi+t > BASE+sh*12+COUNT-1) sh = Math.min(2, Math.ceil((hi+t-BASE-COUNT+1)/12));
   shift = sh; _labels();
   L.steps=[]; let beat=0;
-  sg.notes.forEach(x=>{ if(!x.rest) L.steps.push({midi:toMidi(x.note)+t, beat, dur:x.dur, name:x.note.replace(/\d$/,d=>+d+t/12)}); beat+=x.dur; });
+  L.notes.forEach(x=>{ if(!x.rest) L.steps.push({midi:toMidi(x.note)+t, beat, dur:x.dur, name:x.note.replace(/\d$/,d=>+d+t/12)}); beat+=x.dur; });
   L.total = beat;
   $('ltitle').textContent=sg.title; $('lbar').classList.add('show'); $('songsBtn').classList.add('on');
   buildStaff();
@@ -523,7 +574,7 @@ function startSong(sg){
 }
 function setState(s){ L.state=s; render(); }
 function restart(){ stopDemo(false); clearTimeout(L.timer); allOff(); L.pos=0; L.needShift=true; L.hits=0; L.misses=0; hideDone(); setState('ready'); pulseNext(); }
-function exitSong(){ stopDemo(false); clearTimeout(L.timer); allOff(); hideDone(); L.song=null; L.steps=[]; L.pos=0; L.state='ready'; clearMarks(); $('lbar').classList.remove('show'); $('songsBtn').classList.remove('on'); hint(0); staffEl.classList.remove('has'); staffEl.innerHTML=''; }
+function exitSong(){ stopDemo(false); clearTimeout(L.timer); L.timer=null; releaseAllKeys(); allOff(); hideDone(); L.song=null; L.notes=[]; L.steps=[]; L.pos=0; L.state='ready'; clearMarks(); $('lbar').classList.remove('show'); $('songsBtn').classList.remove('on'); hint(0); staffEl.classList.remove('has'); staffEl.innerHTML=''; }
 function clearMarks(){ keys.forEach(k=>k.classList.remove('next','after')); }
 const keyOf = midi => midi-(BASE+shift*12);
 const nm = midi => NAMES[midi%12]+(Math.floor(midi/12)-1);
@@ -623,7 +674,7 @@ function listen(){
 }
 function showDone(){
   const n=L.steps.length, acc=Math.round(100*L.hits/Math.max(1,L.hits+L.misses));
-  $('dtitle').textContent=L.song.title; $('dstats').textContent=`${n} notes • ${L.misses} miss${L.misses===1?'':'es'} • ${acc}% accuracy`;
+  $('dtitle').textContent=L.song.title+' · '+(L.hand==='left'?'Left hand':'Right hand'); $('dstats').textContent=`${n} notes • ${L.misses} miss${L.misses===1?'':'es'} • ${acc}% accuracy`;
   $('done').classList.add('show');
 }
 function hideDone(){ $('done').classList.remove('show'); }
@@ -639,7 +690,7 @@ $('lmode').onclick=()=>{ if(L.state==='listening') return; L.follow=!L.follow; c
   if (L.state==='playing') scheduleFollow(); render(); };
 document.addEventListener('visibilitychange',()=>{ if(document.hidden){ if(L.demo) stopDemo(); pause(); releaseAllKeys(); allOff(); } });
 
-// ---------- sheet music (treble staff, own SVG) ----------
+// ---------- sheet music (selected hand, own SVG) ----------
 const staffEl = $('staff'), SP = 7, Y0 = 56;            // SP: line spacing; Y0: y of the bottom line (E4)
 const yOf = pos => Y0 - pos*SP/2;                         // pos: diatonic steps above E4
 let staffOn = false, staffNotes = []; try{ staffOn = localStorage.getItem('piano.sheet')==='1'; }catch(_){}
@@ -650,10 +701,12 @@ $('lsheet').onclick = ()=>setStaff(!staffOn);
 const GLY = d => d>=5.5?['w',1]:d>=3.5?['w',0]:d>=2.75?['h',1]:d>=1.85?['h',0]:d>=1.4?['q',1]:d>=.9?['q',0]:d>=.7?['e',1]:d>=.4?['e',0]:['s',0];
 const CLEF = 'M15 66c-4 0-6-3-5-6 1-2 4-2 5 0 1 2-1 4-3 4 1 2 5 2 7-1 2-4 0-9-3-17l-2-12c-1-6 1-13 5-15 2 4 1 10-4 14-6 5-11 10-11 17 0 7 6 11 12 11 6 0 9-4 9-8 0-5-4-8-8-8-5 0-8 3-8 7 0 2 1 4 3 5-4-1-6-4-6-7 0-5 5-9 11-9 6 0 10 4 10 10 0 6-5 10-12 10-9 0-15-6-15-13 0-8 6-13 12-18 3-3 5-6 4-10-2 1-3 5-2 10l5 31c1 6-2 10-7 10z';
 function buildStaff(){
-  const sg=L.song, meter=sg.meter||4, pick=sg.pickup||0, out=[]; staffNotes=[];
+  const sg=L.song, bass=L.hand==='left', meter=sg.meter||4, pick=sg.pickup||0, out=[]; staffNotes=[];
+  staffEl.dataset.clef=bass?'bass':'treble';
+  staffEl.setAttribute('aria-label',(bass?'Left hand · Bass':'Right hand · Treble')+' clef sheet music');
   let x=64, beat=0, k=0, nextBar = pick>0 ? pick : meter, accs={}, beams=[], grp=[];
   const flush=()=>{ if (grp.length>1) beams.push(grp); else if (grp.length===1) grp[0].flag=true; grp=[]; };
-  for (const ev of sg.notes){
+  for (const ev of L.notes){
     while (beat >= nextBar-1e-6){ flush(); out.push(`<line class="ln" x1="${x}" x2="${x}" y1="${yOf(8)}" y2="${Y0}"/>`); x+=10; nextBar+=meter; accs={}; }
     const [g,dot]=GLY(ev.dur);
     if (ev.rest){ flush();
@@ -662,7 +715,7 @@ function buildStaff(){
         `<circle cx="${x-1}" cy="${y-3}" r="2" fill="#1f1f1f"/><path d="M${x-2} ${y-2}l6-2-4 10" stroke="#1f1f1f" stroke-width="1.3" fill="none"/>`);
       x += 16+14*Math.min(ev.dur,4)**.6; beat+=ev.dur; continue; }
     const step=L.steps[k], m=/^([A-G])(#|b)?(-?\d+)$/.exec(step.name)||/^([A-G])(#|b)?(\d)$/.exec(nm(step.midi));
-    const pos=(+m[3])*7+'CDEFGAB'.indexOf(m[1])-30, acc=m[2]||'', key=m[1]+m[3];
+    const pos=(+m[3])*7+'CDEFGAB'.indexOf(m[1])-(bass?18:30), acc=m[2]||'', key=m[1]+m[3];
     let a=''; if ((accs[key]||'')!==acc){ a=acc==='#'?'♯':acc==='b'?'♭':'♮'; accs[key]=acc; x+=7; }
     const n={k, x, pos, g, dot, a, up: pos<4, beat:beat-pick}; staffNotes.push(n);
     if (g==='e'||g==='s'){ if (grp.length && Math.floor(grp[0].beat+1e-6)!==Math.floor(n.beat+1e-6)) flush(); grp.push(n); } else flush();
@@ -695,7 +748,8 @@ function buildStaff(){
       out.push(`<path class="bm" data-k="${n.k}" d="M${Math.min(x1,x2)} ${yy}H${Math.max(x1,x2)}v3H${Math.min(x1,x2)}z"/>`); } }
   const W = x+40, lines=[0,2,4,6,8].map(l=>`<line class="ln" x1="4" x2="${W-4}" y1="${yOf(l)}" y2="${yOf(l)}"/>`).join('');
   const ts = `<text x="38" y="${yOf(6)+1}" font-size="17" font-weight="800" fill="#1f1f1f" font-family="serif">${meter}</text><text x="38" y="${yOf(2)+1}" font-size="17" font-weight="800" fill="#1f1f1f" font-family="serif">4</text>`;
-  staffEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" viewBox="0 0 ${W} 74" preserveAspectRatio="xMinYMid meet">${lines}<path d="${CLEF}" transform="translate(4 -8) scale(.95)" fill="#1f1f1f"/>${ts}<line class="ln" x1="${W-8}" x2="${W-8}" y1="${yOf(8)}" y2="${Y0}" stroke-width="3"/>${out.join('')}</svg>`;
+  const clef=bass?`<g fill="#1f1f1f"><path d="M9 35c-2-7 9-13 15-6 8 10-5 22-17 26 9-6 17-16 14-23-3-6-10-4-10 1z"/><circle cx="10" cy="35" r="3"/><circle cx="29" cy="31.5" r="1.8"/><circle cx="29" cy="38.5" r="1.8"/></g>`:`<path d="${CLEF}" transform="translate(4 -8) scale(.95)" fill="#1f1f1f"/>`;
+  staffEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" viewBox="0 0 ${W} 74" preserveAspectRatio="xMinYMid meet">${lines}${clef}${ts}<line class="ln" x1="${W-8}" x2="${W-8}" y1="${yOf(8)}" y2="${Y0}" stroke-width="3"/>${out.join('')}</svg>`;
   staffEl.classList.add('has'); staffEl._els = [...staffEl.querySelectorAll('.n')]; staffEl._last=-2;
 }
 function markStaff(p, force){
@@ -716,7 +770,7 @@ function jumpTo(k){
 }
 staffEl.addEventListener('click', e=>{ const g=e.target.closest('.n'); if (g) jumpTo(+g.dataset.k); });
 setStaff(staffOn);
-window.__piano={jumpTo,setStaff,startSong,keyDown,keyUp,L,songs:SONGS,play,pause,stop,listen,restart,exitSong};
+window.__piano={jumpTo,setStaff,setHand,startSong,keyDown,keyUp,L,songs:SONGS,play,pause,stop,listen,restart,exitSong};
 const _labels = labels; labels = function(){ _labels(); if(L && L.song) render(); };
 $('rotgo').onclick=()=>document.body.classList.add('portraitok');
 build();

@@ -1,20 +1,36 @@
 // Playwright: song mode (Wait/Tempo/Listen/Start/Pause/Stop/completion) on an emulated iPhone in landscape.
 import { chromium, devices } from 'playwright';
 import { spawn } from 'node:child_process';
+import { once } from 'node:events';
 import assert from 'node:assert/strict';
 
-const PORT = 5199, URL = `http://127.0.0.1:${PORT}/piano/index.html`;
-const server = spawn(process.execPath, ['scripts/serve.mjs', '--port', String(PORT)], { stdio: 'ignore' });
-await new Promise(r => setTimeout(r, 600));
+const PORT = 5199, base = (process.env.GAMES_TEST_URL || `http://127.0.0.1:${PORT}`).replace(/\/$/, '');
+const URL = `${base}/piano/index.html`;
+let server, browser, ctx;
+try {
+if (!process.env.GAMES_TEST_URL) {
+  server = spawn(process.execPath, ['scripts/serve.mjs', '--port', String(PORT)], { stdio: ['ignore', 'pipe', 'pipe'] });
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Piano test server did not start')), 10000);
+    server.stdout.once('data', () => { clearTimeout(timer); resolve(); });
+    server.once('error', error => { clearTimeout(timer); reject(error); });
+    server.once('exit', code => { clearTimeout(timer); reject(new Error(`Piano test server exited ${code}`)); });
+  });
+}
 const shot = process.argv.includes('--shot');
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const iphone = devices['iPhone 13 landscape'];
-const ctx = await browser.newContext({ ...iphone });
+ctx = await browser.newContext({ ...iphone });
 const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 // sample fetches deliberately blocked in the offline test log network errors; ignore only those
-page.on('console', m => m.type() === 'error' && !(/Failed to load resource/.test(m.text()) && /midi-js-soundfonts|salamander/.test(m.location().url)) && errors.push(m.text()));
+page.on('console', message => {
+  if (message.type() !== 'error') return;
+  const text = message.text(), source = message.location().url;
+  if (/Failed to load resource/.test(text) && /midi-js-soundfonts|salamander/.test(source)) return;
+  errors.push(source ? `${text} (${source})` : text);
+});
 let passed = 0;
 const t = async (name, fn) => { await fn(); passed++; console.log('ok -', name); };
 await page.goto(URL);
@@ -222,4 +238,10 @@ await t('Sound picker: present, opens, switches, remembered, falls back when sam
 if (shot) { await pick('imperial'); await tapNext(); await tapNext(); await page.screenshot({ path: 'piano-wait-screenshot.png' }); }
 assert.deepEqual(errors, [], 'console errors: ' + errors.join('\n'));
 console.log(`\n${passed} piano browser tests passed`);
-await browser.close(); server.kill();
+} finally {
+  await ctx?.close().catch(() => {});
+  await browser?.close().catch(() => {});
+  if (server && server.exitCode === null && server.signalCode === null) {
+    const stopped = once(server, 'exit'); server.kill(); await stopped;
+  }
+}

@@ -2,13 +2,16 @@
 //
 // Lazy-friendly: each entry stores its melody as a compact string. The list UI
 // only reads the metadata (title, category, level); notes are parsed on first use
-// via the `notes` getter, which returns [{note:'G4', dur:beats} | {rest:true, dur}].
+// via `notes` (right hand) and `leftNotes` (bass accompaniment), returning
+// [{note:'G4', dur:beats} | {rest:true, dur}]. Both parts share one timeline.
 //
 // Melody string: space-separated tokens "NOTE[:beats]", "r:beats" for a rest,
 // "|" bar lines are ignored. Default length is `unit` (1 beat unless given).
-// `transpose` (semitones) shifts the whole tune, e.g. to fit C4–C6.
-// `meter` (beats per bar, default 4) and `pickup` (beats before the first bar line) only drive the sheet view.
-// Add a song: append { id, title, subtitle, category, level, tempo, melody }.
+// `transpose` (semitones) shifts the stored melody, e.g. to fit C4–C6.
+// `meter` (beats per bar, default 4) and `pickup` define the shared bar grid
+// for notation and the bass arrangement; bass plans already use sounding keys.
+// Add a song: append { id, title, subtitle, category, level, tempo, melody }
+// and its explicit LEFT_PARTS harmony/style plan below.
 window.PIANO_CATEGORIES = ['Star Wars & Movies', 'Christmas', 'Classical', 'Pop', 'Kids & Folk'];
 window.PIANO_SONGS = (() => {
   const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -22,8 +25,114 @@ window.PIANO_SONGS = (() => {
       return { note: transpose ? nameOf(midiOf(n) + transpose) : n, dur };
     });
   }
-  const song = s => { let cache; return Object.defineProperty(s, 'notes', { enumerable: true,
-    get: () => cache || (cache = parse(s.melody, s.unit, s.transpose)) }); };
+  // Original beginner practice accompaniments, not transcriptions of the
+  // published piano scores. Chords are in each melody's *sounding* key, after
+  // its transpose. A token lasts one bar unless ':beats' is supplied. Every
+  // library entry has an explicit plan; adding a melody requires adding a plan.
+  const LEFT_PARTS = {
+    imperial:    { style:'march', harmony:'Gm Gm Eb Gm Cm Gm D7 Gm Gm Eb Cm D7 Gm Cm D7 Gm', ending:'Gm' },
+    starwars:    { style:'march', harmony:'C C F G C C F G Am Em F C Dm Am D7 G C C F G C', ending:'C' },
+    pirate:      { style:'fifths', harmony:'Dm Dm Bb Bb C C Am Dm Dm Dm Bb Bb C C Am Dm Gm Bb C A7 Dm', ending:'Dm' },
+    hedwig:      { style:'waltz', harmony:'Dm Dm Dm Dm Gm Gm A7 A7 Dm Dm F B7 Eb A7 Dm Dm', ending:'Dm' },
+    got:         { style:'waltz', harmony:'Fm Fm Fm Fm F F F F Fm Fm Db Eb Fm Fm Ab Eb Db Eb Fm Fm', ending:'Fm' },
+    mario:       { style:'bounce', harmony:'C G C G C C Am F Dm G C G C G Am F Dm G C G', ending:'C' },
+    tetris:      { style:'bounce', harmony:'Am E7 E7 Am Dm Am E7 Am Dm Dm Am Am E7 E7 Am Am Am Dm E7 Am', ending:'Am' },
+    pinkpanther: { style:'walking', harmony:'Em Em Em Em C7 C7 Em Em B7 C7 Em B7', ending:'Em' },
+    titanic:     { style:'ballad', harmony:'F F Bb F F C Bb C F F Bb F Dm Am Bb C F C Dm Bb F C Bb C', ending:'F' },
+    jingle:      { style:'bounce', harmony:'C C C F F G7 G7 C C C C F F G7 C G7 C C C C F F F F G7 G7 G7 G7 C G7 C C', ending:'C' },
+    wewish:      { style:'waltz', harmony:'G C A7 D7 B7 Em Am D7 G D7 G C G C D7 G', ending:'G' },
+    silent:      { style:'waltz', harmony:'C C C C G7 G7 C C F F C C F F C C G7 G7 C C C G7 C C', ending:'C' },
+    deck:        { style:'fifths', harmony:'G G D7 G G D7 G G Am D7 G D7 G C G D7', ending:'G' },
+    joy:         { style:'march', harmony:'C G C G C C G G C C F G C C F G C C G G C C G C', ending:'C' },
+    rudolph:     { style:'bounce', harmony:'C C G7 G7 G7 G7 C C F C G7 C D7 D7 G7 G7 C C G7 G7 C C', ending:'C' },
+    santa:       { style:'bounce', harmony:'F F Bb Bb F F G7 C7 F F Bb Bb F C7 F F Bb Bb F F G7 G7 C7 C7 F F Bb Bb F C7 F F', ending:'F' },
+    wenceslas:   { style:'march', harmony:'G G C G G G D7 G D7 G C G Em C D7 G', ending:'G' },
+    faithful:    { style:'march', harmony:'G G D7 D7 G D7 G D7 G G D7 G Em A7 D7 D7 G G C G C G D7 G', ending:'G' },
+    carol:       { style:'waltz', harmony:'Gm Gm Gm Gm Cm Cm Cm Cm D7 D7 D7 D7 Gm Gm D7 D7 Gm Gm Cm D7 Gm Gm Gm Gm', ending:'Gm' },
+    ode:         { style:'fifths', harmony:'G D7 G D7 G D7 G G D7 G D7 D7 G D7 G G', ending:'G' },
+    elise:       { style:'arpeggio', harmony:'Am Am E7 Am Am Am E7 Am Am C G7 C E7 E7 E7 Am Am E7 Am Am Am E7 Am C F C G7 C G7 C C E7', ending:'Am' },
+    canon:       { style:'held', harmony:'D:2 A:2 Bm:2 F#m:2 G:2 D:2 G:2 A:2', ending:'D' },
+    mountain:    { style:'pulse', harmony:'Bm F#7 Bm F#7 Bm Em Bm F#7 F#m C#7 F#m C#7 Bm Em F#7 Bm', ending:'Bm' },
+    brahms:      { style:'waltz', harmony:'C C C C F F G7 G7 C C F F C G7 C C', ending:'C' },
+    turkish:     { style:'alberti', harmony:'F#m C#7 F#m C#7 F#m C#7 F#m F#m A E7 A E7 F#m C#7 F#m F#m F# C#7 F# C#7 F# C#7 F# F#', ending:'F#m' },
+    nachtmusik:  { style:'alberti', harmony:'D D D A7 A7 D A7 D D D A7 A7 D D A7 D A A E7 E7 A A E7 A', ending:'D' },
+    danube:      { style:'waltz', harmony:'C C C G7 G7 G7 G7 C C C F F C C G7 C F F C C G7 G7 C C', ending:'C' },
+    clairdelune: { style:'compound', harmony:'Db Db Ab7 Ab7 Db Gb Db Ab7 Bbm Ebm Ab7 Db Gb Db Ab7 Db', ending:'Db' },
+    moonlight:   { style:'ballad', harmony:'C#m C#m F#m G#7 C#m B E E Em Em B7 Em Em F#7 Bm Bm F#m F#m G#7 C#m', ending:'C#m' },
+    swanlake:    { style:'broken', harmony:'Am Am Am Am F Dm E7 E7 Am Am Am Am F Dm E7 Am Am Dm G C F Bdim E7 Am', ending:'Am' },
+    takeonme:    { style:'pulse', harmony:'Bm E A D Bm E A D F#m D A E F#m D A E Bm E A D', ending:'Bm' },
+    shapeofyou:  { style:'syncopated', harmony:'C#m F#m A B', ending:'C#m' },
+    sevennation: { style:'rock', harmony:'Em Em C B7 Em Em C B7 Em Em C B7 C C D D', ending:'Em' },
+    smoke:       { style:'rock', harmony:'Gm Bb C Gm Bb Db C C Gm Bb C Bb Gm Gm Gm Gm', ending:'Gm' },
+    sweetchild:  { style:'broken', harmony:'D D C C G G D D D D C C G G D D', ending:'D' },
+    megalovania: { style:'pulse', harmony:'Em D C#dim C Em D C#dim C', ending:'Em' },
+    zelda:       { style:'waltz', harmony:'F F C C F F C C F F Bb Bb C C F F', ending:'F' },
+    zaychentseto:{ style:'bounce', harmony:'C C F C F G7 C C F C F G7', ending:'C' },
+    twinkle:     { style:'fifths', harmony:'C F C G7 C G7 C G7 C F C G7', ending:'C' },
+    birthday:    { style:'waltz', harmony:'C G7 G7 C C F C G7', ending:'C' },
+    mary:        { style:'fifths', harmony:'C C G7 C C C G7 C', ending:'C' },
+    frere:       { style:'fifths', harmony:'F F F F F F F C7', ending:'F' },
+    oldmac:      { style:'bounce', harmony:'G C G D7 G C G D7 G G G G G C G D7', ending:'G' },
+    row:         { style:'waltz', harmony:'C C C C C C G7 C', ending:'C' },
+    london:      { style:'fifths', harmony:'C C G7 C C C G7 C', ending:'C' },
+    saints:      { style:'march', harmony:'C C C C C C G7 G7 C C F F C G7 C C', ending:'C' },
+    auld:        { style:'fifths', harmony:'G D7 G C G Em C D7 G D7 G C Em C D7 G', ending:'G' },
+    amazing:     { style:'waltz', harmony:'G G C G G G D7 D7 G G C G Em D7 G G', ending:'G' },
+    greensleeves:{ style:'waltz', harmony:'Am C G Em Am F E7 E7 Am C G Em Am E7 Am Am C C G G Am F E7 E7 C C G G Am E7 Am Am', ending:'Am' },
+  };
+  // Relative pitches and rhythmic weights within a harmony. One note at a time
+  // keeps either hand independently playable on a two-octave touch keyboard.
+  const LEFT_STYLES = {
+    held: [[0,1]],
+    fifths: [[0,1],[7,1]],
+    march: [[0,2],[7,1],[12,1]],
+    pulse: [[0,1],[0,1],[7,1],[12,1]],
+    rock: [[0,1],[0,1],[7,1],[0,1]],
+    bounce: [[0,1],[7,1],[12,1],[7,1]],
+    broken: [[0,1],[7,1],['third',1],[7,1]],
+    alberti: [[0,1],[7,1],['third',1],[7,1]],
+    arpeggio: [[0,1],[7,1],[12,1]],
+    ballad: [[0,2],[7,1],['third',1]],
+    waltz: [[0,1],['third',1],[7,1]],
+    walking: [[0,1],['third',1],[7,1],[10,1]],
+    syncopated: [[0,1],[null,.5],[7,.5],[12,1],[7,1]],
+    compound: [[0,1],[7,1],['third',1],[0,1],[7,1],['third',1],[0,1],[7,1],['third',1]],
+  };
+  function bassChord(token) {
+    const m = /^([A-G])([#b]?)(m|dim|7)?(?::(\d+(?:\.\d+)?))?$/.exec(token);
+    if (!m) throw new Error('Unknown left-hand harmony ' + token);
+    return { root:midiOf(m[1]+m[2]+'2'), third:m[3]==='m'||m[3]==='dim'?3:4, fifth:m[3]==='dim'?6:7, beats:m[4]?+m[4]:null };
+  }
+  function leftNotes(s, plan) {
+    const total=s.notes.reduce((sum,n)=>sum+n.dur,0), out=[], meter=s.meter||4;
+    const pattern=LEFT_STYLES[plan.style], harmonies=plan.harmony.split(/\s+/).map(bassChord);
+    const weight=pattern.reduce((sum,[,dur])=>sum+dur,0);
+    let beat=0, bar=0;
+    const append=(note,dur)=>{const clipped=Math.min(dur,total-beat);if(clipped>1e-8){out.push(note===null?{rest:true,dur:clipped}:{note:nameOf(note),dur:clipped});beat+=clipped;}};
+    if(s.pickup)append(null,s.pickup);
+    while(beat<total-1e-8){
+      let chord=harmonies[bar++%harmonies.length];
+      const span=chord.beats||meter;
+      // A final tonic supports the closing phrase, even for excerpts whose
+      // last bar is incomplete. Clipping preserves the exact melody timeline.
+      if(total-beat<=span+1e-8)chord=bassChord(plan.ending);
+      for(const[degree,dur]of pattern){
+        const offset=degree==='third'?chord.third:degree===7?chord.fifth:degree;
+        append(degree===null?null:chord.root+offset,span*dur/weight);
+      }
+    }
+    return out;
+  }
+  const song = s => {
+    let cache, leftCache;
+    const plan=LEFT_PARTS[s.id];
+    if(!plan)throw new Error('Missing left-hand arrangement for '+s.id);
+    return Object.defineProperties(s, {
+      notes:{enumerable:true,get:()=>cache||(cache=parse(s.melody,s.unit,s.transpose))},
+      leftNotes:{enumerable:true,get:()=>leftCache||(leftCache=leftNotes(s,plan))},
+      leftArrangement:{enumerable:true,value:'Simplified bass accompaniment'},
+    });
+  };
   const M = 'Star Wars & Movies', X = 'Christmas', C = 'Classical', P = 'Pop', K = 'Kids & Folk';
   const impOpen = 'G4 G4 G4 D#4:.75 A#4:.25 | G4 D#4:.75 A#4:.25 G4:2 | D5 D5 D5 D#5:.75 A#4:.25 | F#4 D#4:.75 A#4:.25 G4:2';
   const impA = 'G5 G4:.75 G4:.25 G5 F#5:.75 F5:.25 | E5:.25 D#5:.25 E5:.5 r:.5 G#4:.5 C#5 C5:.75 B4:.25 | A#4:.25 A4:.25 A#4:.5 r:.5 D#4:.5 F#4 D#4:.75';
@@ -180,7 +289,7 @@ window.PIANO_SONGS = (() => {
     { id: 'smoke', title: 'Smoke on the Water', subtitle: 'Deep Purple · riff ×4', category: P, level: 'Easy', tempo: 112, melody: smR + smR + smR + smR },
     { id: 'sweetchild', title: "Sweet Child o' Mine", subtitle: "Guns N' Roses · intro riff, twice", category: P, level: 'Hard', tempo: 125, unit: .5, melody: scmR + ' | ' + scmR },
     { id: 'megalovania', title: 'Megalovania', subtitle: 'Toby Fox · Undertale riff, four roots, twice · up a tone', category: P, level: 'Hard', tempo: 120, transpose: 2, melody: mgR + mgR },
-    { id: 'zelda', title: "Zelda's Lullaby", subtitle: 'Koji Kondo · Ocarina of Time · in G', category: P, level: 'Easy', tempo: 90, transpose: -2, meter: 3, melody: zlA + zlA.replace('D5:2 C5:.5 B4:.5 | A4:3', 'D6:3 | r:3') + zlB + zlA },
+    { id: 'zelda', title: "Zelda's Lullaby", subtitle: 'Koji Kondo · Ocarina of Time · in F', category: P, level: 'Easy', tempo: 90, transpose: -2, meter: 3, melody: zlA + zlA.replace('D5:2 C5:.5 B4:.5 | A4:3', 'D6:3 | r:3') + zlB + zlA },
     // ---------------- Kids & Folk ----------------
     { id: 'zaychentseto', title: 'Зайченцето бяло', subtitle: 'The Little White Bunny · Petar Stupel · two verses', category: K, level: 'Easy', tempo: 100, meter: 4, melody: 'G4:.5 G4:.5 E4:.5 G4:.5 C5:.5 B4:.25 A4:.25 G4 | G4:.5 G4:.5 E4:.5 G4:.5 C5:.5 B4:.25 A4:.25 G4 | F4:.5 F4:.5 G4:.5 G4:.5 E4 G4 | F4:.5 F4:.5 G4:.5 G4:.5 E4 G4 | A4:.5 A4:.5 C5:.5 C5:.5 G4 C5 | G4:.5 F4:.5 E4:.5 D4:.5 C4 C4 | G4:.5 G4:.5 E4:.5 G4:.5 C5:.5 B4:.25 A4:.25 G4 | G4:.5 G4:.5 E4:.5 G4:.5 C5:.5 B4:.25 A4:.25 G4 | F4:.5 F4:.5 G4:.5 G4:.5 E4 G4 | F4:.5 F4:.5 G4:.5 G4:.5 E4 G4 | A4:.5 A4:.5 C5:.5 C5:.5 G4 C5 | G4:.5 F4:.5 E4:.5 D4:.5 C4 C4' },
     { id: 'twinkle', title: 'Twinkle Twinkle Little Star', subtitle: 'Traditional · two verses', category: K, level: 'Easy', tempo: 100, melody: twV + ' ' + twV },
