@@ -1,0 +1,28 @@
+.recovery-panel { position:fixed;z-index:22;left:50%;bottom:max(28px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(380px,calc(100% - 28px));padding:14px 16px;background:#101e18ee;border:1px solid #d9e7b96b;border-radius:7px;box-shadow:0 10px 35px #0004;color:#e9efdb; }
+.recovery-panel[hidden],.paused .recovery-panel,.activity-open .recovery-panel,.upgrading .recovery-panel,body:not(.playing) .recovery-panel { display:none; }
+.recovery-panel>div { display:flex;align-items:center;justify-content:space-between;gap:12px; }
+.recovery-panel small { font:9px var(--mono);letter-spacing:.09em;color:#c3da9e; }
+.recovery-panel strong { font:600 13px var(--sans); }
+.recovery-panel p { font:11px/1.5 var(--sans);color:#bdcbb5;margin:7px 0 10px; }
+.recovery-panel nav { display:flex;gap:8px; }
+.recovery-panel button { flex:1;min-height:44px;padding:10px 8px;font:600 11px var(--sans);letter-spacing:0;border-radius:4px; }
+#recoveryReady { background:#d8e9af;color:#162118;border-color:#d8e9af; }
+#recoveryHold:disabled { border-color:#b8d49655;background:#223421;color:#b9d395;opacity:1;cursor:default; }
+.recovery-panel kbd { font:10px var(--mono);margin-left:5px;border:1px solid currentColor;border-radius:3px;padding:1px 4px;opacity:.7; }
+.touch .recovery-panel kbd { display:none; }
+.touch .recovery-panel { bottom:max(210px,calc(env(safe-area-inset-bottom) + 200px)); }
+.recovering #objective { display:none; }
+.recovering #weaponHud { display:none!important; }
+.recovering .activity-interact { bottom:180px; }
+@media(orientation:portrait){.touch.recovering .activity-interact,.touch.recovering #fieldObjective{top:auto;bottom:max(370px,calc(env(safe-area-inset-bottom) + 358px));}}
+@media(max-height:520px){.recovery-panel{width:min(330px,calc(100% - 28px));padding:9px 12px;bottom:14px;}.recovery-panel p{margin:4px 0 7px;font-size:10px;}.touch .recovery-panel{bottom:18px;}.recovery-panel strong{font-size:11px;}}
+@media(orientation:landscape) and (max-height:520px){
+ .touch .recovery-panel{left:auto;right:16px;transform:none;width:min(300px,calc(50% - 28px));bottom:160px;}
+ .touch .recovery-panel>div{display:none;}
+ .touch.recovering .activity-interact{left:16px;right:auto;transform:none;width:calc(50% - 32px);min-width:0;bottom:160px;}
+ .touch.recovering #fieldObjective{top:auto;left:16px;bottom:160px;}
+ .touch.recovering #expeditionWaypoint{display:none;}
+ .touch.recovering.near-outpost .expedition-hud{visibility:hidden;}
+ .touch.recovering #waveBanner{display:none!important;}
+}
+@media(orientation:portrait) and (max-height:520px){.recovery-panel{bottom:148px!important;}.recovery-panel>div,.recovery-panel p{display:none;}.recovering .activity-interact{bottom:218px;}.recovering #waveBanner{display:none!important;}}

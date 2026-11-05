@@ -1,0 +1,91 @@
+/* Small, grouped bearings leave the crosshair and target silhouette clear. */
+.combat-awareness {
+  --awareness-radius: 59px;
+  position: fixed;
+  inset: 50% auto auto 50%;
+  width: 0;
+  height: 0;
+  z-index: 6;
+  pointer-events: none;
+  color: #ffd18d;
+  font: 700 9px/1 system-ui, sans-serif;
+}
+.combat-awareness[hidden],
+.combat-awareness [hidden] { display: none !important; }
+.combat-awareness-ring {
+  position: absolute;
+  width: calc(var(--awareness-radius) * 2);
+  height: calc(var(--awareness-radius) * 2);
+  left: calc(var(--awareness-radius) * -1);
+  top: calc(var(--awareness-radius) * -1);
+}
+.combat-awareness-bearing,
+.combat-awareness-hit { position: absolute; inset: 0; }
+.combat-awareness-chevron {
+  position: absolute;
+  left: calc(50% - 5px);
+  top: 1px;
+  width: 8px;
+  height: 8px;
+  border: solid currentColor;
+  border-width: 2px 0 0 2px;
+  transform: rotate(45deg);
+  opacity: var(--awareness-strength, .8);
+  filter: drop-shadow(0 1px 1px #100e0d) drop-shadow(0 0 2px #100e0d);
+}
+.combat-awareness-count {
+  position: absolute;
+  left: 50%;
+  top: -24px;
+  min-width: 13px;
+  padding: 2px 3px;
+  border-radius: 4px;
+  background: #101715dc;
+  text-align: center;
+  text-shadow: 0 1px 1px #000;
+}
+.combat-awareness-bearing.urgent { color: #ff8170; }
+.combat-awareness-bearing.urgent .combat-awareness-chevron {
+  border-width: 3px 0 0 3px;
+  opacity: 1;
+}
+.combat-awareness-bearing.urgent .combat-awareness-chevron::after {
+  content: '';
+  position: absolute;
+  inset: 3px auto auto 3px;
+  width: 6px;
+  height: 6px;
+  border: solid currentColor;
+  border-width: 2px 0 0 2px;
+}
+.combat-awareness-bearing.winding .combat-awareness-chevron { animation: combat-awareness-warning .6s ease-in-out infinite alternate; }
+.combat-awareness-hit::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: calc(50% - 20px);
+  width: 40px;
+  height: 12px;
+  border: solid #ffd1c1;
+  border-width: 5px 0 0;
+  border-radius: 50% 50% 0 0;
+  filter: drop-shadow(0 0 2px #c23e31) drop-shadow(0 1px 1px #160907);
+}
+.combat-awareness-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.combat-awareness[data-reduced-motion='true'] .combat-awareness-chevron { animation: none; }
+.combat-awareness[data-reduced-motion='true'] .combat-awareness-hit { opacity: 1 !important; }
+@keyframes combat-awareness-warning { from { opacity: .65; } to { opacity: 1; } }
+@media (max-width: 600px), (max-height: 500px) {
+  .combat-awareness { --awareness-radius: 49px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .combat-awareness .combat-awareness-bearing .combat-awareness-chevron { animation: none; }
+  .combat-awareness .combat-awareness-hit { opacity: 1 !important; }
+}

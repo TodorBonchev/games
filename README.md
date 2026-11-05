@@ -135,6 +135,8 @@ A third-person island survival shooter with helicopter insertion, a flyable jetp
 | Skip insertion | Space or Enter | SKIP INSERTION |
 | Sprint | Hold Shift while moving, without firing | Push the movement stick fully, without firing |
 | Pause / resume | Esc or P | Pause button / Resume |
+| Keep scavenging after a wave | C | Keep scavenging |
+| Choose an upgrade now | N, during recovery | Upgrade now |
 | Enter nearby outpost | E | Tap the outpost prompt |
 | Outpost map / waypoint | Tab | Survivor Outposts button |
 | Sound | M or settings | Settings |
@@ -150,7 +152,13 @@ Cast **Frozen Orb** with **F** or its HUD button. Aim with the crosshair: the ic
 
 Each wave also offers an optional **field uplink**. Follow its compass arrow to the turquoise station, enter the marked ring, and hold it for **five seconds**. Enemies inside the zone pause capture; leaving slowly loses progress. Securing it awards **125 score, 20 reserve armor, and ten seconds of Overdrive**. Armor absorbs damage before health and stacks up to 60 points. The uplink never blocks wave progression, and no extra interaction button is needed.
 
-Clearing a wave restores up to **25 health** and grants **four seconds** to collect supplies. Then choose one of **three upgrades**: improve damage, fire rate, movement, armor, recovery, or collection range. Each perk has three ranks; fully upgraded builds receive useful one-time rewards. Combat freezes while you choose. Your build carries into Ember Isle and resets on a new run.
+Clearing a wave restores up to **25 health** and starts a **four-second** recovery countdown. Press **C / Keep scavenging** to stay out as long as you need: collect supplies, finish the uplink, or visit an outpost. The combat clock and uncollected supplies stop aging during this extended break, and your choice survives saves and reloads. Press **N / Upgrade now** when ready. No new enemies spawn until you choose an upgrade.
+
+Choose one of **three upgrades**: improve damage, fire rate, movement, armor, recovery, or collection range. Each perk has three ranks; fully upgraded builds receive useful one-time rewards. Combat freezes while you choose. Your build carries into Ember Isle and resets on a new run.
+
+Amber chevrons around the crosshair show the direction of nearby enemies within **16 metres**. Multiple enemies in one direction share a count. Close enemies and winding attacks receive stronger red warnings; a brief bracket marks the direction of a hit. These cues clear during menus and outposts, and respect reduced motion.
+
+Aim assist turns smoothly toward a target. Move the mouse or drag your firing thumb to take over aiming immediately; shots follow the crosshair. After you stop looking, assistance can return to a target in front of you. Releasing and pressing Fire again starts a fresh assisted search.
 
 Every four kills can drop supplies, and elites drop both kinds. Walk close to a **medkit** to recover 30 HP or an **Overdrive cell** for eight seconds of faster, stronger fire. Full-health medkits remain available until needed. Overdrive waits while you pause, choose an upgrade, recover between waves, or redeploy. Supplies expire after 45 active seconds; at most six are present at once.
 
@@ -206,6 +214,7 @@ These tests execute game rules, DOM controls, real Three.js geometry and raycast
 npx playwright install chromium
 npm run test:activities
 npm run test:polish
+npm run test:survival:polish
 npm run test:browser
 npm run test:mobile
 npm run test:abilities
@@ -215,6 +224,8 @@ npm run test:piano
 `test:activities` exercises the unified entry points, outposts and native controllers. Activity-specific aliases such as `test:upside`, `test:garden`, `test:moonbounce` and `test:lantern` select that activity in the same browser runner. The `test:arcade` and `test:voyage:legacy` aliases select groups. Older script names remain compatibility shortcuts; they no longer imply testing a standalone page or a complete old campaign playthrough.
 
 `test:polish` checks the new controls in the live zombie host on desktop and phone: undo/replay, seed selection and costs, cooldowns, launching while steering, simultaneous touches, overlapping keyboard/touch holds, pause cleanup, route progress and returning to the island without click-through. The unit suite also checks each activity's new mechanics and existing legal completion paths.
+
+`test:survival:polish` checks threat bearings and hit directions, manual aiming, recovery controls, held recovery across reloads, and phone controls in portrait and landscape.
 
 Use `CHROMIUM_PATH=/path/to/chromium` to select an installed browser. Screenshots and measurements go into ignored `test-results/`. Browser checks verify actual rendering, transitions, input and saves; simulation tests exercise additional completion paths. Passing these checks does not establish that every full campaign, audio path or physical phone has been played. Real iOS/Android hardware remains useful for touch, GPU, audio, thermal and browser-toolbar behavior.
 
