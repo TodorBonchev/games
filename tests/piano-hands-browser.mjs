@@ -25,22 +25,22 @@ async function open(context, touch) {
   page.on('response', response => { if (response.status() >= 400) (response.url().startsWith(base) ? errors : sampleWarnings).push(`${response.status()} ${response.url()}`); });
   page.on('requestfailed', request => (request.url().startsWith(base) ? errors : sampleWarnings).push(`${request.failure()?.errorText} ${request.url()}`));
   await page.goto(url);
-  await page.waitForFunction(() => !!window.__piano && window.PIANO_SONGS.length >= 49);
+  await page.waitForFunction(() => !!window.__piano && window.PIANO_SONGS.length >= 65);
   if (await page.locator('#rotgo').isVisible()) await activate('#rotgo', touch);
 }
 async function pick(id, touch, hand = 'left') {
   await activate('#songsBtn', touch);
   await page.locator('#songHand').selectOption(hand);
   await page.locator('#songq').fill('');
-  assert.equal(await page.locator('#songlist .song').count(), 49);
+  assert.equal(await page.locator('#songlist .song').count(), await page.evaluate(() => __piano.songs.length));
   await activate(`#songlist .song[data-id="${id}"]`, touch);
   await page.waitForFunction(hand => __learn.hand === hand && !!__learn.song, hand);
   assert.equal(await page.locator('#lhand').inputValue(), hand);
 }
 async function indexOfMidi(midi, touch) {
   for (let tries = 0; tries < 6; tries++) {
-    const index = await page.evaluate(m => m - 60 - (+document.getElementById('oct').textContent.slice(1) - 4) * 12, midi);
-    if (index >= 0 && index < 25) return index;
+    const { index, count } = await page.evaluate(m => ({ index: m - __piano.keyboard.base, count: __piano.keyboard.count }), midi);
+    if (index >= 0 && index < count) return index;
     await activate(index < 0 ? '#od' : '#ou', touch);
   }
   throw Error(`Cannot reach MIDI ${midi}`);
@@ -56,7 +56,7 @@ async function staff(hand, touch) {
   if (!await page.locator('#staff').isVisible()) await activate('#lsheet', touch);
   assert.equal(await page.locator('#staff').getAttribute('data-clef'), hand === 'left' ? 'bass' : 'treble');
   assert.match(await page.locator('#staff').getAttribute('aria-label'), hand === 'left' ? /left.*bass/i : /right.*treble/i);
-  assert.equal(await page.locator('#staff .n').count(), await page.evaluate(() => __learn.steps.length));
+  assert.equal(await page.locator('#staff .n').count(), await page.evaluate(() => __learn.events.length));
 }
 async function bounded(selector, insets, { hit = false } = {}) {
   const box = await page.locator(selector).boundingBox(), size = page.viewportSize(); assert.ok(box, `${selector} is visible`);
@@ -79,7 +79,7 @@ try {
   const desktop = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   await open(desktop, false); await pick('twinkle', false);
   const catalog = await page.evaluate(() => __piano.songs.map(song => ({ id: song.id, right: song.notes.length, left: song.leftNotes?.length || 0 })));
-  assert.ok(catalog.every(song => song.right && song.left), 'all 49 songs supply both parts');
+  assert.ok(catalog.length >= 65 && catalog.every(song => song.right && song.left), 'every song, including sourced additions, supplies both parts');
   await staff('left', false);
   const firstLeft = await page.evaluate(() => __learn.steps[0].midi), firstRight = midiOf(await page.evaluate(() => __learn.song.notes.find(note => !note.rest).note));
   assert.notEqual(firstLeft, firstRight, 'left accompaniment is distinct from the melody');

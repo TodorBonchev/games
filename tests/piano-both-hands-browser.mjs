@@ -25,7 +25,7 @@ async function open(context, touch = false) {
 }
 async function pick(id, touch = false) {
   await activate('#songsBtn', touch); await page.locator('#songHand').selectOption('both'); await page.locator('#songq').fill('');
-  assert.equal(await page.locator('#songlist .song').count(), 49);
+  assert.equal(await page.locator('#songlist .song').count(), await page.evaluate(() => __piano.songs.length));
   await activate(`#songlist .song[data-id="${id}"]`, touch);
   await page.waitForFunction(() => __learn.hand === 'both' && !!__learn.events?.length);
   assert.equal(await page.locator('#lhand').inputValue(), 'both');
@@ -69,7 +69,8 @@ async function allKeysVisible() {
     const kb = document.getElementById('kb'), area = kb.getBoundingClientRect(), all = [...kb.querySelectorAll('.k')];
     return { keyboard: __piano.keyboard, count: all.length, scroll: kb.scrollWidth > kb.clientWidth + 1, hidden: all.filter(node => { const r = node.getBoundingClientRect(); return r.width <= 0 || r.x < area.x - 1 || r.right > area.right + 1; }).map(node => node.dataset.i), markers: all.filter(node => ((__piano.keyboard.base + +node.dataset.i) % 12) === 0).map(node => { const label = node.querySelector('span'), style = getComputedStyle(label); return { name: label.textContent, visible: style.display !== 'none' && style.visibility !== 'hidden' && parseFloat(style.fontSize) >= 8 }; }) };
   });
-  assert.equal(data.count, data.keyboard.count); assert.ok(data.count > 25 && data.count <= 49);
+  assert.equal(data.count, data.keyboard.count); assert.ok(data.count > 25 && data.count <= 128);
+  assert.equal(data.keyboard.count, data.keyboard.high - data.keyboard.base + 1);
   assert.equal(data.scroll, false, 'expanded keyboard needs no horizontal scroll'); assert.deepEqual(data.hidden, []);
   assert.ok(data.markers.length >= 4 && data.markers.every(marker => marker.visible), 'C octave markers remain readable');
   return data.keyboard;
@@ -133,10 +134,10 @@ try {
   await activate('#lstop'); await page.screenshot({ path: `${output}/desktop-grand-staff.png` });
   const catalog = await page.evaluate(() => {
     const rows = [];
-    for (const song of __piano.songs) { __piano.startSong(song); const range = __piano.keyboard, events = __learn.events; rows.push({ id: song.id, count: range.count, missing: events.filter(event => event.midi < range.base || event.midi > range.high).length, hands: [...new Set(events.map(event => event.hand))].sort() }); }
+    for (const song of __piano.songs) { __piano.startSong(song); const range = __piano.keyboard, events = __learn.events; rows.push({ id: song.id, ...range, missing: events.filter(event => event.midi < range.base || event.midi > range.high).length, hands: [...new Set(events.map(event => event.hand))].sort() }); }
     return rows;
   });
-  assert.equal(catalog.length, 49); assert.ok(catalog.every(song => !song.missing && song.count <= 49 && song.hands.join(',') === 'left,right'), 'all 49 arrangements fit the expanded keyboard');
+  assert.ok(catalog.length >= 65 && catalog.every(song => !song.missing && song.base >= 0 && song.high <= 127 && song.count === song.high - song.base + 1 && song.hands.join(',') === 'left,right'), 'all sourced and practice arrangements fit the expanded keyboard without octave folding');
   await pick('twinkle'); await page.reload(); await page.waitForFunction(() => !!window.__piano?.keyboard);
   assert.equal(await page.locator('#lhand').inputValue(), 'both'); await pick('twinkle'); await ensureStaff(); await allKeysVisible();
   await activate('#ldemo'); await page.waitForFunction(() => __learn.demoNotes.size >= 2); await page.locator('#lhand').selectOption('right');

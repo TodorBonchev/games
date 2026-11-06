@@ -7,9 +7,10 @@ import {JSDOM} from 'jsdom';
 
 const root = new URL('../piano/', import.meta.url);
 const close = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-5, `${message}: ${actual} versus ${expected}`);
+const midiOf = name => {const m=/^([A-G])(#|b)?(\d)$/.exec(name);assert.ok(m);return(+m[3]+1)*12+[0,2,4,5,7,9,11]['CDEFGAB'.indexOf(m[1])]+(m[2]==='#'?1:m[2]==='b'?-1:0);};
 
 async function load(t, {savedSpeed, blockedStorage = false} = {}) {
-  const html = (await readFile(new URL('index.html', root), 'utf8')).replace(/<script src="songs\.js[^"]*"><\/script>/, '');
+  const html = (await readFile(new URL('index.html', root), 'utf8')).replace(/<script src="(?:scores|songs)\.js[^"]*"><\/script>/g, '');
   const dom = new JSDOM(html, {runScripts:'outside-only', pretendToBeVisual:true, url:'http://localhost/piano/'});
   t.after(() => dom.window.close());
   const w = dom.window, d = w.document;
@@ -37,6 +38,7 @@ async function load(t, {savedSpeed, blockedStorage = false} = {}) {
     now = end;
   };
   const tick = ms => advanceTo(now + ms);
+  w.eval(await readFile(new URL('scores.js', root), 'utf8'));
   w.eval(await readFile(new URL('songs.js', root), 'utf8'));
   for (const script of d.querySelectorAll('script:not([src])')) w.eval(script.textContent);
   const P = w.__piano;
@@ -81,17 +83,17 @@ test('saved listening speed is validated and unavailable storage does not preven
   assert.doesNotThrow(() => select(.25)); assert.equal(P.L.listenSpeed, .25);
 });
 
-test('every song and both hands retain their pitches and scale the whole Listen timeline to quarter speed', async t => {
+test('every legacy song and both hands retain pitch and scale the whole Listen timeline to quarter speed', async t => {
   const {P, heard, tick} = await load(t);
-  assert.equal(P.songs.length, 49); P.setListenSpeed(.25);
+  assert.ok(P.songs.length >= 65); P.setListenSpeed(.25);
   for (const hand of ['right', 'left']) {
     P.setHand(hand);
-    for (const song of P.songs) {
+    for (const song of P.songs.filter(song => !song.score)) {
       P.startSong(song); heard.length = 0;
       const steps = Array.from(P.L.steps, step => ({...step}));
       P.listen(); tick(P.L.total * 60000 / song.tempo / .25 + 1000);
       assert.equal(heard.length, steps.length, `${song.id}/${hand}: no skipped or extra notes`);
-      assert.deepEqual(heard.map(event => event.name), steps.map(step => step.name), `${song.id}/${hand}: slowdown must preserve pitch`);
+      assert.deepEqual(heard.map(event => midiOf(event.name)), steps.map(step => step.midi), `${song.id}/${hand}: slowdown preserves exact pitch regardless of enharmonic notation spelling`);
       for (let k = 0; k < steps.length; k++) close(heard[k].at - heard[0].at, (steps[k].beat - steps[0].beat) * 60000 / song.tempo / .25, `${song.id}/${hand}: scaled onset ${k}`);
       assert.equal(P.L.state, 'ready'); assert.equal(P.L.pos, 0);
       assert.equal(P.L.demo, null); assert.equal(P.L.demoNotes.size, 0);

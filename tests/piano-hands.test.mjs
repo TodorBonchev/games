@@ -13,7 +13,7 @@ const midiOf = name => {
 };
 
 async function load(t, {hand, blockedStorage = false} = {}) {
-  const html = (await readFile(new URL('index.html', root), 'utf8')).replace(/<script src="songs\.js[^"]*"><\/script>/, '');
+  const html = (await readFile(new URL('index.html', root), 'utf8')).replace(/<script src="(?:scores|songs)\.js[^"]*"><\/script>/g, '');
   const dom = new JSDOM(html, {runScripts:'outside-only', pretendToBeVisual:true, url:'http://localhost/piano/'});
   t.after(() => dom.window.close());
   const w = dom.window, d = w.document;
@@ -39,17 +39,20 @@ async function load(t, {hand, blockedStorage = false} = {}) {
     }
     now = end;
   };
+  w.eval(await readFile(new URL('scores.js', root), 'utf8'));
   w.eval(await readFile(new URL('songs.js', root), 'utf8'));
   for (const script of d.querySelectorAll('script:not([src])')) w.eval(script.textContent);
   const P = w.__piano;
   assert.equal(typeof P.setHand, 'function', 'the live hand selector has a public lesson action');
   const choose = (value, id = 'lhand') => {const control = d.getElementById(id); assert.ok(control, `${id} exists`); control.value = value; control.dispatchEvent(new w.Event('change', {bubbles:true}));};
-  const indexOf = midi => midi - 12 * (+d.getElementById('oct').textContent.slice(1) + 1);
+  const indexOf = midi => midi - P.keyboard.base;
   const press = () => {
-    const expected = P.L.steps[P.L.pos], i = indexOf(expected.midi);
-    assert.ok(i >= 0 && i < 25, `${P.L.song.id}/${P.L.hand}: ${expected.name} is visible`);
-    const before = P.L.pos; P.keyDown(i); P.keyUp(i);
-    assert.equal(P.L.pos, before + 1, 'one correct press advances exactly one note');
+    const expected = P.L.steps[P.L.pos], before = P.L.pos;
+    for (const midi of expected.midis) {
+      const i = indexOf(midi); assert.ok(i >= 0 && i < P.keyboard.count, `${P.L.song.id}/${P.L.hand}: ${midi} is visible`);
+      P.keyDown(i); P.keyUp(i);
+    }
+    assert.equal(P.L.pos, before + 1, 'the complete target advances exactly one onset');
   };
   return {w, d, P, tick, choose, indexOf, press};
 }
@@ -86,11 +89,11 @@ test('saved left hand initializes both selectors; invalid or inaccessible storag
   assert.equal(blocked.P.L.hand, 'left');
 });
 
-test('every left-hand arrangement is reachable and completable through the real Wait lesson', async t => {
+test('every legacy left-hand arrangement remains reachable and completable through Wait', async t => {
   const {d, P, choose, indexOf, press, tick} = await load(t);
   choose('left', 'songHand');
-  assert.equal(P.songs.length, 49, 'the full current library is covered');
-  for (const song of P.songs) {
+  assert.ok(P.songs.length >= 65, 'the expanded library is loaded');
+  for (const song of P.songs.filter(song => !song.score)) {
     P.startSong(song);
     const notes = song.leftNotes.filter(note => !note.rest), steps = P.L.steps.length;
     assert.equal(P.L.hand, 'left');
@@ -135,7 +138,7 @@ test('Listen plays only the chosen part and stopping restores its learning posit
   const song = P.songs.find(song => song.id === 'canon');
   for (const hand of ['right', 'left']) {
     choose(hand, 'songHand'); P.startSong(song); P.jumpTo(3);
-    const expected = Array.from(P.L.steps.slice(3), step => step.name);
+    const expected = Array.from(P.L.steps.slice(3)).flatMap(step => Array.from(step.midis, midi => ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'][midi%12]+(Math.floor(midi/12)-1)));
     w.__notes = []; P.listen();
     assert.equal(P.L.state, 'listening');
     tick(P.L.total * 60000 / song.tempo + 1000);

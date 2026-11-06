@@ -16,13 +16,13 @@ const near = (actual, expected, message) => assert.ok(Math.abs(actual - expected
 const pitched = (notes, hand) => {
   let beat = 0;
   return Array.from(notes).flatMap((note, index) => {
-    const at = beat; beat += note.dur;
+    const at = Number.isFinite(note.beat) ? note.beat : beat; beat = Math.max(beat, at + note.dur);
     return note.rest ? [] : [{id:`${hand}:${index}`, midi:midiOf(note.note), hand, beat:at, dur:note.dur}];
   });
 };
 
 async function load(t, {hand = 'both'} = {}) {
-  const html = (await readFile(new URL('index.html', root), 'utf8')).replace(/<script src="songs\.js[^"]*"><\/script>/, '');
+  const html = (await readFile(new URL('index.html', root), 'utf8')).replace(/<script src="(?:scores|songs)\.js[^"]*"><\/script>/g, '');
   const dom = new JSDOM(html, {runScripts:'outside-only', pretendToBeVisual:true, url:'http://localhost/piano/'});
   t.after(() => dom.window.close());
   const w = dom.window, d = w.document;
@@ -46,6 +46,7 @@ async function load(t, {hand = 'both'} = {}) {
     }
     now = end;
   };
+  w.eval(await readFile(new URL('scores.js', root), 'utf8'));
   w.eval(await readFile(new URL('songs.js', root), 'utf8'));
   for (const script of d.querySelectorAll('script:not([src])')) w.eval(script.textContent);
   const P = w.__piano;
@@ -77,9 +78,9 @@ test('Both is a saved practice choice, synchronizes settings and restores single
   assert.equal(d.getElementById('songHand').value, 'both');
 });
 
-test('all49 combined songs preserve both full parts, note durations and shared onsets within one visible keyboard', async t => {
+test('the full expanded catalog preserves both parts, source durations and shared onsets in the visible keyboard', async t => {
   const {d,P} = await load(t);
-  assert.equal(P.songs.length, 49);
+  assert.ok(P.songs.length >= 65);
   for (const song of P.songs) {
     P.startSong(song);
     const expected = [...pitched(song.notes,'right'), ...pitched(song.leftNotes,'left')];
@@ -102,14 +103,17 @@ test('all49 combined songs preserve both full parts, note durations and shared o
     assert.equal(P.L.steps.length,onsets.length,`${song.id}: simultaneous notes form one learning step`);
     P.L.steps.forEach((group,index) => {
       near(group.beat,onsets[index],`${song.id}: group time`);
-      assert.deepEqual(Array.from(group.midis).sort((a,b) => a-b),Array.from(group.notes,event => event.midi).sort((a,b) => a-b));
+      assert.deepEqual(Array.from(group.midis).sort((a,b) => a-b),[...new Set(Array.from(group.notes,event => event.midi))].sort((a,b) => a-b));
       assert.equal(new Set(Array.from(group.midis)).size,group.midis.length);
       const until = index + 1 < onsets.length ? onsets[index+1] : P.L.total;
       near(group.dur,until-group.beat,`${song.id}: learning deadline uses onset gap`);
     });
-    near(P.L.total,song.notes.reduce((sum,note) => sum+note.dur,0),`${song.id}: full song length`);
-    assert.ok(P.keyboard.count > 25 && P.keyboard.count <= 49,`${song.id}: combined key count`);
+    const total = song.score ? song.duration : song.notes.reduce((sum,note) => sum+note.dur,0);
+    near(P.L.total,total,`${song.id}: full song length`);
+    assert.ok(P.keyboard.count >= (song.score ? 1 : 26) && P.keyboard.count <= (song.score ? 88 : 49),`${song.id}: full original range or compact legacy key count`);
     assert.equal(P.keyboard.high,P.keyboard.base + P.keyboard.count - 1);
+    if (song.score) assert.ok(P.keyboard.base >= 21 && P.keyboard.high <= 108, `${song.id}: physical A0–C8 keyboard bounds`);
+    for (const key of d.querySelectorAll('#kb .k')) assert.equal(key.classList.contains('b'), [1,3,6,8,10].includes(Number(key.dataset.midi)%12), `${song.id}: actual pitch determines black-key layout`);
     assert.equal(d.querySelectorAll('#kb .k').length,P.keyboard.count);
     assert.equal(d.getElementById('od').disabled,true); assert.equal(d.getElementById('ou').disabled,true);
     const before = P.keyboard.base; d.getElementById('od').click(); d.getElementById('ou').click();
@@ -138,9 +142,9 @@ test('Both Wait accepts chord notes in either order, requires the complete group
   P.restart(); assert.equal(P.L.pressed.size,0); assert.equal(d.getElementById('lprog').firstChild.style.width,'0%');
 });
 
-test('every combined song completes only after all current-onset notes have been played', async t => {
+test('every legacy combined song completes only after all current-onset notes have been played', async t => {
   const {d,P,press} = await load(t);
-  for (const song of P.songs) {
+  for (const song of P.songs.filter(song => !song.score)) {
     P.startSong(song);
     while (P.L.pos < P.L.steps.length) {
       const before = P.L.pos, notes = Array.from(P.L.steps[before].midis).sort((a,b) => before % 2 ? b-a : a-b);

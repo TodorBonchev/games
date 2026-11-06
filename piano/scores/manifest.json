@@ -1,0 +1,489 @@
+[
+  {
+    "id": "elise",
+    "title": "Für Elise",
+    "subtitle": "Ludwig van Beethoven · WoO 59",
+    "category": "Classical",
+    "level": "Hard",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=931",
+    "sourceFile": "source/elise/elise.ly",
+    "midiFile": "midi/elise.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0.5,
+    "key": "Am",
+    "scope": "Complete piano score · repeats included",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Stelios Samelis",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "turkish",
+    "title": "Turkish March",
+    "subtitle": "Wolfgang Amadeus Mozart · K. 331, movement III",
+    "category": "Classical",
+    "level": "Hard",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=108",
+    "sourceFile": "source/turkish/KV331_3_RondoAllaTurca.ly",
+    "midiFile": "midi/turkish.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "Am",
+    "scope": "Complete piano score · repeats included",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Rune Zedeler and Chris Sawer",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "clairdelune",
+    "title": "Clair de Lune",
+    "subtitle": "Claude Debussy · Suite bergamasque, L. 75",
+    "category": "Classical",
+    "level": "Hard",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1778",
+    "sourceFile": "source/clairdelune/clairdelune.ly",
+    "midiFile": "midi/clairdelune.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "Db",
+    "scope": "Complete piano score",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Keith OHara",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "moonlight",
+    "title": "Moonlight Sonata (1st movement)",
+    "subtitle": "Ludwig van Beethoven · Op. 27 No. 2",
+    "category": "Classical",
+    "level": "Hard",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=276",
+    "sourceFile": "source/moonlight/moonlight1-a4.ly",
+    "midiFile": "midi/moonlight.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "C#m",
+    "scope": "Complete first movement",
+    "license": "CC-BY-SA-2.5",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5/",
+    "credit": "Stewart Holmes",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "mountain",
+    "title": "In the Hall of the Mountain King",
+    "subtitle": "Edvard Grieg · Peer Gynt, Op. 46 No. 4",
+    "category": "Classical",
+    "level": "Hard",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1888",
+    "sourceFile": "source/mountain/mountain.ly",
+    "midiFile": "midi/mountain.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "Bm",
+    "scope": "Complete published piano arrangement",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Coyau",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "brahms",
+    "title": "Brahms’ Lullaby",
+    "subtitle": "Johannes Brahms · Op. 49 No. 4",
+    "category": "Classical",
+    "level": "Medium",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1037",
+    "sourceFile": "source/brahms/Wiegenlied.ly",
+    "midiFile": "midi/brahms.mid",
+    "rightTracks": [
+      1,
+      2
+    ],
+    "leftTracks": [
+      3
+    ],
+    "pickup": 0.5,
+    "key": "Eb",
+    "scope": "Complete voice + piano reduction",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "森 章吾",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "ode",
+    "title": "Ode to Joy",
+    "subtitle": "Ludwig van Beethoven · hymn harmonization",
+    "category": "Classical",
+    "level": "Easy",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=528",
+    "sourceFile": "source/ode/ode.ly",
+    "midiFile": "midi/ode.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "G",
+    "scope": "Complete four-part hymn arrangement",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Peter Chubb",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "danube",
+    "title": "The Blue Danube (waltz theme)",
+    "subtitle": "Johann Strauss II · arranged by Nikos Kouremenos",
+    "category": "Classical",
+    "level": "Medium",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=519",
+    "sourceFile": "source/danube/danube.ly",
+    "midiFile": "midi/danube.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 1,
+    "key": "C",
+    "scope": "Complete published theme arrangement",
+    "license": "CC-BY-SA-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "credit": "Nikos Kouremenos",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "minuet",
+    "title": "Minuet in G",
+    "subtitle": "Christian Petzold · BWV Anh. 114",
+    "category": "Classical",
+    "level": "Medium",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=75",
+    "sourceFile": "source/minuet/minuet.ly",
+    "midiFile": "midi/minuet.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "G",
+    "scope": "Complete piano score · repeats included",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Allen Garvin",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "prelude-c",
+    "title": "Prelude in C Major",
+    "subtitle": "Johann Sebastian Bach · BWV 846",
+    "category": "Classical",
+    "level": "Medium",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=5",
+    "sourceFile": "source/prelude-c/prelude-c.ly",
+    "midiFile": "midi/prelude-c.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "C",
+    "scope": "Complete piano score",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Tobias Erbsland",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "sonata-facile",
+    "title": "Sonata Facile (1st movement)",
+    "subtitle": "Wolfgang Amadeus Mozart · K. 545",
+    "category": "Classical",
+    "level": "Hard",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=998",
+    "sourceFile": "source/sonata-facile/sonata-facile.ly",
+    "midiFile": "midi/sonata-facile.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "C",
+    "scope": "Complete first movement · repeats included",
+    "license": "CC-BY-SA-3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "credit": "Alejandro Sierra",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "gymnopedie",
+    "title": "Gymnopédie No. 1",
+    "subtitle": "Erik Satie · 1888",
+    "category": "Classical",
+    "level": "Medium",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=37",
+    "sourceFile": "source/gymnopedie/gymnopedie.ly",
+    "midiFile": "midi/gymnopedie.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "D",
+    "scope": "Complete piano score · repeats included",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Evin Robertson",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "chopin-prelude-a",
+    "title": "Prelude in A Major",
+    "subtitle": "Frédéric Chopin · Op. 28 No. 7",
+    "category": "Classical",
+    "level": "Medium",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=470",
+    "sourceFile": "source/chopin-prelude-a/chopin_prelude_op28_no7.ly",
+    "midiFile": "midi/chopin-prelude-a.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 1,
+    "key": "A",
+    "scope": "Complete piano score",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Mutopia Project contributors",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "chopin-prelude-e",
+    "title": "Prelude in E Minor",
+    "subtitle": "Frédéric Chopin · Op. 28 No. 4",
+    "category": "Classical",
+    "level": "Hard",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=468",
+    "sourceFile": "source/chopin-prelude-e/chopin-prelude-e.ly",
+    "midiFile": "midi/chopin-prelude-e.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 1,
+    "key": "Em",
+    "scope": "Complete piano score",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Magnus Lewis-Smith",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "silent",
+    "title": "Silent Night",
+    "subtitle": "Franz Xaver Gruber · complete carol harmonization",
+    "category": "Christmas",
+    "level": "Medium",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1295",
+    "sourceFile": "source/silent/silent.ly",
+    "midiFile": "midi/silent.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "Bb",
+    "scope": "Complete one-verse carol harmonization",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Steve Dunlop",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "joy",
+    "title": "Joy to the World",
+    "subtitle": "Lowell Mason · Antioch hymn harmonization",
+    "category": "Christmas",
+    "level": "Medium",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1223",
+    "sourceFile": "source/joy/joy.ly",
+    "midiFile": "midi/joy.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "D",
+    "scope": "Complete one-verse carol harmonization",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Steve Dunlop",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "faithful",
+    "title": "O Come, All Ye Faithful",
+    "subtitle": "John Francis Wade · Adeste fideles",
+    "category": "Christmas",
+    "level": "Medium",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1220",
+    "sourceFile": "source/faithful/faithful.ly",
+    "midiFile": "midi/faithful.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 1,
+    "key": "G",
+    "scope": "Complete one-verse carol harmonization",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Steve Dunlop",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "wenceslas",
+    "title": "Good King Wenceslas",
+    "subtitle": "Piae Cantiones · Hutchins carol setting",
+    "category": "Christmas",
+    "level": "Medium",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=905",
+    "sourceFile": "source/wenceslas/wenceslas.ly",
+    "midiFile": "midi/wenceslas.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      2
+    ],
+    "pickup": 0,
+    "key": "A",
+    "scope": "Complete one-verse carol harmonization",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "James Kilfiger",
+    "repeats": "unfolded",
+    "checked": "2026-11-06"
+  },
+  {
+    "id": "canon",
+    "title": "Canon in D (outer voices)",
+    "subtitle": "Johann Pachelbel · complete melody + bass reduction",
+    "category": "Classical",
+    "level": "Hard",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=2047",
+    "sourceFile": "source/canon/canon_per_3_violini_e_basso.ly",
+    "midiFile": "midi/canon.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      4
+    ],
+    "pickup": 0,
+    "key": "D",
+    "scope": "Complete canon · violin I + bass reduction",
+    "license": "CC-BY-4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "credit": "Michael Fischer v. Mollard",
+    "repeats": "unfolded",
+    "checked": "2026-11-06",
+    "reduction": true,
+    "useOriginalOutputName": true,
+    "changes": "Complete violin I and original bass/cello parts assigned to the right and left hands. Inner string parts omitted. Original pitches and rhythms retained; wide violin chords may be rolled. Fixed practice tempo."
+  },
+  {
+    "id": "nachtmusik",
+    "title": "Eine kleine Nachtmusik (outer voices)",
+    "subtitle": "Wolfgang Amadeus Mozart · K. 525, first movement",
+    "category": "Classical",
+    "level": "Hard",
+    "sourceUrl": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=900",
+    "sourceFile": "source/nachtmusik/eine-kleine-nachtmusik-mvt1.ly",
+    "midiFile": "midi/nachtmusik.mid",
+    "rightTracks": [
+      1
+    ],
+    "leftTracks": [
+      4
+    ],
+    "pickup": 0,
+    "key": "G",
+    "scope": "Complete first movement · violin I + bass reduction",
+    "license": "Public Domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "credit": "Mutopia Project contributors",
+    "repeats": "unfolded",
+    "checked": "2026-11-06",
+    "reduction": true,
+    "useOriginalOutputName": true,
+    "changes": "Complete violin I and original bass/cello parts assigned to the right and left hands. Inner string parts omitted. Original pitches and rhythms retained; wide violin chords may be rolled. Fixed practice tempo."
+  }
+]

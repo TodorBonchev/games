@@ -1,3 +1,6 @@
 selva/index.html linguist-generated=true
 selva/assets/*.js -whitespace linguist-generated=true
 selva/assets/*.css linguist-generated=true
+# Keep the downloaded score editions byte-for-byte, including their old spacing.
+piano/scores/source/** -whitespace
+piano/scores.js linguist-generated=true

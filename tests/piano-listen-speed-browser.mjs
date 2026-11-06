@@ -35,16 +35,16 @@ async function recordNotes() {
   });
 }
 async function next(touch = false) {
-  const index = await page.evaluate(() => __learn.steps[__learn.pos].midi - (+document.getElementById('oct').textContent.slice(1) + 1) * 12);
-  assert.ok(index >= 0 && index < 25, 'next practice note is visible');
+  const { index, count } = await page.evaluate(() => ({ index: __learn.steps[__learn.pos].midi - __piano.keyboard.base, count: __piano.keyboard.count }));
+  assert.ok(index >= 0 && index < count, 'next practice note is visible');
   const key = page.locator(`#kb .k[data-i="${index}"]`), rect = await key.boundingBox(), black = await key.evaluate(node => node.classList.contains('b'));
   const x = rect.x + rect.width / 2, y = rect.y + rect.height * (black ? .4 : .86);
   if (touch) await page.touchscreen.tap(x, y); else await page.mouse.click(x, y);
 }
 async function checkCue() {
   const cue = await page.evaluate(() => {
-    const current = __learn.steps[__learn.demoPos], shift = +document.getElementById('oct').textContent.slice(1) - 4;
-    return { state: __learn.state, pos: __learn.demoPos, staff: +document.querySelector('#staff .n.cur')?.dataset.k, next: +document.querySelector('#kb .k.next')?.dataset.i, expected: current.midi - 60 - shift * 12, midi: window.__lastVoice?.midi, expectedMidi: current.midi };
+    const current = __learn.steps[__learn.demoPos];
+    return { state: __learn.state, pos: __learn.demoPos, staff: +document.querySelector('#staff .n.cur')?.dataset.k, next: +document.querySelector('#kb .k.next')?.dataset.i, expected: current.midi - __piano.keyboard.base, midi: window.__lastVoice?.midi, expectedMidi: current.midi };
   });
   assert.equal(cue.state, 'listening'); assert.equal(cue.staff, cue.pos, 'sheet follows the slowed note');
   assert.equal(cue.next, cue.expected, 'keyboard follows the slowed note'); assert.equal(cue.midi, cue.expectedMidi, 'sound keeps the original pitch');

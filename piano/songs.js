@@ -4,6 +4,8 @@
 // only reads the metadata (title, category, level); notes are parsed on first use
 // via `notes` (right hand) and `leftNotes` (bass accompaniment), returning
 // [{note:'G4', dur:beats} | {rest:true, dur}]. Both parts share one timeline.
+// Published settings from scores.js use absolute `beat` onsets as well, so
+// chords and independent voices retain their timing. See scores/README.md.
 //
 // Melody string: space-separated tokens "NOTE[:beats]", "r:beats" for a rest,
 // "|" bar lines are ignored. Default length is `unit` (1 beat unless given).
@@ -78,7 +80,7 @@ window.PIANO_SONGS = (() => {
     saints:      { style:'march', harmony:'C C C C C C G7 G7 C C F F C G7 C C', ending:'C' },
     auld:        { style:'fifths', harmony:'G D7 G C G Em C D7 G D7 G C Em C D7 G', ending:'G' },
     amazing:     { style:'waltz', harmony:'G G C G G G D7 D7 G G C G Em D7 G G', ending:'G' },
-    greensleeves:{ style:'waltz', harmony:'Am C G Em Am F E7 E7 Am C G Em Am E7 Am Am C C G G Am F E7 E7 C C G G Am E7 Am Am', ending:'Am' },
+    greensleeves:{ style:'waltz', harmony:'Am C G Em Am F E7 E7 C C G G Am E7 Am Am', ending:'Am' },
   };
   // Relative pitches and rhythmic weights within a harmony. One note at a time
   // keeps either hand independently playable on a two-octave touch keyboard.
@@ -306,5 +308,29 @@ window.PIANO_SONGS = (() => {
       'D4 | ' + agV + ' G4:2 D4 | ' + agV + ' G4:2 D4 | ' + agV + ' G4:3' },
     { id: 'greensleeves', title: 'Greensleeves', subtitle: 'English folk · verse and chorus, twice', category: K, level: 'Medium', tempo: 110, meter: 3, pickup: .5, melody:
       'A4:.5 | ' + gsV + gsC + ' A4:2.5 A4:.5 | ' + gsV + gsC + ' A4:2.5' },
-  ].map(song);
+  ].map(s => {
+    const score=(window.PIANO_SCORE_DATA||[]).find(item=>item.id===s.id);
+    return score ? sourced(score) : practice(s);
+  }).concat((window.PIANO_SCORE_DATA||[]).filter(item=>!LEFT_PARTS[item.id]).map(sourced));
+
+  function sourced(data){
+    const flats=/^(?:F|Bb|Eb|Ab|Db|Gb|Cb|Dm|Gm|Cm|Fm|Bbm|Ebm|Abm)(?:$|\s)/.test(data.key||'');
+    const names=flats?['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B']:NAMES;
+    const part=events=>events.map(([pitch,beat,dur,voice])=>({note:typeof pitch==='string'?pitch:names[pitch%12]+(Math.floor(pitch/12)-1),beat,dur,...(voice?{voice}:{})}));
+    let right,left;
+    const {right:rawRight,left:rawLeft,...metadata}=data;
+    return Object.defineProperties({...metadata,meter:data.timeSignature[0]*4/data.timeSignature[1],leftArrangement:data.source.scope},{
+      notes:{enumerable:true,get:()=>right||(right=part(rawRight))},
+      leftNotes:{enumerable:true,get:()=>left||(left=part(rawLeft))},
+    });
+  }
+  function practice(s){
+    const audit=(window.PIANO_MELODY_AUDIT||{})[s.id];
+    if(!audit)return song({...s,source:{scope:'Simplified practice arrangement · excerpt',checked:null}});
+    const copy={...s,meter:audit.meter,timeSignature:audit.timeSignature,pickup:audit.pickup,key:audit.key,source:audit.source};
+    if(audit.replaceMelody){copy.melody=audit.melody;copy.unit=1;copy.transpose=0;}
+    if(audit.key==='F')copy.melody=copy.melody.replace(/\bA#/g,'Bb');
+    if(audit.subtitle)copy.subtitle=audit.subtitle;
+    return song(copy);
+  }
 })();

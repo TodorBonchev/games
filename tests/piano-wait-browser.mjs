@@ -43,13 +43,13 @@ const pick = async id => {
 const midi = k => page.evaluate(k => __learn.steps[k ?? __learn.pos].midi, k);
 // tap the key element for a midi note (must be visible)
 const tapMidi = async m => {
-  const sel = await page.evaluate(m => { const sh = +document.getElementById('oct').textContent.slice(1) - 4; const i = m - 60 - sh * 12; return i >= 0 && i < 25 ? `#kb .k[data-i="${i}"]` : null; }, m);
+  const sel = await page.evaluate(m => { const i = m - __piano.keyboard.base; return i >= 0 && i < __piano.keyboard.count ? `#kb .k[data-i="${i}"]` : null; }, m);
   assert.ok(sel, `midi ${m} not on screen`);
   const box = await page.locator(sel).boundingBox();
   const black = await page.locator(sel).evaluate(e => e.classList.contains('b'));
   await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height * (black ? 0.4 : 0.85));
 };
-const tapNext = async () => tapMidi(await midi());
+const tapNext = async () => { for (const note of await page.evaluate(() => __learn.steps[__learn.pos].midis)) await tapMidi(note); };
 
 await t('Imperial March: wait mode waits, advances only on the blue key', async () => {
   await pick('imperial');
@@ -162,16 +162,16 @@ await t('sheet music: toggle persists, highlight follows wait mode, auto-scrolls
   assert.ok(await page.isVisible('#staff'));
   const kb = await page.locator('#kb').boundingBox(), sb = await page.locator('#staff').boundingBox();
   assert.ok(sb.height <= 66 && kb.height >= 180, `keys keep room (${kb.height}px, staff ${sb.height}px)`);
-  const cur = () => page.evaluate(() => [...document.querySelectorAll('#staff .n')].findIndex(g => g.classList.contains('cur')));
+  const cur = () => page.evaluate(() => +document.querySelector('#staff .n.cur')?.dataset.k);
   assert.equal(await cur(), 0);
   for (let k = 0; k < 30; k++) await tapNext();
   assert.equal(await cur(), 30); assert.equal((await L()).pos, 30);
-  assert.equal(await page.locator('#staff .n.played').count(), 30);
-  assert.equal(await page.evaluate(() => document.querySelectorAll('#staff .n')[31].classList.contains('nxt')), true);
+  assert.equal(await page.locator('#staff .n.played').count(), await page.evaluate(() => __learn.events.filter(event => event.stepIndex < 30).length));
+  assert.ok(await page.locator('#staff .n.nxt[data-k="31"]').count() > 0);
   await page.waitForTimeout(500);
   const vis = await page.evaluate(() => { const s = document.getElementById('staff'), r = s.getBoundingClientRect(), n = s.querySelector('.n.cur ellipse').getBoundingClientRect(); return { sl: s.scrollLeft, inside: n.left >= r.left && n.right <= r.right }; });
   assert.ok(vis.sl > 0 && vis.inside, 'staff scrolled so the current note is visible');
-  const target = page.locator('#staff .n[data-k="40"] .hit');
+  const target = page.locator('#staff .n[data-k="40"] .hit').first();
   await target.scrollIntoViewIfNeeded(); await target.tap();
   assert.equal((await L()).pos, 40, 'tapping a note jumps there');
   await page.reload();

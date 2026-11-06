@@ -1,0 +1,244 @@
+{
+  "twinkle": {
+    "melody": "C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2 G4 G4 F4 F4 E4 E4 D4:2 G4 G4 F4 F4 E4 E4 D4:2 C4 C4 G4 G4 A4 A4 G4:2 F4 F4 E4 E4 D4 D4 C4:2",
+    "replaceMelody": false,
+    "meter": 4,
+    "timeSignature": [
+      4,
+      4
+    ],
+    "pickup": 0,
+    "key": "C",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "https://trillian.mit.edu/~jc/music/abc/mirror/musicaviva.com/france/ah-vous-c/ah-vous-c-1.abc",
+      "scope": "Complete melody · simplified bass",
+      "verifiedMelody": true,
+      "credit": "Traditional French melody; comparison: Frank Nordberg / MusicaViva ABC, archived by John Chambers",
+      "license": "Public-domain melody; modern edition not redistributed",
+      "checked": "2026-11-06",
+      "changes": "Published tune compared with the existing melody; original practice repetitions retained. Bass is an original simplified accompaniment."
+    },
+    "subtitle": null
+  },
+  "frere": {
+    "melody": "F4 G4 A4 F4 F4 G4 A4 F4 A4 Bb4 C5:2 A4 Bb4 C5:2 C5:0.5 D5:0.5 C5:0.5 Bb4:0.5 A4 F4 C5:0.5 D5:0.5 C5:0.5 Bb4:0.5 A4 F4 F4 C4 F4:2 F4 C4 F4:2",
+    "replaceMelody": false,
+    "meter": 4,
+    "timeSignature": [
+      4,
+      4
+    ],
+    "pickup": 0,
+    "key": "F",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "https://trillian.mit.edu/~jc/music/abc/mirror/wprj.net/tunes/Frere_Jacques.abc",
+      "scope": "Complete melody · simplified bass",
+      "verifiedMelody": true,
+      "credit": "Traditional French round; comparison: wprj.net ABC, archived by John Chambers",
+      "license": "Public-domain melody; modern edition not redistributed",
+      "checked": "2026-11-06",
+      "changes": "Published tune compared with the existing melody; original practice repetitions retained. Bass is an original simplified accompaniment."
+    },
+    "subtitle": null
+  },
+  "row": {
+    "melody": "C4:1.5 C4:1.5 C4 D4:0.5 E4:1.5 E4 D4:0.5 E4 F4:0.5 G4:3 C5:0.5 C5:0.5 C5:0.5 G4:0.5 G4:0.5 G4:0.5 E4:0.5 E4:0.5 E4:0.5 C4:0.5 C4:0.5 C4:0.5 G4 F4:0.5 E4 D4:0.5 C4:3",
+    "replaceMelody": false,
+    "meter": 3,
+    "timeSignature": [
+      6,
+      8
+    ],
+    "pickup": 0,
+    "key": "C",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "https://www.flutetunes.com/tunes.php?id=128",
+      "scope": "Complete melody · simplified bass",
+      "verifiedMelody": true,
+      "credit": "Traditional American round; existing melody checked against Flutetunes printed solo melody in G, transposed down a fifth to C",
+      "license": "Public-domain melody; modern edition not redistributed",
+      "checked": "2026-11-06",
+      "changes": "Published tune compared with the existing melody; original practice repetitions retained. Bass is an original simplified accompaniment. Written meter corrected to 6/8; quarter-note durations were already correct."
+    },
+    "subtitle": null
+  },
+  "birthday": {
+    "melody": "G4:0.75 G4:0.25 A4 G4 C5 B4:2 G4:0.75 G4:0.25 A4 G4 D5 C5:2 G4:0.75 G4:0.25 G5 E5 C5 B4 A4 F5:0.75 F5:0.25 E5 C5 D5 C5:3",
+    "replaceMelody": true,
+    "meter": 3,
+    "timeSignature": [
+      3,
+      4
+    ],
+    "pickup": 1,
+    "key": "C",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "https://trillian.mit.edu/~jc/music/abc/mirror/troseandassociates.com/abc/HappyBirthday.abc",
+      "scope": "Complete melody · simplified bass",
+      "verifiedMelody": true,
+      "credit": "Melody: Mildred J. Hill (Good Morning to All); Happy Birthday song associated with Mildred J. and Patty Smith Hill",
+      "license": "Public-domain melody; modern edition not redistributed",
+      "checked": "2026-11-06",
+      "changes": "Complete source-derived melody in the practice key; bass is an original simplified accompaniment."
+    },
+    "subtitle": "Mildred J. Hill · complete melody in C"
+  },
+  "saints": {
+    "melody": "C4 E4 F4 G4:4 r C4 E4 F4 G4:4 r C4 E4 F4 G4:2 E4:2 C4:2 E4:2 D4:4 r E4 E4 D4 C4:4 E4:2 G4:2 G4 F4:3 r:2 E4 F4 G4:2 E4:2 C4:2 D4:2 C4:4 r",
+    "replaceMelody": true,
+    "meter": 4,
+    "timeSignature": [
+      4,
+      4
+    ],
+    "pickup": 3,
+    "key": "C",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "https://trillian.mit.edu/~jc/music/abc/demo/Tunes/WhenTheSaintsGoMarchingIn.abc",
+      "scope": "Complete melody · simplified bass",
+      "verifiedMelody": true,
+      "credit": "Traditional American spiritual; comparison: MusicaViva ABC, archived by John Chambers",
+      "license": "Public-domain melody; modern edition not redistributed",
+      "checked": "2026-11-06",
+      "changes": "Complete source-derived melody in the practice key; bass is an original simplified accompaniment."
+    },
+    "subtitle": "Traditional spiritual · complete melody"
+  },
+  "amazing": {
+    "melody": "D4 G4:2 B4:0.5 G4:0.5 B4:2 A4 G4:2 E4 D4:2 D4 G4:2 B4:0.5 G4:0.5 B4:2 A4 D5:5 B4 D5:1.5 B4:0.5 D5:0.5 B4:0.5 G4:2 D4 E4:1.5 G4:0.5 G4:0.5 E4:0.5 D4:2 D4 G4:2 B4:0.5 G4:0.5 B4:2 A4 G4:5",
+    "replaceMelody": true,
+    "meter": 3,
+    "timeSignature": [
+      3,
+      4
+    ],
+    "pickup": 1,
+    "key": "G",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "http://openhymnal.org/Pdf/Amazing_Grace-New_Britain.pdf",
+      "scope": "Complete melody · simplified bass",
+      "verifiedMelody": true,
+      "credit": "New Britain: James P. Carrell and David L. Clayton, 1831; melody checked against Edwin Othello Excell 1900 setting, Open Hymnal 2006 revision",
+      "license": "Public-domain melody; modern edition not redistributed",
+      "checked": "2026-11-06",
+      "changes": "Complete source-derived melody in the practice key; bass is an original simplified accompaniment."
+    },
+    "subtitle": "New Britain · complete melody in G"
+  },
+  "greensleeves": {
+    "melody": "A4:0.5 C5 D5:0.5 E5:0.75 F5:0.25 E5:0.5 D5 B4:0.5 G4:0.75 A4:0.25 B4:0.5 C5 A4:0.5 A4:0.75 G#4:0.25 A4:0.5 B4:1.5 E4 A4:0.5 C5 D5:0.5 E5:0.75 F5:0.25 E5:0.5 D5 B4:0.5 G4:0.75 A4:0.25 B4:0.5 C5:0.75 B4:0.25 A4:0.5 G#4:0.75 F#4:0.25 G#4:0.5 A4:1.5 A4 r:0.5 G5:1.5 G5:0.75 F#5:0.25 E5:0.5 D5 B4:0.5 G4:0.75 A4:0.25 B4:0.5 C5 A4:0.5 A4:0.75 G#4:0.25 A4:0.5 B4 G#4:0.5 E4 r:0.5 G5:1.5 G5:0.75 F5:0.25 E5:0.5 D5 B4:0.5 G4:0.75 A4:0.25 B4:0.5 C5:0.75 B4:0.25 A4:0.5 G#4:0.75 F#4:0.25 G#4:0.5 A4:1.5 A4",
+    "replaceMelody": true,
+    "meter": 3,
+    "timeSignature": [
+      6,
+      8
+    ],
+    "pickup": 0.5,
+    "key": "Am",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1247",
+      "scope": "Complete melody · simplified bass",
+      "verifiedMelody": true,
+      "credit": "Traditional English melody; exact soprano of Steve Dunlop public-domain Mutopia Greensleeves hymn setting, transposed E minor to A minor",
+      "license": "Public Domain",
+      "checked": "2026-11-06",
+      "changes": "Complete source-derived melody in the practice key; bass is an original simplified accompaniment. Soprano transposed from E minor to A minor."
+    },
+    "subtitle": "Traditional · complete melody in A minor, 6/8"
+  },
+  "mary": {
+    "melody": "E4:1.5 D4:0.5 C4 D4 E4 E4 E4:2 D4 D4 D4:2 E4 G4 G4:2 E4:1.5 D4:0.5 C4 D4 E4 E4 E4 E4 D4 D4 E4 D4 C4:4",
+    "replaceMelody": false,
+    "meter": 4,
+    "timeSignature": [
+      4,
+      4
+    ],
+    "pickup": 0,
+    "key": "C",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "https://www.pianolessons4children.com/sheetmusic/Mary_Had_a_Little_Lamb_C_Major.pdf",
+      "scope": "Complete melody · straight-rhythm variant",
+      "verifiedMelody": true,
+      "credit": "Traditional melody; checked against PianoLessons4Children printed melody (no accompaniment copied)",
+      "license": "Public-domain melody; modern edition not redistributed",
+      "checked": "2026-11-06",
+      "changes": "Pitches match the published tune; the existing straight-quarter rhythm variant is retained instead of the source’s dotted rhythm. Bass is an original simplified accompaniment."
+    },
+    "subtitle": null
+  },
+  "oldmac": {
+    "melody": "G4 G4 G4 D4 E4 E4 D4:2 B4 B4 A4 A4 G4:3 D4 G4 G4 G4 D4 E4 E4 D4:2 B4 B4 A4 A4 G4:3 D4:0.5 D4:0.5 G4 G4 G4 D4:0.5 D4:0.5 G4 G4 G4:2 G4:0.5 G4:0.5 G4 G4:0.5 G4:0.5 G4 G4:0.5 G4:0.5 G4:0.5 G4:0.5 G4 G4 G4 G4 G4 D4 E4 E4 D4:2 B4 B4 A4 A4 G4:3 r",
+    "replaceMelody": true,
+    "meter": 4,
+    "timeSignature": [
+      4,
+      4
+    ],
+    "pickup": 0,
+    "key": "G",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "https://cantatalearning.com/products/old-macdonald/old-macdonald-sheet-music.pdf",
+      "scope": "Complete melody · simplified bass",
+      "verifiedMelody": true,
+      "credit": "Traditional American; complete melody compared visually against Cantata Learning public-domain score",
+      "license": "Public-domain melody; modern edition not redistributed",
+      "checked": "2026-11-06",
+      "changes": "Complete source melody in G, including the final one-beat rest. The original simplified bass is retained."
+    },
+    "subtitle": "Traditional · complete melody in G"
+  },
+  "london": {
+    "melody": "G4:1.5 A4:0.5 G4 F4 E4 F4 G4:2 D4 E4 F4:2 E4 F4 G4:2 G4:1.5 A4:0.5 G4 F4 E4 F4 G4:2 D4:2 G4:2 E4 C4:3",
+    "replaceMelody": false,
+    "meter": 4,
+    "timeSignature": [
+      4,
+      4
+    ],
+    "pickup": 0,
+    "key": "C",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "https://portenotes.lacultureataporte.fr/piano/repertoire/london-bridge",
+      "scope": "Complete melody · simplified bass",
+      "verifiedMelody": true,
+      "credit": "Traditional English; melody compared with primary teacher ABC published by Porte-Notes / La Culture à ta porte",
+      "license": "Public-domain melody; modern edition not redistributed",
+      "checked": "2026-11-06",
+      "changes": "All existing melody pitches and relative rhythms match the linked educator edition. The current 4/4 rhythmic augmentation (twice the 2/4 source note lengths) and three practice repetitions are retained."
+    },
+    "subtitle": null
+  },
+  "auld": {
+    "melody": "D4 G4:1.5 F#4:0.5 G4 B4 A4:1.5 G4:0.5 A4 B4:0.5 A4:0.5 G4:1.5 G4:0.5 B4 D5 E5:3 E5 D5:1.5 B4:0.5 B4 G4 A4:1.5 G4:0.5 A4 B4:0.5 A4:0.5 G4:1.5 E4:0.5 E4 D4 G4:3 E5 D5:1.5 B4:0.5 B4 G4 A4:1.5 G4:0.5 A4 E5 D5:1.5 B4:0.5 B4 D5 E5:3 E5 D5:1.5 B4:0.5 B4 G4 A4:1.5 G4:0.5 A4 B4:0.5 A4:0.5 G4:1.5 E4:0.5 E4 D4 G4:3",
+    "replaceMelody": true,
+    "meter": 4,
+    "timeSignature": [
+      4,
+      4
+    ],
+    "pickup": 1,
+    "key": "G",
+    "source": {
+      "title": "Published traditional melody comparison",
+      "url": "https://trillian.mit.edu/~jc/music/abc/song/Auld_Lang_Syne.abc",
+      "scope": "Complete melody · simplified bass",
+      "verifiedMelody": true,
+      "credit": "Traditional Scottish melody; direct John Chambers ABC transcription, transposed F major to G major",
+      "license": "Public-domain melody; modern edition not redistributed",
+      "checked": "2026-11-06",
+      "changes": "Complete verse and chorus transposed from the linked F-major source to G. Original simplified bass accompaniment retained."
+    },
+    "subtitle": "Scottish traditional · complete verse and chorus in G"
+  }
+}
