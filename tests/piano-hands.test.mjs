@@ -78,7 +78,7 @@ test('saved left hand initializes both selectors; invalid or inaccessible storag
   for (const id of ['lhand', 'songHand']) assert.equal(saved.d.getElementById(id).value, 'left');
   saved.P.startSong(saved.P.songs.find(song => song.id === 'canon'));
   assert.ok(saved.P.L.steps.every(step => step.midi <= 60) && saved.P.L.steps.some(step => step.midi < 60), 'saved choice selects actual bass notes');
-  const invalid = await load(t, {hand:'both'});
+  const invalid = await load(t, {hand:'unknown'});
   assert.equal(invalid.P.L.hand, 'right');
   const blocked = await load(t, {blockedStorage:true});
   assert.equal(blocked.P.L.hand, 'right');
