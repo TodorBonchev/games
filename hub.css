@@ -30,7 +30,7 @@ h1 span{color:var(--orange)}
 .section-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:22px 0;border-top:1px solid var(--line)}
 .section-heading h2{font:inherit;letter-spacing:1.4px;margin:0}
 .section-heading p{margin:0;color:var(--muted);font-size:9px;letter-spacing:1px}
-.game-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.game-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
 .game-card{display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);border-radius:8px;background:#1b231e;overflow:hidden;transition:transform .2s,border-color .2s}
 .game-card:hover{transform:translateY(-4px);border-color:#c7d5b88c}
 .game-art{position:relative;aspect-ratio:1.65;flex-shrink:0;overflow:hidden;background:#678a4a}
@@ -62,6 +62,15 @@ h3>span{display:none}
 .piano-card .art-tag{background:#ead6a8;color:#302b22;border-color:#ead6a8}
 .piano-card .game-category,.piano-card .play-link>span:last-child{color:#e3c78b}
 .piano-card .game-description,.piano-card .game-tags{color:#c4baaa}
+.selva-card{background:#24232b;border-color:#c2b0d53d}
+.selva-card .game-art{background:#161720}
+.selva-card .art-shade{background:linear-gradient(180deg,#13111e35,transparent 25%,#171422ed)}
+.selva-card .art-tag{background:#241e34e8;color:#e5d6f3}
+.selva-card .game-category,.selva-card .play-link>span:last-child{color:#d0b8ec}
+.selva-card .game-description,.selva-card .game-tags{color:#bcb5c8}
+.game-grid .world-badge{display:none}
+.quick-play a:last-child:nth-child(3){grid-column:1/-1}
+@media(min-width:701px) and (max-width:1050px){.game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.selva-card{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.selva-card .game-art{aspect-ratio:auto;min-height:330px}}
 .collection-note{display:flex;align-items:center;gap:19px;padding:35px 0 42px}
 .note-symbol{font-size:43px;color:var(--orange);line-height:1}
 .collection-note strong{font-size:14px;font-weight:500}

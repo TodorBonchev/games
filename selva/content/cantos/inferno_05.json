@@ -1,0 +1,308 @@
+{
+  "id": "inferno_05",
+  "canticle": "inferno",
+  "number": 5,
+  "title": "Lust",
+  "subtitle_it": "La bufera infernal",
+  "role": "combat",
+  "circle": 2,
+  "geo": {
+    "bounds": {
+      "width": 160,
+      "height": 120
+    },
+    "spawn": {
+      "x": 20,
+      "y": 60
+    },
+    "exits": [
+      {
+        "to_canto": "inferno_01",
+        "x": 12,
+        "y": 60,
+        "label": "Return to Dark Wood"
+      },
+      {
+        "to_canto": "inferno_06",
+        "x": 150,
+        "y": 60,
+        "label": "Toward Gluttony →",
+        "require_clear": "inferno_05"
+      }
+    ],
+    "pois": [
+      {
+        "id": "gale_bell",
+        "kind": "bell",
+        "x": 90,
+        "y": 62,
+        "label": "Gale Bell",
+        "hint": "Stills nearby shades — then press on to Minos"
+      },
+      {
+        "id": "wind_cache",
+        "kind": "cache",
+        "x": 60,
+        "y": 55,
+        "label": "Wind Cache",
+        "hint": "One champion drop per visit — E to claim"
+      },
+      {
+        "id": "wind_shrine",
+        "kind": "shrine",
+        "x": 26,
+        "y": 64,
+        "label": "Wind Shrine",
+        "hint": "Restores life and breath — E to kneel"
+      },
+      {
+        "id": "lee_shrine",
+        "kind": "shrine",
+        "x": 106,
+        "y": 52.5,
+        "label": "Lee Shrine",
+        "hint": "In the rock's lee, short of the Judge — restores life and breath"
+      }
+    ],
+    "windbreaks": [
+      {
+        "x": 29,
+        "y": 52,
+        "r": 1.5
+      },
+      {
+        "x": 38.5,
+        "y": 60,
+        "r": 1.6
+      },
+      {
+        "x": 45.5,
+        "y": 69.5,
+        "r": 1.5
+      },
+      {
+        "x": 34.5,
+        "y": 73.5,
+        "r": 1.4
+      },
+      {
+        "x": 43.5,
+        "y": 43.5,
+        "r": 1.7
+      },
+      {
+        "x": 53.5,
+        "y": 38,
+        "r": 1.6
+      },
+      {
+        "x": 63,
+        "y": 50,
+        "r": 1.6
+      },
+      {
+        "x": 73.5,
+        "y": 53.5,
+        "r": 1.7
+      },
+      {
+        "x": 82.5,
+        "y": 41.5,
+        "r": 1.6
+      },
+      {
+        "x": 77.5,
+        "y": 72.5,
+        "r": 1.5
+      },
+      {
+        "x": 94.5,
+        "y": 43.5,
+        "r": 1.6
+      },
+      {
+        "x": 106,
+        "y": 48.5,
+        "r": 1.7
+      },
+      {
+        "x": 115.5,
+        "y": 70,
+        "r": 1.5
+      },
+      {
+        "x": 120,
+        "y": 52,
+        "r": 1.6
+      },
+      {
+        "x": 132.5,
+        "y": 66,
+        "r": 1.6
+      },
+      {
+        "x": 132.5,
+        "y": 54.5,
+        "r": 1.5
+      }
+    ]
+  },
+  "packs": [
+    {
+      "id": "lust_storm_heart",
+      "name": "Storm Heart",
+      "archetype": "storm_heart",
+      "count": 1,
+      "elite": true,
+      "champion": true,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 78,
+        "y": 58
+      }
+    },
+    {
+      "id": "lust_wisps",
+      "name": "Gale Wisp",
+      "archetype": "gale_wisp",
+      "count": 4,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 40,
+        "y": 72
+      }
+    },
+    {
+      "id": "lust_road_wardens",
+      "name": "Road Shade",
+      "archetype": "whirl_shade",
+      "count": 2,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 34,
+        "y": 56
+      }
+    },
+    {
+      "id": "lust_winds_a",
+      "archetype": "whirl_shade",
+      "count": 3,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 48,
+        "y": 40
+      }
+    },
+    {
+      "id": "lust_winds_b",
+      "archetype": "whirl_shade",
+      "count": 3,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 72,
+        "y": 70
+      }
+    },
+    {
+      "id": "lust_champion_pair",
+      "archetype": "gale_champion",
+      "count": 2,
+      "elite": true,
+      "champion": true,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 100,
+        "y": 46
+      },
+      "name": "Paolo & Francesca"
+    },
+    {
+      "id": "lust_strays",
+      "name": "Stray Shade",
+      "archetype": "whirl_shade",
+      "count": 2,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 86,
+        "y": 38
+      }
+    },
+    {
+      "id": "lust_chorus",
+      "name": "Chorus Shade",
+      "archetype": "whirl_shade",
+      "count": 3,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 110,
+        "y": 72
+      }
+    },
+    {
+      "id": "lust_gate_warden",
+      "name": "Gate Warden",
+      "archetype": "gale_warden",
+      "count": 1,
+      "elite": true,
+      "champion": true,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 132,
+        "y": 60
+      }
+    },
+    {
+      "id": "lust_bufera",
+      "name": "Bufera",
+      "archetype": "gale_champion",
+      "count": 1,
+      "elite": true,
+      "champion": true,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 122,
+        "y": 58
+      }
+    }
+  ],
+  "bosses": [
+    {
+      "id": "minos_gate",
+      "name": "Minos",
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 140,
+        "y": 60
+      },
+      "first_clear_emit": true
+    }
+  ],
+  "first_clear": {
+    "enabled": true,
+    "event": "FirstClear",
+    "requires": "minos_gate"
+  },
+  "daily_quests": [],
+  "style_kit": {
+    "palette": "inferno_red_black",
+    "kit_id": "circle_02_lust",
+    "notes": "Circle kit 2 of 12; red-black gale; Doré line weight; storm-swept plain of rock islands (windbreaks)"
+  },
+  "loot_density": "raw_d2",
+  "legal": {
+    "text_source": "italian_original",
+    "notes": "Names and short Italian tags only; original encounter design; no assets from other Dante games"
+  }
+}

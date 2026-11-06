@@ -1,0 +1,357 @@
+{
+  "id": "inferno_07",
+  "canticle": "inferno",
+  "number": 7,
+  "title": "Avarice",
+  "subtitle_it": "voltando pesi per forza di poppa",
+  "role": "combat",
+  "circle": 4,
+  "geo": {
+    "bounds": {
+      "width": 160,
+      "height": 120
+    },
+    "spawn": {
+      "x": 18,
+      "y": 52
+    },
+    "exits": [
+      {
+        "to_canto": "inferno_06",
+        "x": 10,
+        "y": 52,
+        "label": "Return to Gluttony ←",
+        "hint": "di qua dal peso — return through the weighed gate; bank loot at the Dark Wood stash"
+      },
+      {
+        "to_canto": "inferno_01",
+        "x": 14,
+        "y": 44,
+        "label": "Dark Wood stash road"
+      },
+      {
+        "to_canto": "inferno_08",
+        "x": 150,
+        "y": 66,
+        "label": "Toward Wrath →",
+        "require_clear": "inferno_07",
+        "hint": "Plutus broken — the marsh of the Styx lies beyond"
+      }
+    ],
+    "pois": [
+      {
+        "id": "ledger_bell",
+        "kind": "bell",
+        "x": 124,
+        "y": 50,
+        "label": "Ledger Bell",
+        "hint": "When Plutus holds two coin, ring it between clashes"
+      },
+      {
+        "id": "ledger_cache",
+        "kind": "cache",
+        "x": 54,
+        "y": 67.5,
+        "label": "Ledger Cache",
+        "hint": "One weighed drop per visit — beyond the wasters' track"
+      },
+      {
+        "id": "ledger_shrine",
+        "kind": "shrine",
+        "x": 28,
+        "y": 56,
+        "label": "Ledger Shrine",
+        "hint": "rebalance — restores life and breath (kneel at the measure)"
+      },
+      {
+        "id": "tally_shrine",
+        "kind": "shrine",
+        "x": 103,
+        "y": 52.5,
+        "label": "Tally Shrine",
+        "hint": "rebalance — inside the ring, short of Plutus: restores life and breath"
+      },
+      {
+        "id": "avarice_portal_home",
+        "kind": "portal",
+        "x": 151,
+        "y": 54,
+        "label": "Dark Wood road",
+        "to_canto": "inferno_01",
+        "require_clear": "inferno_07",
+        "hint": "Once Plutus falls, the road home opens past the dais"
+      },
+      {
+        "id": "ledger_stone",
+        "kind": "marker",
+        "x": 33,
+        "y": 53,
+        "label": "Ledger Stone",
+        "hint": "«Perché tieni?» «Perché burli?» — cross a lane behind a passing weight, between clashes"
+      }
+    ]
+  },
+  "packs": [
+    {
+      "id": "ava_hoard_heart",
+      "name": "Hoard Heart",
+      "archetype": "hoard_heart",
+      "count": 1,
+      "elite": true,
+      "champion": true,
+      "drop_table": "avarice_pack_weights",
+      "anchor": {
+        "x": 78,
+        "y": 58
+      },
+      "notes": "Wards nearby weights until broken — the heart of the ring, between the processions, where the road turns to cross the wasters' lane"
+    },
+    {
+      "id": "ava_coin_wisps",
+      "name": "Coin Wisps",
+      "archetype": "coin_wisp",
+      "count": 4,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 38,
+        "y": 72
+      },
+      "notes": "Scattered greed; small, quick, easy to undervalue"
+    },
+    {
+      "id": "ava_road_weights",
+      "name": "Road Weights",
+      "archetype": "weight_shade",
+      "count": 2,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 36,
+        "y": 50
+      },
+      "notes": "First counterweights past the shrine — spawn keep-out; learn the measure on the scorched road"
+    },
+    {
+      "id": "ava_ledger_a",
+      "name": "North Ledger",
+      "archetype": "weight_shade",
+      "count": 3,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 56,
+        "y": 40.5
+      },
+      "notes": "Hoarders' side, just outside the north track — lure them into a rolling weight"
+    },
+    {
+      "id": "ava_ledger_b",
+      "name": "South Balance",
+      "archetype": "weight_shade",
+      "count": 3,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 66,
+        "y": 73
+      },
+      "notes": "Wasters' side, outside the south track"
+    },
+    {
+      "id": "ava_champion_pair",
+      "name": "Weight Champions",
+      "archetype": "weight_champion",
+      "count": 2,
+      "elite": true,
+      "champion": true,
+      "drop_table": "avarice_pack_weights",
+      "anchor": {
+        "x": 100,
+        "y": 34
+      },
+      "notes": "Heavy measures north of the hoarders' track — gold trim, don't undervalue"
+    },
+    {
+      "id": "ava_strays",
+      "name": "Stray Coin",
+      "archetype": "weight_shade",
+      "count": 2,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 92,
+        "y": 57
+      },
+      "notes": "Loose change inside the ring, between the processions"
+    },
+    {
+      "id": "ava_chorus",
+      "name": "Gold Chorus",
+      "archetype": "weight_shade",
+      "count": 3,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 117,
+        "y": 69
+      },
+      "notes": "On the road beside the wasters' last run into the east clash — the lane is a weapon"
+    },
+    {
+      "id": "ava_approach_flank",
+      "name": "Crush Approach",
+      "archetype": "weight_shade",
+      "count": 2,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 124,
+        "y": 34
+      },
+      "notes": "North flank before the Crush dais — keep the approach readable"
+    },
+    {
+      "id": "ava_ledger_warden",
+      "name": "Ledger Warden",
+      "archetype": "ledger_warden",
+      "count": 1,
+      "elite": true,
+      "champion": true,
+      "drop_table": "avarice_pack_weights",
+      "anchor": {
+        "x": 114,
+        "y": 53
+      },
+      "notes": "Tablet shield inside the ring before the east clash (off the road)"
+    },
+    {
+      "id": "ava_counterweight",
+      "name": "Counterweight",
+      "archetype": "weight_champion",
+      "count": 1,
+      "elite": true,
+      "champion": true,
+      "drop_table": "avarice_pack_weights",
+      "anchor": {
+        "x": 97,
+        "y": 76
+      },
+      "notes": "Mid-elite on the wasters' side, past the road's crossing of their lane: charges like a rolling weight (sidestep; break the charge with a finisher) — lure it into the lane and the weights crush it too"
+    },
+    {
+      "id": "ava_north_measure",
+      "name": "North Measure",
+      "archetype": "weight_shade",
+      "count": 2,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 100,
+        "y": 26
+      },
+      "notes": "Empty ledger flats north of the road — unpaid tallies drift"
+    },
+    {
+      "id": "ava_south_spill",
+      "name": "South Spill",
+      "archetype": "coin_wisp",
+      "count": 3,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 118,
+        "y": 88
+      },
+      "notes": "Coin spill south of the Crush lane — undervalue them and they swarm"
+    },
+    {
+      "id": "ava_nw_drift",
+      "name": "Northwest Drift",
+      "archetype": "weight_shade",
+      "count": 2,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 22,
+        "y": 22
+      },
+      "notes": "Drift weights on the scorched NW flats — fills the empty ledger corner"
+    },
+    {
+      "id": "ava_sw_spill",
+      "name": "Southwest Spill",
+      "archetype": "coin_wisp",
+      "count": 2,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 24,
+        "y": 96
+      },
+      "notes": "Coin spill on empty SW flats — fills the ledger corner west of South Balance"
+    },
+    {
+      "id": "ava_se_drift",
+      "name": "Southeast Drift",
+      "archetype": "weight_shade",
+      "count": 2,
+      "elite": false,
+      "champion": false,
+      "drop_table": "inferno_pack_common",
+      "anchor": {
+        "x": 148,
+        "y": 92
+      },
+      "notes": "SE ledger flats past South Spill — unpaid weights drift off the Crush lane"
+    }
+  ],
+  "bosses": [
+    {
+      "id": "hoard_crush",
+      "name": "Plutus",
+      "drop_table": "avarice_pack_weights",
+      "anchor": {
+        "x": 138,
+        "y": 48
+      },
+      "first_clear_emit": true,
+      "notes": "«Pape Satàn, pape Satàn aleppe!» — swallows coin (Fiorini) and swells; the Ledger Bell breaks him; at half he hurls rolling weights"
+    }
+  ],
+  "first_clear": {
+    "enabled": true,
+    "event": "FirstClear",
+    "requires": "hoard_crush",
+    "notes": "Plutus broken — Avarice yields its measure; return via Gluttony gate or bank at the Dark Wood stash"
+  },
+  "daily_quests": [
+    {
+      "id": "ava_daily_ledger",
+      "objective": "Ring the Ledger Bell to still a pack or break a swollen Plutus",
+      "emit_event": "DailyQuest",
+      "notes": "Contrapasso of measure: still the weights, tip the Crush; shares UTC daily cap with Dark Wood writ"
+    }
+  ],
+  "style_kit": {
+    "palette": "inferno_red_black",
+    "kit_id": "circle_04_avarice",
+    "notes": "Circle kit 4 of 12; the two processions of rolling weights clash on the road; gold-on-black irony, Doré bone-gold"
+  },
+  "loot_density": "raw_d2",
+  "legal": {
+    "text_source": "italian_original",
+    "notes": "Names and short Italian tags only; original encounter design; no assets from other Dante games"
+  }
+}

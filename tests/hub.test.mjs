@@ -17,14 +17,14 @@ async function hub() {
   return { dom, run: () => entry.evaluate(), refresh: () => dom.window.dispatchEvent(new dom.window.Event('storage')) };
 }
 
-test('the two-destination home resumes the zombie campaign and leaves piano independent', async () => {
+test('the three-destination home resumes Zombie and leaves Piano and Selva independent', async () => {
   const { dom, run, refresh } = await hub(), { document, localStorage } = dom.window;
   try {
     writeGameSave('soldier', { schema: 1, level: 2, wave: 3, phase: 'play' }, localStorage);
     writeGameSave('garden', { schema: 1, level: 3, wave: 2, mode: 'playing' }, localStorage);
     const previousGarden = localStorage.getItem('games:save:garden');
     await run();
-    assert.equal(document.querySelectorAll('.game-card').length, 2);
+    assert.equal(document.querySelectorAll('.game-card').length, 3);
     const card = document.querySelector('.soldier-card'), url = new URL(card.href);
     assert.equal(card.querySelector('[data-play-label]').textContent, 'CONTINUE THE ADVENTURE');
     assert.equal(url.pathname, '/games/soldier.html');
@@ -56,7 +56,7 @@ test('home reflects unique completed expedition activities without changing any 
     assert.equal(localStorage.getItem('games:zombie:expedition:v1'), raw);
     assert.equal(localStorage.getItem('games:save:arcade:lane-lark'), 'existing arcade save');
     assert.equal(localStorage.getItem('games:save:ribbon'), 'existing ribbon save');
-    assert.equal(document.querySelectorAll('[data-game-link]:not([data-game-link="soldier"]):not([data-game-link="piano"])').length, 0);
+    assert.equal(document.querySelectorAll('[data-game-link]:not([data-game-link="soldier"]):not([data-game-link="piano"]):not([data-game-link="selva"])').length, 0);
   } finally { dom.window.close(); }
 });
 
@@ -82,6 +82,6 @@ test('home remains usable when browser storage is unavailable', async () => {
     Object.defineProperty(dom.window, 'localStorage', { configurable: true, get() { throw new Error('blocked storage'); } });
     await run(); assert.doesNotThrow(refresh);
     const links = [...dom.window.document.querySelectorAll('.game-card')].map(card => new URL(card.href).pathname);
-    assert.deepEqual(links, ['/games/soldier.html', '/games/piano/']);
+    assert.deepEqual(links, ['/games/soldier.html', '/games/piano/', '/games/selva/']);
   } finally { dom.window.close(); }
 });

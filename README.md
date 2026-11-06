@@ -2,7 +2,7 @@
 
 [Play online](https://todorbonchev.github.io/games/)
 
-The site has two destinations: **Zombie** and **Piano**. Zombie combines the two-island survival campaign with **30 activities discovered in the world**. Walk to survivor outposts, help rebuild the settlement, then return to the same live battle with your position, equipment and campaign intact. Piano remains a separate instrument.
+The site has three destinations: **Zombie**, **Piano**, and **Selva Oscura**. Zombie combines the two-island survival campaign with **30 activities discovered in the world**. Walk to survivor outposts, help rebuild the settlement, then return to the same live battle with your position, equipment and campaign intact. Piano is a separate instrument; Selva Oscura is a standalone single-player action RPG.
 
 The latest survival pass implements **[50 improvements from self-play](IMPROVEMENTS-50.md)**, with a numbered checklist and verification for every change.
 
@@ -10,6 +10,7 @@ The latest survival pass implements **[50 improvements from self-play](IMPROVEME
 | --- | --- | --- |
 | Zombie | [Enter the world](https://todorbonchev.github.io/games/soldier.html) | Survival, exploration, weapons, upgrades, and every former game as an outpost activity. |
 | Piano | [Take a seat](https://todorbonchev.github.io/games/piano/) | Free play, instrument sounds, songs and guided practice. |
+| Selva Oscura | [Begin the descent](https://todorbonchev.github.io/games/selva/) | Single-player combat, loot, skills, device saves and a randomized auction house. |
 
 Former entry pages redirect into Zombie with an activity waypoint. They do not open separate game sessions. Wonderwake's 25 challenges and the five larger adventures now share the survivor settlement.
 
@@ -24,6 +25,26 @@ npm run dev
 Open **http://127.0.0.1:5173**. The runtime needs no build step or account. Three.js, game assets and fonts are bundled locally; any ordinary static HTTP server works. Piano can download instrument samples and uses its built-in synthesizer when they are unavailable.
 
 For a phone on your Wi-Fi, run `npm run dev -- --host 0.0.0.0` and open your computer's local IP on port 5173. Portrait and landscape layouts support rotation during play. Release and replace held touches after rotating.
+
+## Selva Oscura
+
+Selva Oscura runs entirely in your browser. Its original combat engine now drives one local character, with equipment, skills, Ash, stash and progression saved on this device. Ash is fictional game currency. No account, wallet, multiplayer server or database is needed. The Dark Wood leads to the authored Lust, Gluttony, Avarice and Wrath areas; the Giants' Well is a solo guardian trial.
+
+The auction house generates a fresh selection of random equipment, combat stats and Ash prices on every game launch. Browsing or refreshing does not reroll the current stock. Bought equipment stays in your save; a sold offer cannot be bought twice. Selling spare gear pays Ash immediately.
+
+Move with **WASD** or the touch stick, hold **F / Attack** to fight, and use **E / Use** to interact. **1–4** cast equipped skills, **Space** dashes, **Q** drinks a flask, **I** opens inventory, **K** opens skills, and **H** opens the auction house in the Dark Wood. Menus pause the solo encounter; resume with fresh input. Fullscreen is an explicit menu choice.
+
+The checked-in `selva/index.html` and `selva/assets/` run on any static server. To edit and rebuild:
+
+```sh
+npm ci --prefix selva/app
+npm run typecheck:selva
+npm run build:selva
+npm run test:selva:rules
+npm run test:selva
+```
+
+Source lives in `selva/app/`, the local simulation in `selva/engine/`, and authored areas/items in `selva/content/`. The MIT license is retained in `selva/LICENSE`. The original repository history is preserved on the `codex/selva-oscura-original` branch.
 
 ## Survivor outposts
 
@@ -267,7 +288,7 @@ Use `CHROMIUM_PATH=/path/to/chromium` to select an installed browser. Screenshot
 
 | Module | Responsibility |
 | --- | --- |
-| `index.html`, `hub.js`, `hub.css` | Two-destination home and saved-survival continuation. |
+| `index.html`, `hub.js`, `hub.css` | Three-game home and saved-survival continuation. |
 | `soldier.html`, `main.js`, `world.js`, `world2.js` | Survival UI, one root animation loop, combat and island worlds. |
 | `activities/catalog.js` | Thirty activities, six districts, descriptions and stages. |
 | `activities/world.js` | Terrain-safe stations, batched workstation models, completion colors and projected waypoints. |

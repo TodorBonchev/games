@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Selva Oscura" />
+  <meta name="theme-color" content="#07090a" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="A single-player dark-fantasy action RPG. Explore the Inferno, find powerful loot and browse a new randomized Auction House each time you play." />
+  <title>Selva Oscura — Single Player</title>
+  <link rel="icon" href="./assets/items/item_gem.png" />
+  <script type="module" crossorigin src="./assets/index-Dt34v1Am.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BCbmlEHz.css">
+</head>
+<body>
+  <div id="hud">
+    <header id="hud-top">
+      <!-- Zone plate (D4-style canto name) -->
+      <div id="zone-plate" class="plate plate-zone">
+        <span class="finial finial-l" aria-hidden="true"></span>
+        <h1>Selva Oscura</h1>
+        <div id="canto-title">Single-player journey</div>
+        <span class="finial finial-r" aria-hidden="true"></span>
+      </div>
+
+      <div id="stats">
+        <!-- Vitals: bone frame, crimson fill, gold ticks -->
+        <div id="hp-plate" class="plate plate-hp" role="meter" aria-label="Health">
+          <div id="hp-bar">
+            <div id="hp-fill"></div>
+            <div class="hp-ticks" aria-hidden="true"></div>
+            <span id="hp">HP —</span>
+          </div>
+          <span id="combo-pip" class="buff-pip combo-pip hidden" title="Hit streak" aria-label="Hit streak" aria-hidden="true">1</span>
+          <span id="ward-pip" class="buff-pip ward-pip hidden" title="Whirl Ward — +armor" aria-label="Whirl Ward active">W</span>
+        </div>
+        <!-- Mana: bone-gold fill -->
+        <div id="mp-plate" class="plate plate-mp" role="meter" aria-label="Mana">
+          <div id="mp-bar">
+            <div id="mp-fill"></div>
+            <div class="mp-ticks" aria-hidden="true"></div>
+            <span id="mp">MP —</span>
+          </div>
+        </div>
+        <!-- Ash: fictional currency earned in this journey -->
+        <div id="ash-plate" class="plate plate-ash">
+          <span class="ash-sigil" aria-hidden="true">✦</span>
+          <span id="ash">Ash —</span>
+          <span id="pending" class="hidden"></span>
+        </div>
+      </div>
+    </header>
+    <div id="help" class="help-desktop">
+      WASD / click ground to move · Click foe to attack · 1–4 spells · K skills · E interact · I inventory · H AH
+    </div>
+    <div id="help-mobile" class="help-mobile">
+      Stick moves · Tap foe / hold Attack · Spell icons · Tap POI / Use
+    </div>
+  </div>
+  <!-- Toast lives outside #hud so it can stack above open modals -->
+  <div id="toast-layer" aria-live="polite">
+    <div id="toast"></div>
+  </div>
+
+  <div id="modal-backdrop" class="hidden"></div>
+  <div id="panels">
+    <aside id="inventory" class="panel modal inv-panel hidden" aria-label="Inventory">
+      <div class="panel-head">
+        <h2>Inventory <em id="inv-count"></em></h2>
+        <button type="button" id="btn-inv-sort" class="btn-inv-filter btn-inv-sort" aria-pressed="true" title="Sort the bag by gear score">Sort: Score</button>
+        <button type="button" id="btn-inv-weighed" class="btn-inv-filter" aria-pressed="false" title="Show weighed (soulbound) items only">Weighed</button>
+        <button type="button" class="btn-close" data-close="inventory" aria-label="Close inventory">✕</button>
+      </div>
+      <div class="inv-scroll">
+        <div class="inv-layout">
+          <div id="equip-doll" class="equip-doll" aria-label="Equipment">
+            <button type="button" class="equip-slot" data-slot="Head" title="Head"><span class="equip-slot-label">Head</span><span class="equip-slot-body"></span></button>
+            <button type="button" class="equip-slot" data-slot="Chest" title="Chest"><span class="equip-slot-label">Chest</span><span class="equip-slot-body"></span></button>
+            <button type="button" class="equip-slot" data-slot="Hands" title="Hands"><span class="equip-slot-label">Hands</span><span class="equip-slot-body"></span></button>
+            <button type="button" class="equip-slot" data-slot="Feet" title="Feet"><span class="equip-slot-label">Feet</span><span class="equip-slot-body"></span></button>
+            <button type="button" class="equip-slot" data-slot="MainHand" title="Main Hand"><span class="equip-slot-label">Main</span><span class="equip-slot-body"></span></button>
+            <button type="button" class="equip-slot" data-slot="OffHand" title="Off Hand"><span class="equip-slot-label">Off</span><span class="equip-slot-body"></span></button>
+            <div id="equip-stats" class="equip-stats"></div>
+          </div>
+          <div id="inv-grid" class="inv-grid"></div>
+          <section id="stash-wrap" class="stash-wrap hidden" aria-label="Dark Wood stash">
+            <div class="stash-head"><span>Dark Wood Stash</span><em id="stash-count"></em></div>
+            <div id="stash-grid" class="inv-grid stash-grid"></div>
+          </section>
+        </div>
+      </div>
+      <div class="inv-footer">
+        <div id="inv-detail" class="inv-detail">
+          <span class="inv-detail-name muted">Select an item to equip, bank or sell for Ash.</span>
+        </div>
+        <div class="row inv-actions">
+          <button id="btn-stash" type="button" class="btn-gold hidden" disabled>Bank</button>
+          <button id="btn-equip-best" type="button" class="btn-gold" disabled title="Wear the highest-score item for each slot">Best equipped</button>
+          <button id="btn-melt" type="button" class="btn-gold" disabled>Nothing to melt</button>
+        </div>
+        <div class="row inv-actions">
+          <button id="btn-equip" type="button" class="btn-gold">Equip</button>
+          <button id="btn-unequip" type="button">Unequip</button>
+          <span id="sell-price" class="muted"></span>
+          <button id="btn-list" type="button">Sell item</button>
+        </div>
+      </div>
+    </aside>
+    <aside id="ah" class="panel modal hidden" aria-label="Auction House">
+      <div class="panel-head">
+        <h2>Auction House</h2>
+        <button type="button" class="btn-close" data-close="ah" aria-label="Close auction house">✕</button>
+      </div>
+      <p class="solo-market-note">Fresh random gear, stats and prices each launch. Buy with Ash earned in your journey.</p>
+      <div class="ah-toolbar">
+        <input id="ah-search" type="search" placeholder="Search items" autocomplete="off" enterkeyhint="search" aria-label="Search items" />
+        <select id="ah-slot" aria-label="Filter by slot">
+          <option value="">All slots</option>
+          <option value="Head">Head</option>
+          <option value="Chest">Chest</option>
+          <option value="Hands">Hands</option>
+          <option value="Feet">Feet</option>
+          <option value="MainHand">Main hand</option>
+          <option value="OffHand">Off hand</option>
+          <option value="Other">Other</option>
+        </select>
+        <select id="ah-sort" aria-label="Sort lots">
+          <option value="price_asc" selected>Price ↑</option>
+          <option value="price_desc">Price ↓</option>
+          <option value="score_desc">Score ↓</option>
+          <option value="score_asc">Score ↑</option>
+        </select>
+      </div>
+      <ul id="ah-list" class="ah-list"></ul>
+      <div class="row row-end">
+        <button id="btn-ah-refresh" type="button">Check stock</button>
+      </div>
+    </aside>
+  </div>
+
+  <div id="portal-hold-prompt" class="hidden" aria-hidden="true">
+    <div class="php-key" aria-hidden="true">E</div>
+    <div class="php-copy">
+      <div class="php-title">Hold to enter</div>
+      <div class="php-dest">Lust</div>
+      <div class="php-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+    </div>
+  </div>
+  <div id="xp-plate" title="Level 1 — 0/100">
+    <span id="xp-lv">Lv 1</span>
+    <div id="xp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><i id="xp-fill"></i></div>
+    <span id="xp-read">0/100</span>
+    <div id="xp-float" aria-hidden="true"></div>
+  </div>
+  <nav id="action-bar" aria-label="Game actions">
+    <div id="hud-util" aria-label="Utility">
+      <button type="button" id="btn-skills" class="action-btn" title="Skills (K)">
+        <img class="action-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 6 L37.5 23.5 H56 L41 34.5 L46.5 52 L32 41.5 L17.5 52 L23 34.5 L8 23.5 H26.5 Z' fill='none' stroke='%23e6d7b0' stroke-width='2.4' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='32' r='3' fill='%23c9a227'/%3E%3C/svg%3E" alt="" draggable="false" />
+        <span class="action-label">Skills</span>
+        <span class="action-hint" aria-hidden="true">K</span>
+        <span id="skill-badge" class="skill-badge hidden"></span>
+      </button>
+      <button type="button" id="btn-ah" class="action-btn" title="Auction House">
+        <img class="action-icon" src="./assets/ui/scales.svg" alt="" draggable="false" />
+        <span class="action-label">AH</span>
+        <span class="action-hint" aria-hidden="true">H</span>
+      </button>
+      <button type="button" id="btn-inv" class="action-btn" title="Inventory">
+        <img class="action-icon" src="./assets/ui/bag.svg" alt="" draggable="false" />
+        <span class="action-label">Inv</span>
+        <span class="action-hint" aria-hidden="true">I</span>
+      </button>
+      <button type="button" id="btn-menu" class="action-btn" title="Menu" aria-haspopup="menu" aria-expanded="false" aria-controls="pvp-menu">
+        <img class="action-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M14 18 H50 M14 32 H50 M14 46 H50' fill='none' stroke='%23e6d7b0' stroke-width='3.2' stroke-linecap='round'/%3E%3Ccircle cx='14' cy='18' r='2.4' fill='%23c9a227'/%3E%3Ccircle cx='14' cy='32' r='2.4' fill='%23c9a227'/%3E%3Ccircle cx='14' cy='46' r='2.4' fill='%23c9a227'/%3E%3C/svg%3E" alt="" draggable="false" />
+        <span class="action-label">Menu</span>
+        <span class="action-hint" aria-hidden="true">M</span>
+        <span id="pvp-menu-badge" class="pvp-menu-badge hidden"></span>
+      </button>
+    </div>
+    <div id="spell-bar" class="spell-bar" role="group" aria-label="Spells">
+      <button type="button" class="action-btn spell-btn" data-spell="gale_bolt" data-slot="0" id="btn-spell-slot-0" title="Gale Bolt (1)">
+        <img class="spell-icon" src="./assets/spells/spell_gale_bolt.png" alt="" draggable="false" />
+        <span class="spell-cd" hidden></span>
+        <span class="action-label" data-short="Gale">Gale</span>
+        <span class="action-hint" aria-hidden="true">1</span>
+        <span class="spell-cost">18</span>
+        <span class="spell-rank"></span>
+      </button>
+      <button type="button" class="action-btn spell-btn" data-spell="whirl_ward" data-slot="1" id="btn-spell-slot-1" title="Whirl Ward (2)">
+        <img class="spell-icon" src="./assets/spells/spell_whirl_ward.png" alt="" draggable="false" />
+        <span class="spell-cd" hidden></span>
+        <span class="action-label" data-short="Ward">Ward</span>
+        <span class="action-hint" aria-hidden="true">2</span>
+        <span class="spell-cost">28</span>
+        <span class="spell-rank"></span>
+      </button>
+      <button type="button" class="action-btn spell-btn" data-spell="infernal_burst" data-slot="2" id="btn-spell-slot-2" title="Infernal Burst (3)">
+        <img class="spell-icon" src="./assets/spells/spell_infernal_burst.png" alt="" draggable="false" />
+        <span class="spell-cd" hidden></span>
+        <span class="action-label" data-short="Burst">Burst</span>
+        <span class="action-hint" aria-hidden="true">3</span>
+        <span class="spell-cost">48</span>
+        <span class="spell-rank"></span>
+      </button>
+      <button type="button" class="action-btn spell-btn spell-empty" data-slot="3" id="btn-spell-slot-3" title="Spell 4" aria-label="Spell 4 empty">
+        <img class="spell-icon" alt="" draggable="false" hidden />
+        <span class="spell-cd" hidden></span>
+        <span class="action-label" data-short=""></span>
+        <span class="action-hint" aria-hidden="true">4</span>
+        <span class="spell-cost"></span>
+        <span class="spell-rank"></span>
+      </button>
+    </div>
+    <button type="button" id="btn-dash" class="action-btn" title="Dash — short leap, brief safety (Space)">
+      <img class="action-icon" src="./assets/ui/dash.svg" alt="" draggable="false" />
+      <span class="spell-cd" hidden></span>
+      <span class="action-label" data-short="Dash">Dash</span>
+      <span class="action-hint" aria-hidden="true">␣</span>
+    </button>
+    <button type="button" id="btn-sip" class="action-btn" title="Flask — heal and breath (Q)">
+      <img class="action-icon" src="./assets/ui/flask.svg" alt="" draggable="false" />
+      <span class="spell-cd" hidden></span>
+      <span class="action-label" data-short="Sip">Flask</span>
+      <span class="action-hint" aria-hidden="true">Q</span>
+    </button>
+    <button type="button" id="btn-interact" class="action-btn action-primary interact-idle" title="Interact">
+      <img class="action-icon" src="./assets/ui/hand.svg" alt="" draggable="false" />
+      <span class="spell-cd interact-cd" hidden></span>
+      <span class="action-label" data-short="Use">Interact</span>
+      <span class="action-hint" aria-hidden="true">E</span>
+    </button>
+    <button type="button" id="btn-attack" class="action-btn action-attack" title="Attack (F — hold to keep swinging)">
+      <img class="action-icon" src="./assets/ui/sword.svg" alt="" draggable="false" />
+      <span class="spell-cd attack-cd" hidden></span>
+      <span class="action-label">Attack</span>
+      <span class="action-hint" aria-hidden="true">F</span>
+    </button>
+  </nav>
+  <div id="bar-tip" class="hidden" role="tooltip" aria-hidden="true">
+    <span class="bt-key"></span>
+    <div class="bt-copy">
+      <div class="bt-name"></div>
+      <div class="bt-meta"></div>
+      <div class="bt-blurb"></div>
+    </div>
+  </div>
+  <div id="danger-vignette" aria-hidden="true"></div>
+  <div id="slam-sting" aria-hidden="true"></div>
+  <div id="slam-safe" aria-hidden="true"></div>
+  <div id="heat-haze" aria-hidden="true"></div>
+  <div id="mire-rain" aria-hidden="true"></div>
+  <div id="gold-dust" aria-hidden="true"></div>
+  <div id="void-corona" aria-hidden="true"></div>
+  <div id="abyss-chroma" aria-hidden="true"></div>
+  <div id="rift-shear" aria-hidden="true"></div>
+  <div id="abyss-afterimage" aria-hidden="true"></div>
+  <div id="horizon-fold" aria-hidden="true"></div>
+  <div id="combo-void-ghost" aria-hidden="true"></div>
+  <div id="mana-vignette" aria-hidden="true"></div>
+  <div id="death-flash" aria-hidden="true"></div>
+  <div id="quest-track">Speak with the Guide</div>
+  <div id="dodge-callout" class="hidden">Dash the slam</div>
+  <div id="target-plate" class="hidden" aria-live="polite">
+    <div id="target-name"></div>
+    <div class="tp-hp"><i id="target-hp"></i></div>
+    <div id="target-hp-pct" hidden></div>
+  </div>
+  <div id="canto-compass" aria-hidden="true"></div>
+  <aside id="minimap" aria-label="Minimap">
+    <canvas id="minimap-canvas" width="256" height="256"></canvas>
+    <div id="minimap-hint">Explore the wood</div>
+  </aside>
+  <div id="game-root"></div>
+  <div id="boot-veil" aria-hidden="true">
+    <div class="boot-plate">
+      <span class="finial finial-l"></span>
+      <em>Nel mezzo del cammin</em>
+      <strong>Selva Oscura</strong>
+      <span class="finial finial-r"></span>
+      <label class="boot-name-wrap" for="boot-name">
+        <span class="boot-name-label">Your pilgrim</span>
+        <input id="boot-name" type="text" maxlength="24" autocomplete="nickname" enterkeyhint="go" hidden />
+      </label>
+      <button type="button" id="btn-enter-wood" class="btn-enter-wood" hidden>Start single-player journey</button>
+      <a class="solo-back boot-back" href="../">← Back to games</a>
+      <p class="boot-hint" hidden>Left stick walks · right thumb strikes &amp; casts · <b>Use</b> talks, kneels, enters<br />Fullscreen on supported phones</p>
+    </div>
+  </div>
+</body>
+</html>

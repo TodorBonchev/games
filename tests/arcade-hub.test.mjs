@@ -9,12 +9,12 @@ import { ACTIVITIES, DISTRICTS } from '../activities/catalog.js';
 
 const distinctActivities = [...arcadeGames.map(game => game.id), 'moonbounce', 'popwake', 'pondpost', 'ribbon', 'dewfall', 'garden', 'borrowed', 'prism', 'lantern', 'upside'];
 
-test('home exposes only Zombie and Piano with complete accessible destination cards', async () => {
+test('home exposes Zombie, Piano and Selva with complete accessible destination cards', async () => {
   const dom = new JSDOM(await readFile(new URL('../index.html', import.meta.url), 'utf8'));
   try {
     const { document } = dom.window;
-    assert.deepEqual([...document.querySelectorAll('.game-card')].map(card => card.dataset.gameLink), ['soldier', 'piano']);
-    assert.deepEqual([...document.querySelectorAll('.quick-play a')].map(card => card.dataset.gameLink), ['soldier', 'piano']);
+    assert.deepEqual([...document.querySelectorAll('.game-card')].map(card => card.dataset.gameLink), ['soldier', 'piano', 'selva']);
+    assert.deepEqual([...document.querySelectorAll('.quick-play a')].map(card => card.dataset.gameLink), ['soldier', 'piano', 'selva']);
     assert.equal(document.querySelectorAll('.arcade-card, .wonderwake-card, .upside-card, #arcade-grid').length, 0);
     for (const card of document.querySelectorAll('.game-card')) {
       assert.ok(document.getElementById(card.getAttribute('aria-labelledby')));
@@ -22,7 +22,7 @@ test('home exposes only Zombie and Piano with complete accessible destination ca
       await access(new URL(`../${image.getAttribute('src')}`, import.meta.url));
     }
     const destinations = [...new Set([...document.querySelectorAll('a[href]')].map(link => link.getAttribute('href')).filter(href => !href.startsWith('#') && href !== './'))].sort();
-    assert.deepEqual(destinations, ['piano/', 'soldier.html']);
+    assert.deepEqual(destinations, ['piano/', 'selva/', 'soldier.html']);
   } finally { dom.window.close(); }
 });
 

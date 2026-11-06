@@ -1,0 +1,21 @@
+{
+  "id": "inferno_bases_t1",
+  "items": [
+    { "name": "Bone Shard", "slot": "misc", "baseId": "bone_shard" },
+    { "name": "Ashen Club", "slot": "weapon", "baseId": "ashen_club" },
+    { "name": "Torn Cape", "slot": "armor", "baseId": "torn_cape" },
+    { "name": "Rusty Buckler", "slot": "offhand", "baseId": "rusty_buckler" },
+    { "name": "Pilgrim Boots", "slot": "boots", "baseId": "pilgrim_boots" },
+    { "name": "Ash Helm", "slot": "helm", "baseId": "ash_helm" },
+    { "name": "Grave Gloves", "slot": "gloves", "baseId": "grave_gloves" },
+    { "name": "Cinder Veil", "slot": "armor", "baseId": "cinder_veil" },
+    { "name": "Road Pike", "slot": "weapon", "baseId": "road_pike" },
+    { "name": "Minos Band", "slot": "misc", "baseId": "minos_band" },
+    { "name": "Storm Cowl", "slot": "helm", "baseId": "storm_cowl" },
+    { "name": "Ashen Signet", "slot": "misc", "baseId": "ashen_signet" },
+    { "name": "Wisp Filament", "slot": "misc", "baseId": "wisp_filament" },
+    { "name": "Heart Shard", "slot": "misc", "baseId": "heart_shard" },
+    { "name": "Pyre Coal", "slot": "misc", "baseId": "pyre_coal" },
+    { "name": "Writ Quill", "slot": "misc", "baseId": "writ_quill" }
+  ]
+}

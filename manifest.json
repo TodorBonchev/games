@@ -1,5 +1,5 @@
 {
-  "name": "Games \u2014 Zombie & Piano",
+  "name": "Games — Zombie, Piano & Selva Oscura",
   "short_name": "Games",
   "start_url": "./index.html",
   "scope": "./",
@@ -23,5 +23,5 @@
       "type": "image/png"
     }
   ],
-  "description": "One survival world with 30 discoverable minigames, plus a piano to play and learn."
+  "description": "Zombie and 30 outpost minigames, Piano with guided practice, and the single-player Selva Oscura action RPG."
 }

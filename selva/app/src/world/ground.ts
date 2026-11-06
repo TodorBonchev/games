@@ -1,0 +1,1133 @@
+/**
+ * Canto ground plane (XZ) + props. PlaneGeometry faces +z; rotateX(−π/2) maps
+ * that to +y so the floor is visible from above (threejs-frame-conventions Rule 2).
+ */
+import * as THREE from "three";
+import type { MatKit } from "./materials";
+import { distToArcs } from "./avariceProcession";
+import { buildAvariceTracks } from "./avariceGround";
+import {
+  makeBrazier,
+  makeFallenLog,
+  makeForestRock,
+  makeGaleRibbon,
+  makeMossClump,
+  makeRuinObelisk,
+  makeStump,
+  makeTree,
+} from "./meshes";
+import { isCompactUi } from "../ui/hud";
+import { buildGiantsWell } from "./giantsWell";
+import type { Tier } from "./quality";
+import { makeLightShaft } from "./fx";
+import { CAUSEWAY_HALF, CAUSEWAY_PADS, CAUSEWAY_PTS, mireDepth } from "./gluttonyMire";
+import { WRATH_DAIS, WRATH_HUNT, styxDepth } from "./wrathStyx";
+
+export type GroundRig = {
+  group: THREE.Group;
+  floor: THREE.Mesh;
+  cantoId: string;
+  heightAt: (x: number, z: number) => number;
+  /**
+   * Top of what is actually drawn at (x, z): the floor mesh as rendered (its coarse
+   * triangles, not the analytic heightAt) or the boss dais plinth/step. Ground decals
+   * that must never sink into either (telegraphs, slam rings) sit on this.
+   */
+  surfaceAt: (x: number, z: number) => number;
+};
+
+function hash(i: number, j: number) {
+  let n = i * 374761393 + j * 668265263;
+  n = (n ^ (n >> 13)) * 1274126177;
+  return ((n ^ (n >> 16)) >>> 0) / 4294967296;
+}
+
+export function distToPoly(x: number, z: number, pts: [number, number][]): number {
+  let best = Infinity;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const ax = pts[i][0];
+    const az = pts[i][1];
+    const bx = pts[i + 1][0];
+    const bz = pts[i + 1][1];
+    const dx = bx - ax;
+    const dz = bz - az;
+    const l2 = dx * dx + dz * dz || 1;
+    let t = ((x - ax) * dx + (z - az) * dz) / l2;
+    t = Math.max(0, Math.min(1, t));
+    const d = Math.hypot(x - (ax + t * dx), z - (az + t * dz));
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+const HUB_PATH: [number, number][] = [
+  [52, 78],
+  [58, 74],
+  [64, 72],
+  [70, 62],
+  [80, 52],
+  [90, 44],
+  [96, 40],
+];
+const HUB_SPUR: [number, number][] = [
+  [64, 72],
+  [70, 76],
+  [76, 78],
+];
+const HUB_WRIT: [number, number][] = [
+  [64, 72],
+  [64, 60],
+];
+const LUST_HUNT: [number, number][] = [
+  [20, 60],
+  [48, 48],
+  [72, 60],
+  [100, 52],
+  [140, 60],
+];
+/** Gluttony's hunt path is the old stone causeway through the mire (gluttonyMire.ts). */
+const GLUTTONY_HUNT: [number, number][] = CAUSEWAY_PTS;
+const AVARICE_HUNT: [number, number][] = [
+  [18, 52],
+  // Avarice road: into the ring of the processions through the west clash, past the Hoard
+  // Heart, across the wasters' lane mid-span to the Counterweight, then beside their last
+  // run and through the east clash onto Plutus's dais
+  [29, 52],
+  [40, 57],
+  [62, 59],
+  [82, 61],
+  [93, 70],
+  [108, 72],
+  [122, 62],
+  [133, 51],
+  [138, 48],
+];
+
+export function huntPathFor(cantoId: string): [number, number][] {
+  if (cantoId === "inferno_07") return AVARICE_HUNT;
+  if (cantoId === "inferno_06") return GLUTTONY_HUNT;
+  if (cantoId === "inferno_08") return WRATH_HUNT;
+  return LUST_HUNT;
+}
+
+
+function bossDaisFor(cantoId: string): { x: number; z: number } {
+  if (cantoId === "inferno_07") return { x: 138, z: 48 };
+  if (cantoId === "inferno_06") return { x: 138, z: 48 };
+  if (cantoId === "inferno_08") return WRATH_DAIS;
+  return { x: 140, z: 60 };
+}
+
+/**
+ * Height of the boss dais top at (x, z) (−Infinity off it), matching the cylinders
+ * buildGround stacks there: Gluttony/Avarice a 7.6→8.6 plinth (top +0.53) with a
+ * 5.4→5.8 step (top +0.72); Lust a 6.5→7.2 slab (top +0.34). The thin rings and lips
+ * on top are left out: they sit over decals like paint.
+ */
+function daisTopAt(cantoId: string, base: number, cx: number, cz: number, x: number, z: number): number {
+  const r = Math.hypot(x - cx, z - cz);
+  if (cantoId === "inferno_06" || cantoId === "inferno_07") {
+    if (r <= 5.4) return base + 0.72;
+    if (r <= 5.67) return base + 0.72 - (r - 5.4) * 0.7;
+    if (r <= 7.6) return base + 0.53;
+    if (r <= 8.6) return base + 0.53 - (r - 7.6) * 0.62;
+    return -Infinity;
+  }
+  if (r <= 6.5) return base + 0.34;
+  if (r <= 7.2) return base + 0.34 - ((r - 6.5) / 0.7) * 0.4;
+  return -Infinity;
+}
+
+/** Same displacement the floor mesh uses, so feet and props sit on the dirt. */
+export function terrainHeight(
+  cantoId: string,
+  bounds: { width: number; height: number },
+  wx: number,
+  wz: number
+): number {
+  const isHub = cantoId === "inferno_01";
+  const x = wx - bounds.width / 2;
+  const z = wz - bounds.height / 2;
+  const isGlut = cantoId === "inferno_06";
+  const isAva = cantoId === "inferno_07";
+  let n =
+    Math.sin(x * 0.17) * Math.cos(z * 0.13) * (isHub ? 0.28 : isGlut || isAva ? 0.16 : 0.12) +
+    Math.sin(x * 0.41 + z * 0.27) * (isGlut || isAva ? 0.11 : 0.08);
+  if (isHub) {
+    const pathD = Math.min(
+      distToPoly(wx, wz, HUB_PATH),
+      distToPoly(wx, wz, HUB_SPUR),
+      distToPoly(wx, wz, HUB_WRIT)
+    );
+    if (pathD < 2.6) n *= 0.22;
+  } else if (isGlut) {
+    // The causeway and its landings stay flat; the mire sags into pockets beside them
+    const d = mireDepth(wx, wz, CAUSEWAY_PTS, CAUSEWAY_HALF, CAUSEWAY_PADS);
+    // (the floor's triangles are ~4.6u: the sag starts a cell out, so the drawn mud by the
+    // stones stays level with them)
+    if (d < 5) n *= 0.08;
+    else n = n * 0.6 - Math.min(0.2, (d - 5) * 0.045) * (0.6 + 0.4 * Math.abs(Math.sin(x * 0.09) * Math.cos(z * 0.11)));
+  } else if (distToPoly(wx, wz, huntPathFor(cantoId)) < (isAva ? 3.6 : 3.2)) {
+    n *= isAva ? 0.08 : 0.15;
+  } else if (isAva) {
+    // Hard scorched flats between weight lanes
+    n *= 0.7;
+  }
+  // Wrath: the Styx sags into a shallow channel (the water sheet sits just over it);
+  // its banks stay soft and low
+  if (cantoId === "inferno_08") {
+    const sd = styxDepth(wx, wz);
+    if (sd < 2.5) n = n * 0.2 - (sd < 0 ? 0.12 : 0.12 * (1 - sd / 2.5));
+  }
+  // Avarice: the processions' tracks are beaten flat (the weights roll level)
+  if (isAva) {
+    const dt = distToArcs(wx, wz);
+    if (dt < 3.2) n *= dt < 1.9 ? 0.06 : 0.06 + ((dt - 1.9) / 1.3) * 0.94;
+  }
+  return n;
+}
+
+export function buildGround(
+  cantoId: string,
+  bounds: { width: number; height: number },
+  mats: MatKit,
+  keepouts: { x: number; y: number; r: number }[],
+  tier: Tier = "high"
+): GroundRig {
+  if (cantoId === "inferno_31") return buildGiantsWell(bounds, mats, tier);
+  const group = new THREE.Group();
+  group.name = `ground:${cantoId}`;
+  const isHub = cantoId === "inferno_01";
+  const w = bounds.width;
+  const h = bounds.height;
+
+  const heightAt = (x: number, z: number) => terrainHeight(cantoId, bounds, x, z);
+
+  const segs = isHub ? 48 : 40;
+  const geo = new THREE.PlaneGeometry(w + 24, h + 24, segs, segs);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const wx = pos.getX(i) + w / 2;
+    const wz = pos.getZ(i) + h / 2;
+    pos.setY(i, heightAt(wx, wz));
+  }
+  geo.computeVertexNormals();
+  const ny = geo.attributes.normal.getY(0);
+  if (ny < 0) {
+    // Flip if the plane ended up facing down.
+    const nrm = geo.attributes.normal;
+    for (let i = 0; i < nrm.count; i++) nrm.setY(i, -nrm.getY(i));
+  }
+
+  if (isHub) {
+    const colors = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      const wx = pos.getX(i) + w / 2;
+      const wz = pos.getZ(i) + h / 2;
+      const pathD = Math.min(distToPoly(wx, wz, HUB_PATH), distToPoly(wx, wz, HUB_SPUR), distToPoly(wx, wz, HUB_WRIT));
+      const spawnD = Math.hypot(wx - 64, wz - 72);
+      let k = 0.78 + hash((wx * 3) | 0, (wz * 3) | 0) * 0.16;
+      if (spawnD < 7) k = 0.9 - (spawnD / 7) * 0.08;
+      if (pathD < 3.4) k = 1.02 - (pathD / 3.4) * 0.1;
+      colors[i * 3] = k;
+      colors[i * 3 + 1] = k * 0.93;
+      colors[i * 3 + 2] = k * 0.78;
+    }
+    geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    geo.computeVertexNormals();
+  }
+
+  const floorMat = isHub
+    ? mats.groundHub
+    : cantoId === "inferno_07"
+      ? mats.groundAvarice
+      : cantoId === "inferno_08"
+      ? mats.groundWrath
+      : cantoId === "inferno_06"
+        ? mats.groundGlut
+        : mats.groundLust;
+  const floor = new THREE.Mesh(geo, floorMat);
+  // The floor has the costliest pixels on screen: draw it after the other opaques (sky
+  // goes last) so depth rejects the parts hidden under the hero, foes and props
+  floor.renderOrder = 5;
+  floor.receiveShadow = true;
+  floor.position.set(w / 2, 0, h / 2);
+  floor.name = "floor";
+  group.add(floor);
+
+  const fogSegs =
+    cantoId === "inferno_07"
+      ? isCompactUi()
+        ? 14
+        : 28
+      : cantoId === "inferno_06"
+        ? isCompactUi()
+          ? 20
+          : 32
+        : 48;
+  const fogRing = new THREE.Mesh(
+    new THREE.RingGeometry(Math.max(w, h) * 0.62, Math.max(w, h) * 1.4, fogSegs),
+    new THREE.MeshBasicMaterial({
+      color: isHub
+        ? 0x1a1810
+        : cantoId === "inferno_07"
+          ? 0x14120a
+          : cantoId === "inferno_08"
+          ? 0x10100c
+          : cantoId === "inferno_06"
+            ? 0x18160c
+            : 0x201008,
+      transparent: true,
+      opacity:
+        cantoId === "inferno_07"
+          ? isCompactUi()
+            ? 0.28
+            : 0.34
+          : cantoId === "inferno_06"
+            ? 0.4
+            : 0.28,
+      side: THREE.DoubleSide,
+      forceSinglePass: true,
+      depthWrite: false,
+    })
+  );
+  fogRing.rotation.x = -Math.PI / 2;
+  fogRing.position.set(w / 2, 0.04, h / 2);
+  group.add(fogRing);
+
+  const blocked = (x: number, z: number, r: number) => {
+    // Portal seam: keep decorative props off the walk-through (~6u).
+    if (x < 6 || z < 6 || x > w - 6 || z > h - 6) return true;
+    for (const k of keepouts) {
+      if (Math.hypot(x - k.x, z - k.y) < k.r + r) return true;
+    }
+    return false;
+  };
+
+  if (isHub) {
+    const onTrail = (x: number, z: number, pad: number) =>
+      distToPoly(x, z, HUB_PATH) < pad ||
+      distToPoly(x, z, HUB_SPUR) < pad ||
+      distToPoly(x, z, HUB_WRIT) < pad;
+    const compactHub = isCompactUi();
+    const groveN = compactHub ? 16 : 28;
+    const treeCap = compactHub ? 36 : 64;
+    const stumpCap = compactHub ? 8 : 16;
+    const logCap = compactHub ? 6 : 12;
+    const mossCap = compactHub ? 22 : 48;
+    const rockCap = compactHub ? 12 : 22;
+
+    for (let i = 0; i < groveN; i++) {
+      const ang = (i / groveN) * Math.PI * 2 + hash(i, 71) * 0.2;
+      let placedGrove = false;
+      for (const rad of [6.4, 8.2, 10.4, 13.2]) {
+        const x = 64 + Math.cos(ang) * rad;
+        const z = 72 + Math.sin(ang) * rad;
+        if (blocked(x, z, 1.8) || onTrail(x, z, 2.35)) continue;
+        const tree = makeTree(mats, (hash(i, 73 + rad) * 1e9) | 1);
+        tree.position.set(x, heightAt(x, z), z);
+        tree.rotation.y = hash(i, 74) * Math.PI * 2;
+        tree.scale.setScalar((rad < 8 ? 0.55 : 0.82) + hash(i, 75) * 0.55);
+        group.add(tree);
+        placedGrove = true;
+        break;
+      }
+      if (!placedGrove) continue;
+    }
+
+    // Light shafts through the canopy over the camp clearing and the east trail
+    const shafts: [number, number, number][] = compactHub
+      ? [[60, 66, 12], [70, 76, 10], [80, 56, 13]]
+      : [[58, 64, 12], [70, 77, 10], [66, 60, 11], [80, 56, 13], [88, 46, 12]];
+    for (const [sx, sz, sh] of shafts) {
+      const shaft = makeLightShaft(sh, compactHub ? 0.13 : 0.16);
+      shaft.position.set(sx, heightAt(sx, sz), sz);
+      group.add(shaft);
+    }
+
+    let placed = 0;
+    for (let i = 0; i < 360 && placed < treeCap; i++) {
+      const x = 4 + hash(i, 1) * (w - 8);
+      const z = 4 + hash(i, 2) * (h - 8);
+      if (blocked(x, z, 2.2) || onTrail(x, z, 2.9)) continue;
+      const tree = makeTree(mats, (hash(i, 3) * 1e9) | 1);
+      tree.position.set(x, heightAt(x, z), z);
+      tree.rotation.y = hash(i, 4) * Math.PI * 2;
+      const s = 0.62 + hash(i, 5) * 0.95;
+      tree.scale.setScalar(s);
+      group.add(tree);
+      placed++;
+    }
+    placed = 0;
+    for (let i = 0; i < 110 && placed < stumpCap; i++) {
+      const x = 6 + hash(i, 11) * (w - 12);
+      const z = 6 + hash(i, 12) * (h - 12);
+      if (blocked(x, z, 1.4) || onTrail(x, z, 1.8)) continue;
+      const stump = makeStump(mats, (hash(i, 13) * 1e9) | 1);
+      stump.position.set(x, heightAt(x, z), z);
+      stump.rotation.y = hash(i, 14) * Math.PI * 2;
+      stump.scale.setScalar(0.85 + hash(i, 15) * 0.5);
+      group.add(stump);
+      placed++;
+    }
+    placed = 0;
+    for (let i = 0; i < 90 && placed < logCap; i++) {
+      const x = 6 + hash(i, 21) * (w - 12);
+      const z = 6 + hash(i, 22) * (h - 12);
+      if (blocked(x, z, 1.8) || onTrail(x, z, 2.2)) continue;
+      const log = makeFallenLog(mats, (hash(i, 23) * 1e9) | 1);
+      log.position.set(x, heightAt(x, z), z);
+      log.rotation.y = hash(i, 24) * Math.PI * 2;
+      log.scale.setScalar(0.8 + hash(i, 25) * 0.45);
+      group.add(log);
+      placed++;
+    }
+    placed = 0;
+    for (let i = 0; i < 220 && placed < mossCap; i++) {
+      const x = 5 + hash(i, 31) * (w - 10);
+      const z = 5 + hash(i, 32) * (h - 10);
+      if (blocked(x, z, 0.9)) continue;
+      const moss = makeMossClump(mats, (hash(i, 33) * 1e9) | 1);
+      moss.position.set(x, heightAt(x, z), z);
+      group.add(moss);
+      placed++;
+    }
+    placed = 0;
+    for (let i = 0; i < 140 && placed < rockCap; i++) {
+      const x = 5 + hash(i, 41) * (w - 10);
+      const z = 5 + hash(i, 42) * (h - 10);
+      if (blocked(x, z, 1.1) || onTrail(x, z, 1.4)) continue;
+      const rock = makeForestRock(mats, (hash(i, 43) * 1e9) | 1);
+      rock.position.set(x, heightAt(x, z), z);
+      rock.rotation.y = hash(i, 44) * Math.PI * 2;
+      group.add(rock);
+      placed++;
+    }
+  } else {
+    const hunt = huntPathFor(cantoId);
+    const isGlut = cantoId === "inferno_06";
+    const isAva = cantoId === "inferno_07";
+    const isWrath = cantoId === "inferno_08";
+    const isWeightLane = isGlut || isAva;
+    const arenas: { x: number; z: number; r: number }[] = isWeightLane
+      ? isAva
+        ? [
+            { x: 22, z: 22, r: 4 },
+            { x: 24, z: 96, r: 4 },
+            { x: 148, z: 92, r: 4 },
+            { x: 30, z: 52, r: 5 },
+            { x: 81, z: 58, r: 5 },
+            { x: 100, z: 76, r: 5 },
+            { x: 100, z: 34, r: 5 },
+            { x: 117, z: 69, r: 4 },
+            { x: 138, z: 48, r: 9 },
+          ]
+        : [{ x: 138, z: 48, r: 9 }]
+      : isWrath
+      ? [
+          // Wrath: muddy landings where the wrathful brawl, and Argenti's landing
+          { x: 34, z: 62, r: 5 },
+          { x: 76, z: 60, r: 6 },
+          { x: 98, z: 54, r: 5 },
+          { x: 138, z: 58, r: 9 },
+        ]
+      : [
+          // Lust: pack arenas between the windbreak rock islands (canto JSON)
+          { x: 34, z: 56, r: 5 },
+          { x: 48, z: 40, r: 6 },
+          { x: 72, z: 70, r: 6 },
+          { x: 100, z: 46, r: 7 },
+          { x: 122, z: 58, r: 5 },
+          { x: 140, z: 60, r: 9 },
+        ];
+    const colors = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      const wx = pos.getX(i) + w / 2;
+      const wz = pos.getZ(i) + h / 2;
+      const pathD = distToPoly(wx, wz, hunt);
+      let k = 0.72 + hash((wx * 2) | 0, (wz * 2) | 0) * 0.18;
+      if (pathD < 4.2) k = 1.12 - (pathD / 4.2) * 0.16;
+      else if (pathD > 16) k *= 0.62;
+      for (const a of arenas) {
+        const d = Math.hypot(wx - a.x, wz - a.z);
+        if (d < a.r) k = Math.max(k, 0.92 + (1 - d / a.r) * 0.18);
+      }
+      if (isGlut) {
+        // Dark sheen mire; a little lighter packed mud under and beside the stones
+        const md = mireDepth(wx, wz, CAUSEWAY_PTS, CAUSEWAY_HALF, CAUSEWAY_PADS);
+        const kk = 0.72 + hash((wx * 2) | 0, (wz * 2) | 0) * 0.16;
+        const near = md < 1.5 ? 1 : md > 9 ? 0 : 1 - (md - 1.5) / 7.5;
+        const sink = 0.6 + 0.3 * near;
+        colors[i * 3] = kk * 0.5 * sink;
+        colors[i * 3 + 1] = kk * 0.49 * sink;
+        colors[i * 3 + 2] = kk * 0.25 * sink;
+      } else if (isAva) {
+        // Stronger gold road vs pitch off-path (gold-on-black irony; slash-readable)
+        const onPath = pathD < 3.9;
+        const sink = pathD > 11 ? 0.48 : pathD > 6 ? 0.72 : 1;
+        // NW / SW Drift scorched flats — darker ledger corners
+        const nw = Math.hypot(wx - 22, wz - 22);
+        const sw = Math.hypot(wx - 24, wz - 96);
+        const se = Math.hypot(wx - 148, wz - 92);
+        const corner =
+          (nw < 18 ? 0.72 + (nw / 18) * 0.28 : 1) *
+          (sw < 18 ? 0.72 + (sw / 18) * 0.28 : 1) *
+          (se < 16 ? 0.74 + (se / 16) * 0.26 : 1);
+        if (onPath) {
+          colors[i * 3] = k * 1.22;
+          colors[i * 3 + 1] = k * 0.98;
+          colors[i * 3 + 2] = k * 0.42;
+        } else {
+          colors[i * 3] = k * 0.38 * sink * corner;
+          colors[i * 3 + 1] = k * 0.32 * sink * corner;
+          colors[i * 3 + 2] = k * 0.18 * sink * corner;
+        }
+      } else if (isWrath) {
+        // Grey-brown silt; a pale bone road; the Styx itself near-black (its glossy
+        // sheet is laid over it by the canto mechanic)
+        const sd = styxDepth(wx, wz);
+        const onPath = pathD < 3.8;
+        const sink = pathD > 12 ? 0.55 : pathD > 6 ? 0.75 : 1;
+        if (sd < 0) {
+          colors[i * 3] = k * 0.22;
+          colors[i * 3 + 1] = k * 0.2;
+          colors[i * 3 + 2] = k * 0.15;
+        } else if (onPath) {
+          colors[i * 3] = k * 1.08;
+          colors[i * 3 + 1] = k * 0.92;
+          colors[i * 3 + 2] = k * 0.7;
+        } else {
+          const bank = sd < 3 ? 0.55 + (sd / 3) * 0.45 : 1;
+          colors[i * 3] = k * 0.62 * sink * bank;
+          colors[i * 3 + 1] = k * 0.5 * sink * bank;
+          colors[i * 3 + 2] = k * 0.38 * sink * bank;
+        }
+      } else {
+        colors[i * 3] = k * 1.05;
+        colors[i * 3 + 1] = k * 0.72;
+        colors[i * 3 + 2] = k * 0.55;
+      }
+    }
+    geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    geo.computeVertexNormals();
+
+    const compactDecor = isCompactUi();
+    // (Lust: the windbreak rock islands — built by its canto mechanic — replace the obelisks)
+    const isLust = cantoId === "inferno_05";
+    const obCap = isLust ? 0 : compactDecor ? (isWeightLane ? 4 : 5) : isWeightLane ? 6 : 8;
+    let placed = 0;
+    for (let i = 0; i < 70 && placed < obCap; i++) {
+      const x = 8 + hash(i, 7) * (w - 16);
+      const z = 8 + hash(i, 8) * (h - 16);
+      if (blocked(x, z, 3.2) || distToPoly(x, z, hunt) < 4.5) continue;
+      if (isWrath && styxDepth(x, z) < 2) continue;
+      if (arenas.some((a) => Math.hypot(x - a.x, z - a.z) < a.r + 1.5)) continue;
+      const ob = makeRuinObelisk(mats);
+      ob.position.set(x, heightAt(x, z), z);
+      ob.rotation.y = hash(i, 9) * Math.PI * 2;
+      ob.scale.setScalar(0.85 + hash(i, 10) * 0.7);
+      if (isWeightLane) {
+        ob.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (m.isMesh) m.castShadow = false;
+        });
+      }
+      group.add(ob);
+      placed++;
+    }
+    const compact = isCompactUi();
+    const ringSegs = compact ? (isWeightLane ? 18 : 22) : isWeightLane ? 24 : 40;
+    for (const a of arenas) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(a.r, isWeightLane ? 0.1 : 0.07, 6, ringSegs),
+        isGlut ? mats.mire : mats.gold
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(a.x, heightAt(a.x, a.z) + 0.12, a.z);
+      ring.castShadow = false;
+      group.add(ring);
+      // Compact / Avarice: one brazier per arena (density + tick cost)
+      const placeBoth = !compact && !isAva;
+      const brazL = makeBrazier(mats);
+      const lx = a.x - a.r * 0.72;
+      const lz = a.z - a.r * 0.22;
+      brazL.position.set(lx, heightAt(lx, lz), lz);
+      group.add(brazL);
+      if (placeBoth) {
+        const brazR = makeBrazier(mats);
+        const rx = a.x + a.r * 0.72;
+        const rz = a.z + a.r * 0.22;
+        brazR.position.set(rx, heightAt(rx, rz), rz);
+        group.add(brazR);
+      }
+    }
+    for (let i = 0; i < hunt.length - 1 && !isGlut; i++) {
+      const a = hunt[i];
+      const b = hunt[i + 1];
+      const mx = (a[0] + b[0]) * 0.5;
+      const mz = (a[1] + b[1]) * 0.5;
+      // (Lust: its storm's wind streamers follow the real wind instead of the road)
+      if (!isLust) {
+        const rib = makeGaleRibbon(mats, Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.55);
+        rib.position.set(mx, heightAt(mx, mz) + 1.8, mz);
+        rib.rotation.y = Math.atan2(-(b[1] - a[1]), b[0] - a[0]);
+        const mat = rib.material as THREE.MeshBasicMaterial;
+        mat.side = THREE.DoubleSide;
+        mat.opacity = 0.32;
+        if (isGlut && mat.color) mat.color.set(0x6a5a30);
+        if (isAva && mat.color) mat.color.set(0x8a7040);
+        if (isWrath && mat.color) mat.color.set(0x8a3a24);
+        group.add(rib);
+      }
+      const crack = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.62, 0.05, 0.22), mats.ember);
+      crack.position.set(mx, heightAt(mx, mz) + 0.05, mz);
+      crack.rotation.y = Math.atan2(-(b[1] - a[1]), b[0] - a[0]);
+      crack.castShadow = false;
+      crack.receiveShadow = false;
+      group.add(crack);
+    }
+    const daisPos = bossDaisFor(cantoId);
+    if (isGlut) {
+      const mud = new THREE.MeshStandardMaterial({
+        color: 0x3a3220,
+        roughness: 0.95,
+        metalness: 0.04,
+        emissive: 0x1a180c,
+        emissiveIntensity: 0.22,
+      });
+      const hy = heightAt(daisPos.x, daisPos.z);
+      // Stepped dais: plinth + lip + dual sludge rings (readable boss arena)
+      const dais = new THREE.Mesh(new THREE.CylinderGeometry(7.6, 8.6, 0.62, compact ? 14 : 18), mud);
+      dais.position.set(daisPos.x, hy + 0.22, daisPos.z);
+      dais.receiveShadow = true;
+      dais.castShadow = false;
+      group.add(dais);
+      const step = new THREE.Mesh(new THREE.CylinderGeometry(5.4, 5.8, 0.28, compact ? 12 : 16), mud);
+      step.position.set(daisPos.x, hy + 0.58, daisPos.z);
+      step.receiveShadow = true;
+      step.castShadow = false;
+      group.add(step);
+      const lipSegs = compact ? 20 : 28;
+      const lip = new THREE.Mesh(new THREE.TorusGeometry(7.8, 0.14, 6, lipSegs), mats.gold);
+      lip.rotation.x = Math.PI / 2;
+      lip.position.set(daisPos.x, hy + 0.55, daisPos.z);
+      lip.castShadow = false;
+      group.add(lip);
+      const filth = new THREE.Mesh(new THREE.TorusGeometry(5.4, 0.1, 6, lipSegs), mats.mire);
+      filth.rotation.x = Math.PI / 2;
+      filth.position.set(daisPos.x, hy + 0.72, daisPos.z);
+      filth.castShadow = false;
+      filth.name = "daisPulse";
+      group.add(filth);
+      const filth2 = new THREE.Mesh(new THREE.TorusGeometry(3.6, 0.07, 5, compact ? 16 : 22), mats.mire);
+      filth2.rotation.x = Math.PI / 2;
+      filth2.position.set(daisPos.x, hy + 0.76, daisPos.z);
+      filth2.castShadow = false;
+      filth2.name = "daisPulse";
+      group.add(filth2);
+      // Cheap boss-arena telegraph: additive ring, pulsed in WorldApp (no custom shaders).
+      const tele = new THREE.Mesh(
+        new THREE.RingGeometry(6.2, 6.55, compact ? 24 : 32),
+        new THREE.MeshBasicMaterial({
+          color: 0xa8b040,
+          transparent: true,
+          opacity: 0.22,
+          side: THREE.DoubleSide,
+          forceSinglePass: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        })
+      );
+      tele.rotation.x = -Math.PI / 2;
+      tele.position.set(daisPos.x, hy + 0.82, daisPos.z);
+      tele.castShadow = false;
+      tele.name = "daisTelegraph";
+      group.add(tele);
+
+      // Shared puddle geo/mat + InstancedMesh (was N unique Mesh+Material)
+      // Standing black water in the mire: a dark gloss, no glow
+      const puddleMat = new THREE.MeshStandardMaterial({
+        color: 0x0e100a,
+        roughness: 0.18,
+        metalness: 0.35,
+        emissive: 0x0a0c06,
+        emissiveIntensity: 0.1,
+        transparent: true,
+        opacity: 0.62,
+      });
+      const puddleGeo = new THREE.CircleGeometry(1, 20);
+      const puddleN = compact ? 8 : 14;
+      const puddles = new THREE.InstancedMesh(puddleGeo, puddleMat, puddleN);
+      puddles.castShadow = false;
+      puddles.receiveShadow = true;
+      puddles.frustumCulled = true;
+      const _m = new THREE.Matrix4();
+      const _p = new THREE.Vector3();
+      const _q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+      const _s = new THREE.Vector3();
+      let pn = 0;
+      for (let i = 0; i < 200 && pn < puddleN; i++) {
+        const px = 14 + hash(i, 90) * (w - 28);
+        const pz = 14 + hash(i, 91) * (h - 28);
+        const md = mireDepth(px, pz, CAUSEWAY_PTS, CAUSEWAY_HALF, CAUSEWAY_PADS);
+        if (md < 3 || md > 34 || blocked(px, pz, 2)) continue;
+        const sc = 1.6 + hash(i, 92) * 2.2;
+        _p.set(px, heightAt(px, pz) + 0.05, pz);
+        _s.set(sc, sc * (0.6 + hash(i, 93) * 0.4), sc);
+        _m.compose(_p, _q, _s);
+        puddles.setMatrixAt(pn++, _m);
+      }
+      puddles.count = pn;
+      puddles.instanceMatrix.needsUpdate = true;
+      group.add(puddles);
+
+      // The old stone causeway: slabs over the band and landings, curbs along its lips;
+      // their tops are the drawn surface on the road (decals, telegraphs sit on them)
+      buildCauseway(group, heightAt, mats, compact);
+      group.userData.surfaceTop = (x: number, z: number) =>
+        mireDepth(x, z, CAUSEWAY_PTS, CAUSEWAY_HALF, CAUSEWAY_PADS) < 0.1 ? heightAt(x, z) + 0.05 : -Infinity;
+      // Lanterns on the stones where the road bends (a few; each is a flame sprite)
+      const lamps: [number, number][] = compact
+        ? [[23, 48.5], [63, 50], [92.5, 59.5], [115.5, 44]]
+        : [[23, 48.5], [39.5, 47], [63, 50], [92.5, 59.5], [103, 42], [115.5, 44]];
+      for (const [lx, lz] of lamps) {
+        const lamp = makeBrazier(mats);
+        lamp.position.set(lx, heightAt(lx, lz) + 0.1, lz);
+        group.add(lamp);
+      }
+
+      // Olive haze ribbons — Ava gold restraint parity (slash-readable)
+      const hazeN = compact ? 2 : 3;
+      for (let i = 0; i < hazeN; i++) {
+        const ribbon = makeGaleRibbon(mats, 14 + i * 3);
+        const mat = ribbon.material as THREE.MeshBasicMaterial;
+        mat.color.set(0x6a7a30);
+        mat.opacity = compact ? 0.12 : 0.16;
+        const rx = 28 + i * 28;
+        const rz = 44 + (i % 2) * 12;
+        ribbon.position.set(rx, heightAt(rx, rz) + 0.7, rz);
+        ribbon.rotation.y = 0.12 * (i % 2 ? -1 : 1);
+        ribbon.rotation.x = Math.PI * 0.06;
+        ribbon.castShadow = false;
+        group.add(ribbon);
+      }
+    } else if (isAva) {
+      const metal = new THREE.MeshStandardMaterial({
+        color: 0x2a2418,
+        roughness: 0.55,
+        metalness: 0.45,
+        emissive: 0x3a2a10,
+        emissiveIntensity: 0.28,
+      });
+      const hy = heightAt(daisPos.x, daisPos.z);
+      const dais = new THREE.Mesh(new THREE.CylinderGeometry(7.6, 8.6, 0.62, compact ? 14 : 18), metal);
+      dais.position.set(daisPos.x, hy + 0.22, daisPos.z);
+      dais.receiveShadow = true;
+      dais.castShadow = false;
+      group.add(dais);
+      const step = new THREE.Mesh(new THREE.CylinderGeometry(5.4, 5.8, 0.28, compact ? 12 : 16), metal);
+      step.position.set(daisPos.x, hy + 0.58, daisPos.z);
+      step.receiveShadow = true;
+      step.castShadow = false;
+      group.add(step);
+      const lipSegs = compact ? 20 : 28;
+      const lip = new THREE.Mesh(new THREE.TorusGeometry(7.8, 0.14, 6, lipSegs), mats.gold);
+      lip.rotation.x = Math.PI / 2;
+      lip.position.set(daisPos.x, hy + 0.55, daisPos.z);
+      lip.castShadow = false;
+      lip.name = "daisPulse";
+      group.add(lip);
+      const coinRing = new THREE.Mesh(new THREE.TorusGeometry(5.4, 0.1, 6, lipSegs), mats.gold);
+      coinRing.rotation.x = Math.PI / 2;
+      coinRing.position.set(daisPos.x, hy + 0.72, daisPos.z);
+      coinRing.castShadow = false;
+      coinRing.name = "daisPulse";
+      group.add(coinRing);
+      // Inner measure ring (Gluttony filth2 parity — Crush dais read)
+      // Compact: static (no daisPulse tick) to cut propAnims cost
+      const coinInner = new THREE.Mesh(new THREE.TorusGeometry(3.6, 0.07, 5, compact ? 14 : 22), mats.bronze);
+      coinInner.rotation.x = Math.PI / 2;
+      coinInner.position.set(daisPos.x, hy + 0.76, daisPos.z);
+      coinInner.castShadow = false;
+      if (!compact) coinInner.name = "daisPulse";
+      group.add(coinInner);
+      const tele = new THREE.Mesh(
+        new THREE.RingGeometry(6.2, 6.55, compact ? 24 : 32),
+        new THREE.MeshBasicMaterial({
+          color: 0xd4a840,
+          transparent: true,
+          opacity: 0.24,
+          side: THREE.DoubleSide,
+          forceSinglePass: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        })
+      );
+      tele.rotation.x = -Math.PI / 2;
+      tele.position.set(daisPos.x, hy + 0.82, daisPos.z);
+      tele.castShadow = false;
+      tele.name = "daisTelegraph";
+      group.add(tele);
+
+      // Scorched coin discs along hunt (InstancedMesh)
+      const coinMat = new THREE.MeshStandardMaterial({
+        color: 0x6a5028,
+        roughness: 0.6,
+        metalness: 0.4,
+        emissive: 0x2a1c08,
+        emissiveIntensity: 0.25,
+        transparent: true,
+        opacity: 0.7,
+      });
+      const coinGeo = new THREE.CircleGeometry(1, compact ? 8 : 10);
+      const coinN = compact ? Math.min(3, hunt.length) : hunt.length + 3;
+      const coins = new THREE.InstancedMesh(coinGeo, coinMat, coinN);
+      coins.castShadow = false;
+      coins.receiveShadow = true;
+      coins.frustumCulled = true;
+      const _m = new THREE.Matrix4();
+      const _p = new THREE.Vector3();
+      const _q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+      const _s = new THREE.Vector3();
+      for (let i = 0; i < coinN; i++) {
+        // (never on a clash point: the clash telegraph must read clean there)
+        const onClash = i < hunt.length && distToArcs(hunt[i]![0], hunt[i]![1]) < 3;
+        const [px, pz] =
+          i < hunt.length && !onClash
+            ? hunt[i]!
+            : ([20 + hash(i, 90) * (w - 40), 20 + hash(i, 91) * (h - 40)] as [number, number]);
+        const sc = 0.7 + hash(i, 92) * 0.6;
+        _p.set(px + (hash(i, 93) - 0.5) * 2.4, heightAt(px, pz) + 0.05, pz + (hash(i, 94) - 0.5) * 2.4);
+        _s.set(sc, sc, sc);
+        _m.compose(_p, _q, _s);
+        coins.setMatrixAt(i, _m);
+      }
+      coins.instanceMatrix.needsUpdate = true;
+      group.add(coins);
+
+      // Scorched ledger cracks along hunt (InstancedMesh; cheap boxes)
+      const crackMat = new THREE.MeshStandardMaterial({
+        color: 0x1a140c,
+        roughness: 0.92,
+        metalness: 0.08,
+        emissive: 0x3a2a10,
+        emissiveIntensity: 0.22,
+      });
+      const crackGeo = new THREE.BoxGeometry(1.8, 0.04, 0.14);
+      const crackN = compact ? 4 : 9;
+      const cracks = new THREE.InstancedMesh(crackGeo, crackMat, crackN);
+      cracks.castShadow = false;
+      cracks.receiveShadow = true;
+      cracks.frustumCulled = true;
+      for (let i = 0; i < crackN; i++) {
+        const [px, pz] =
+          i < hunt.length
+            ? hunt[i]
+            : ([30 + hash(i, 81) * (w - 60), 30 + hash(i, 82) * (h - 60)] as [number, number]);
+        _p.set(px + (hash(i, 83) - 0.5) * 1.6, heightAt(px, pz) + 0.04, pz + (hash(i, 84) - 0.5) * 1.6);
+        _q.setFromEuler(new THREE.Euler(0, hash(i, 85) * Math.PI, 0));
+        _s.set(0.9 + hash(i, 86) * 0.7, 1, 1);
+        _m.compose(_p, _q, _s);
+        cracks.setMatrixAt(i, _m);
+      }
+      cracks.instanceMatrix.needsUpdate = true;
+      group.add(cracks);
+
+      // The processions' worn tracks + scarred clash rings (the weights themselves roll
+      // in cantoMech/avarice.ts)
+      // (the tracks' east ends climb onto the dais: drape them over its plinth)
+      const onDais = (x: number, z: number) =>
+        Math.max(heightAt(x, z), daisTopAt(cantoId, hy, daisPos.x, daisPos.z, x, z));
+      buildAvariceTracks(group, onDais, compact, mats.gold);
+
+      // Restrained gold haze (Lust-soften parity — keep slash readable)
+      const hazeN = compact ? 1 : 2;
+      for (let i = 0; i < hazeN; i++) {
+        const ribbon = makeGaleRibbon(mats, 14 + i * 3);
+        const mat = ribbon.material as THREE.MeshBasicMaterial;
+        mat.color.set(0xa88a40);
+        mat.opacity = compact ? 0.1 : 0.13;
+        const rx = 28 + i * 28;
+        const rz = 44 + (i % 2) * 12;
+        ribbon.position.set(rx, heightAt(rx, rz) + 0.7, rz);
+        ribbon.rotation.y = 0.12 * (i % 2 ? -1 : 1);
+        ribbon.rotation.x = Math.PI * 0.06;
+        ribbon.castShadow = false;
+        group.add(ribbon);
+      }
+
+      // Road ledger slabs + gate approach plates (two instanced meshes: slab + gold trim)
+      const slabPts: [number, number][] = compact
+        ? [[18, 52], [29, 52], [72, 60], [100, 71]]
+        : [[14, 50], [22, 52], [29, 52], [50, 58], [70, 60], [96, 70.5], [104, 71.5], [115, 67], [127, 57]];
+      const slabs = new THREE.InstancedMesh(new THREE.BoxGeometry(1.1, 0.08, 0.7), mats.bone, slabPts.length);
+      const trims = new THREE.InstancedMesh(new THREE.BoxGeometry(1.15, 0.03, 0.08), mats.gold, slabPts.length);
+      slabs.castShadow = false;
+      slabs.receiveShadow = true;
+      trims.castShadow = false;
+      for (let i = 0; i < slabPts.length; i++) {
+        const [sx, sz] = slabPts[i]!;
+        _q.setFromEuler(new THREE.Euler(0, hash(i, 77) * Math.PI, 0));
+        _s.set(1, 1, 1);
+        _p.set(sx, heightAt(sx, sz) + 0.06, sz);
+        _m.compose(_p, _q, _s);
+        slabs.setMatrixAt(i, _m);
+        _p.y = heightAt(sx, sz) + 0.12;
+        _m.compose(_p, _q, _s);
+        trims.setMatrixAt(i, _m);
+      }
+      slabs.instanceMatrix.needsUpdate = true;
+      trims.instanceMatrix.needsUpdate = true;
+      group.add(slabs, trims);
+
+      // South / north edge props — unpaid tallies on the empty ledger rims (cheap instances)
+      const edgeCap = compact ? 4 : 8;
+      const edgeGeo = new THREE.CylinderGeometry(0.42, 0.5, 0.28, compact ? 7 : 9);
+      const edgeMesh = new THREE.InstancedMesh(edgeGeo, mats.bronze, edgeCap);
+      edgeMesh.castShadow = false;
+      edgeMesh.receiveShadow = true;
+      edgeMesh.frustumCulled = true;
+      const edgeCoinGeo = new THREE.CircleGeometry(1, compact ? 7 : 9);
+      const edgeCoinMat = new THREE.MeshStandardMaterial({
+        color: 0x8a6840,
+        roughness: 0.42,
+        metalness: 0.5,
+        emissive: 0x3a2a10,
+        emissiveIntensity: 0.22,
+        transparent: true,
+        opacity: 0.78,
+      });
+      const edgeCoins = new THREE.InstancedMesh(edgeCoinGeo, edgeCoinMat, edgeCap);
+      edgeCoins.castShadow = false;
+      edgeCoins.receiveShadow = true;
+      edgeCoins.frustumCulled = true;
+      let edgeN = 0;
+      for (let i = 0; i < 40 && edgeN < edgeCap; i++) {
+        const south = i % 2 === 0;
+        const x = 16 + hash(i, 101) * (w - 32);
+        const z = south ? 10 + hash(i, 102) * 10 : h - 20 + hash(i, 103) * 10;
+        if (x < 8 || z < 8 || x > w - 8 || z > h - 8) continue;
+        if (blocked(x, z, 2.0)) continue;
+        if (arenas.some((a) => Math.hypot(x - a.x, z - a.z) < a.r + 1.5)) continue;
+        _p.set(x, heightAt(x, z) + 0.16, z);
+        _q.setFromEuler(new THREE.Euler(0, hash(i, 104) * Math.PI * 2, Math.PI / 2));
+        _s.set(1 + hash(i, 105) * 0.35, 1, 1 + hash(i, 106) * 0.3);
+        _m.compose(_p, _q, _s);
+        edgeMesh.setMatrixAt(edgeN, _m);
+        _q.setFromEuler(new THREE.Euler(-Math.PI / 2, 0, hash(i, 107) * Math.PI));
+        _s.set(0.85 + hash(i, 108) * 0.5, 0.85 + hash(i, 108) * 0.5, 0.85);
+        _p.y = heightAt(x, z) + 0.05;
+        _m.compose(_p, _q, _s);
+        edgeCoins.setMatrixAt(edgeN, _m);
+        edgeN++;
+      }
+      edgeMesh.count = edgeN;
+      edgeCoins.count = edgeN;
+      edgeMesh.instanceMatrix.needsUpdate = true;
+      edgeCoins.instanceMatrix.needsUpdate = true;
+      group.add(edgeMesh, edgeCoins);
+    } else {
+      const dais = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 7.2, 0.4, 20), mats.stone);
+      dais.position.set(daisPos.x, heightAt(daisPos.x, daisPos.z) + 0.14, daisPos.z);
+      dais.receiveShadow = true;
+      group.add(dais);
+      for (let i = 0; i < 5; i++) {
+        const ribbon = makeGaleRibbon(mats, 14 + i * 2);
+        const rx = 28 + i * 24;
+        const rz = 58 + (i % 2) * 4;
+        ribbon.position.set(rx, heightAt(rx, rz) + 1.15, rz);
+        ribbon.rotation.y = 0.08 * (i % 2 ? -1 : 1);
+        group.add(ribbon);
+      }
+    }
+  }
+
+  freezeStaticProps(group);
+  // The floor as drawn: PlaneGeometry cells (x from −12 by (w+24)/segs, z likewise; vertex
+  // ix + (segs+1)·iz), each split along its (x0,z1)–(x1,z0) diagonal — read straight from
+  // the displaced vertex heights, so a decal a few cm up never sinks and a lookup is cheap
+  const cw = (w + 24) / segs;
+  const ch = (h + 24) / segs;
+  const vy = pos.array as Float32Array;
+  const row = segs + 1;
+  const floorAt = (x: number, z: number): number => {
+    const fx = (x + 12) / cw;
+    const fz = (z + 12) / ch;
+    const ix = Math.max(0, Math.min(segs - 1, Math.floor(fx)));
+    const iz = Math.max(0, Math.min(segs - 1, Math.floor(fz)));
+    const u = Math.max(0, Math.min(1, fx - ix));
+    const v = Math.max(0, Math.min(1, fz - iz));
+    const ia = ix + row * iz;
+    const ha = vy[ia * 3 + 1]!;
+    const hb = vy[(ia + row) * 3 + 1]!;
+    const hc = vy[(ia + row + 1) * 3 + 1]!;
+    const hd = vy[(ia + 1) * 3 + 1]!;
+    return u + v <= 1 ? ha + (hd - ha) * u + (hb - ha) * v : hc + (hb - hc) * (1 - u) + (hd - hc) * (1 - v);
+  };
+  const dais = isHub ? null : bossDaisFor(cantoId);
+  const daisBase = dais ? heightAt(dais.x, dais.z) : 0;
+  // a canto branch may lay its own surface over the floor (group.userData.surfaceTop)
+  const top = group.userData.surfaceTop as ((x: number, z: number) => number) | undefined;
+  const surfaceAt = (x: number, z: number): number => {
+    const f = top ? Math.max(floorAt(x, z), top(x, z)) : floorAt(x, z);
+    return dais ? Math.max(f, daisTopAt(cantoId, daisBase, dais.x, dais.z, x, z)) : f;
+  };
+  return { group, floor, cantoId, heightAt, surfaceAt };
+}
+
+/** Ground nodes WorldApp animates by name (tickFx prop animator / tree sway). */
+const ANIMATED_PROPS = new Set(["tree", "galeRibbon", "ember", "daisPulse", "daisTelegraph"]);
+
+/**
+ * Hundreds of ground props never move after build: bake their local matrices once so
+ * the per-frame scene update skips recomposing them. Animated props (and flame sprites,
+ * which rescale themselves) keep auto-update; world matrices still follow parents.
+ */
+function freezeStaticProps(group: THREE.Group) {
+  group.traverse((o) => {
+    if (o === group || ANIMATED_PROPS.has(o.name) || (o as THREE.Sprite).isSprite) return;
+    o.updateMatrix();
+    o.matrixAutoUpdate = false;
+  });
+}
+
+/**
+ * Gluttony's causeway: hexagonal slabs laid over every point of firm ground (the band
+ * within CAUSEWAY_HALF of the polyline and the landings), a few gaps where old stones
+ * sank, and taller curb stones along both lips so the edge of the mire reads from the
+ * phone camera. Two instanced draws, one shared stone program.
+ */
+function buildCauseway(
+  group: THREE.Group,
+  heightAt: (x: number, z: number) => number,
+  mats: MatKit,
+  compact: boolean
+) {
+  const pts = CAUSEWAY_PTS;
+  const half = CAUSEWAY_HALF;
+  const pads = CAUSEWAY_PADS;
+  // (the road runs up to the Maw's plinth; stones by its lip sit on its slope)
+  const dais = bossDaisFor("inferno_06");
+  const daisBase = heightAt(dais.x, dais.z);
+  const surf = (x: number, z: number) => Math.max(heightAt(x, z), daisTopAt("inferno_06", daisBase, dais.x, dais.z, x, z));
+  const step = compact ? 1.5 : 1.22;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (const p of pts) {
+    minX = Math.min(minX, p[0] - half);
+    maxX = Math.max(maxX, p[0] + half);
+    minZ = Math.min(minZ, p[1] - half);
+    maxZ = Math.max(maxZ, p[1] + half);
+  }
+  for (const p of pads) {
+    minX = Math.min(minX, p[0] - p[2]);
+    maxX = Math.max(maxX, p[0] + p[2]);
+    minZ = Math.min(minZ, p[1] - p[2]);
+    maxZ = Math.max(maxZ, p[1] + p[2]);
+  }
+  const spots: number[] = [];
+  let row = 0;
+  for (let z = minZ; z <= maxZ; z += step * 0.87, row++) {
+    for (let x = minX + (row & 1 ? step * 0.5 : 0); x <= maxX; x += step) {
+      const jx = x + (hash((x * 7) | 0, (z * 7) | 0) - 0.5) * step * 0.28;
+      const jz = z + (hash((x * 5) | 0, (z * 9) | 0) - 0.5) * step * 0.28;
+      // the Maw's plinth is its own stone
+      if (Math.hypot(jx - dais.x, jz - dais.z) < 8.3) continue;
+      if (mireDepth(jx, jz, pts, half, pads) > -0.35) continue;
+      // an old stone sunk out of the road here and there
+      if (hash((jx * 3) | 0, (jz * 3) | 0) < 0.06) continue;
+      spots.push(jx, jz);
+    }
+  }
+  const n = spots.length / 2;
+  const slabGeo = new THREE.CylinderGeometry(0.62 * (step / 1.22), 0.68 * (step / 1.22), 0.26, 6);
+  const slabs = new THREE.InstancedMesh(slabGeo, mats.stone, n);
+  slabs.name = "causewayStones";
+  slabs.castShadow = false;
+  slabs.receiveShadow = true;
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
+  const p = new THREE.Vector3();
+  const sc = new THREE.Vector3();
+  const col = new THREE.Color();
+  for (let i = 0; i < n; i++) {
+    const x = spots[i * 2]!;
+    const z = spots[i * 2 + 1]!;
+    const r = hash((x * 11) | 0, (z * 13) | 0);
+    e.set((r - 0.5) * 0.06, r * Math.PI * 2, (hash((x * 17) | 0, (z * 3) | 0) - 0.5) * 0.06);
+    q.setFromEuler(e);
+    // mostly bedded in the mud: the tops stand a few cm proud (feet, decals sit on them)
+    p.set(x, surf(x, z) - 0.105 + r * 0.03, z);
+    sc.set(0.9 + r * 0.3, 1, 0.85 + hash((z * 5) | 0, (x * 3) | 0) * 0.35);
+    m.compose(p, q, sc);
+    slabs.setMatrixAt(i, m);
+    // old wet stone: grey-olive, some darker with moss
+    const v = 0.5 + r * 0.28;
+    col.setRGB(v * 0.84, v * 0.86, v * 0.8);
+    slabs.setColorAt(i, col);
+  }
+  slabs.instanceMatrix.needsUpdate = true;
+  if (slabs.instanceColor) slabs.instanceColor.needsUpdate = true;
+  group.add(slabs);
+
+  // Curbs: the lips of the road, both sides, not across the landings
+  const curbs: number[] = [];
+  const cStep = compact ? 2.3 : 1.8;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const ax = pts[i]![0];
+    const az = pts[i]![1];
+    const bx = pts[i + 1]![0];
+    const bz = pts[i + 1]![1];
+    const len = Math.hypot(bx - ax, bz - az);
+    const ux = (bx - ax) / len;
+    const uz = (bz - az) / len;
+    for (let t = cStep * 0.5; t < len; t += cStep) {
+      for (const side of [-1, 1]) {
+        const cx = ax + ux * t - uz * side * (half + 0.12);
+        const cz = az + uz * t + ux * side * (half + 0.12);
+        // inside a landing or another stretch of road: no lip there
+        let onPad = false;
+        for (const pd of pads) if (Math.hypot(cx - pd[0], cz - pd[1]) < pd[2] + 0.4) onPad = true;
+        if (onPad) continue;
+        let d = Infinity;
+        for (let j = 0; j < pts.length - 1; j++) {
+          if (j === i) continue;
+          const dx = pts[j + 1]![0] - pts[j]![0];
+          const dz = pts[j + 1]![1] - pts[j]![1];
+          const l2 = dx * dx + dz * dz || 1;
+          const tt = Math.max(0, Math.min(1, ((cx - pts[j]![0]) * dx + (cz - pts[j]![1]) * dz) / l2));
+          d = Math.min(d, Math.hypot(cx - pts[j]![0] - dx * tt, cz - pts[j]![1] - dz * tt));
+        }
+        if (d < half - 0.2) continue;
+        curbs.push(cx, cz, Math.atan2(-uz, ux));
+      }
+    }
+  }
+  const cn = curbs.length / 3;
+  const curbGeo = new THREE.BoxGeometry(0.95, 0.42, 0.42);
+  const curbMesh = new THREE.InstancedMesh(curbGeo, mats.stone, cn);
+  curbMesh.name = "causewayCurbs";
+  curbMesh.castShadow = false;
+  curbMesh.receiveShadow = true;
+  for (let i = 0; i < cn; i++) {
+    const x = curbs[i * 3]!;
+    const z = curbs[i * 3 + 1]!;
+    const r = hash((x * 13) | 0, (z * 7) | 0);
+    e.set((r - 0.5) * 0.18, curbs[i * 3 + 2]! + (r - 0.5) * 0.25, (hash((z * 3) | 0, (x * 5) | 0) - 0.5) * 0.2);
+    q.setFromEuler(e);
+    p.set(x, surf(x, z) + 0.02 + r * 0.06, z);
+    sc.set(0.85 + r * 0.4, 0.8 + r * 0.45, 1);
+    m.compose(p, q, sc);
+    curbMesh.setMatrixAt(i, m);
+    const v = 0.36 + r * 0.2;
+    col.setRGB(v, v * 0.98, v * 0.86);
+    curbMesh.setColorAt(i, col);
+  }
+  curbMesh.instanceMatrix.needsUpdate = true;
+  if (curbMesh.instanceColor) curbMesh.instanceColor.needsUpdate = true;
+  group.add(curbMesh);
+}
